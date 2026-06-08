@@ -1,4 +1,4 @@
---cpu=Cortex-M4.fp
+--cpu=Cortex-M4.fp.sp
 "cubemx\startup_stm32f407xx.o"
 "cubemx\main.o"
 "cubemx\gpio.o"
