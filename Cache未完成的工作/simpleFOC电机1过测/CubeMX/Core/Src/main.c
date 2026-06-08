@@ -20,7 +20,6 @@
 #include "main.h"
 #include "i2c.h"
 #include "tim.h"
-#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -94,8 +93,9 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C2_Init();
   MX_I2C1_Init();
-  MX_USART2_Init();
   MX_I2C3_Init();
+  MX_TIM3_Init();
+  MX_TIM4_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 	printf("\r\n--- STM32F407 System Clock: %ld Hz ---\r\n", HAL_RCC_GetHCLKFreq());
@@ -107,6 +107,7 @@ int main(void)
 	TIM6_1ms_Init();           // 1ms定时器中断
 
 	delay_ms(1000);            // 等待系统稳定
+
 
 	/* SimpleFOC参数配置 */
 	voltage_power_supply = 12.0f;   // V
@@ -121,6 +122,13 @@ int main(void)
 	systick_CountMode();            // SysTick循环计数模式(不能再调用delay_us/ms和HAL_Delay)
 	target = 1.0f;                  // 上电后以 1 rad/s 转动
 
+	/* 启动TIM3/TIM4 PWM输出 */
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -238,8 +246,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

@@ -109,9 +109,9 @@ void setPhaseVoltage(float Uq, float Ud, float angle_el)
 	}
 
 	/* TIM1通道1~3输出PWM (PE9, PE11, PE13) */
-	TIM1->CCR1 = (uint32_t)(Ta * PWM_Period);
-	TIM1->CCR2 = (uint32_t)(Tb * PWM_Period);
-	TIM1->CCR3 = (uint32_t)(Tc * PWM_Period);
+	TIM1->CCR1 = (uint32_t)(Ta * (PWM_Period_TIM1 + 1));
+	TIM1->CCR2 = (uint32_t)(Tb * (PWM_Period_TIM1 + 1));
+	TIM1->CCR3 = (uint32_t)(Tc * (PWM_Period_TIM1 + 1));
 }
 /******************************************************************************/
 /* 使用SysTick获取微秒级时间戳

@@ -33,7 +33,6 @@ cubemx\focmotor.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h
 cubemx\focmotor.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h
 cubemx\focmotor.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h
 cubemx\focmotor.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
-cubemx\focmotor.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_usart.h
 cubemx\focmotor.o: ../Core/Inc/gpio.h
 cubemx\focmotor.o: ../Core/Inc/usart.h
 cubemx\focmotor.o: ../Core/Inc/i2c.h

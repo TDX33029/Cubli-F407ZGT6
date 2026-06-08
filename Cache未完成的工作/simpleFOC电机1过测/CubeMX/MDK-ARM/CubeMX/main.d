@@ -32,14 +32,13 @@ cubemx\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h
 cubemx\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h
 cubemx\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h
 cubemx\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
-cubemx\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_usart.h
 cubemx\main.o: ../Core/Inc/i2c.h
 cubemx\main.o: ../Core/Inc/tim.h
-cubemx\main.o: ../Core/Inc/usart.h
 cubemx\main.o: ../Core/Inc/gpio.h
 cubemx\main.o: D:\Program Files\Keil5\ARM\ARMCC\Bin\..\include\stdio.h
 cubemx\main.o: D:\Program Files\Keil5\ARM\ARMCC\Bin\..\include\stdlib.h
 cubemx\main.o: ../Core/Inc/MyProject.h
+cubemx\main.o: ../Core/Inc/usart.h
 cubemx\main.o: ../Hardware/delay.h
 cubemx\main.o: ../Hardware/timer.h
 cubemx\main.o: ../SimpleFOC/foc_utils.h
