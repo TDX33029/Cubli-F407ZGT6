@@ -33,6 +33,7 @@ cubemx\currentsense.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h
 cubemx\currentsense.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h
 cubemx\currentsense.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h
 cubemx\currentsense.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
+cubemx\currentsense.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
 cubemx\currentsense.o: ../Core/Inc/gpio.h
 cubemx\currentsense.o: ../Core/Inc/usart.h
 cubemx\currentsense.o: ../Core/Inc/i2c.h

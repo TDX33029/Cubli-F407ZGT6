@@ -7,6 +7,7 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
+/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __USART_H__
 #define __USART_H__
 
@@ -14,6 +15,7 @@
 extern "C" {
 #endif
 
+/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
@@ -23,12 +25,21 @@ extern unsigned short USART_RX_STA;
 void USART2_IRQHandler_User(void);
 /* USER CODE END Includes */
 
-extern USART_HandleTypeDef husart2;
+extern UART_HandleTypeDef huart2;
 
-void MX_USART2_Init(void);
+/* USER CODE BEGIN Private defines */
+
+/* USER CODE END Private defines */
+
+void MX_USART2_UART_Init(void);
+
+/* USER CODE BEGIN Prototypes */
+
+/* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* __USART_H__ */
+

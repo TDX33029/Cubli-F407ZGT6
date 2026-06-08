@@ -33,6 +33,7 @@ cubemx\foc_utils.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h
 cubemx\foc_utils.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h
 cubemx\foc_utils.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h
 cubemx\foc_utils.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
+cubemx\foc_utils.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
 cubemx\foc_utils.o: ../Core/Inc/gpio.h
 cubemx\foc_utils.o: ../Core/Inc/usart.h
 cubemx\foc_utils.o: ../Core/Inc/i2c.h

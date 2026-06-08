@@ -33,6 +33,7 @@ cubemx\bldcmotor.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h
 cubemx\bldcmotor.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h
 cubemx\bldcmotor.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h
 cubemx\bldcmotor.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
+cubemx\bldcmotor.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
 cubemx\bldcmotor.o: ../Core/Inc/gpio.h
 cubemx\bldcmotor.o: ../Core/Inc/usart.h
 cubemx\bldcmotor.o: ../Core/Inc/i2c.h

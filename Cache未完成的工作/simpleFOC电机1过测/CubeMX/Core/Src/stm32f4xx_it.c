@@ -56,7 +56,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-
+extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
 uint32_t time1_cntr;
 /* USER CODE END EV */
@@ -199,13 +199,21 @@ void SysTick_Handler(void)
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
 
-/* USER CODE BEGIN 1 */
-/* USART2 中断处理 (接收命令) */
+/**
+  * @brief This function handles USART2 global interrupt.
+  */
 void USART2_IRQHandler(void)
 {
+  /* USER CODE BEGIN USART2_IRQn 0 */
 	USART2_IRQHandler_User();
+  /* USER CODE END USART2_IRQn 0 */
+  HAL_UART_IRQHandler(&huart2);
+  /* USER CODE BEGIN USART2_IRQn 1 */
+
+  /* USER CODE END USART2_IRQn 1 */
 }
 
+/* USER CODE BEGIN 1 */
 /* TIM6 1ms 定时中断 (用于LED闪烁等) */
 void TIM6_DAC_IRQHandler(void)
 {
