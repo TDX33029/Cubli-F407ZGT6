@@ -48,7 +48,10 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-float target;  // SimpleFOC target value (shared with commander)
+float target;       // SimpleFOC global target (sets all motors)
+float target_m1;    // M1 individual target
+float target_m2;    // M2 individual target
+float target_m3;    // M3 individual target
 uint32_t debug_timer;  // 调试输出计时
 /* USER CODE END PV */
 
@@ -119,10 +122,15 @@ int main(void)
 	pole_pairs = 7;                 // 极对数
 
 	M1_Enable;                      // 使能DRV8313-1
-	printf("Motor ready.\r\n");
+	M2_Enable;                      // 使能DRV8313-2
+	M3_Enable;                      // 使能DRV8313-3
+	printf("3 motors ready.\r\n");
 
 	systick_CountMode();            // SysTick循环计数模式(不能再调用delay_us/ms和HAL_Delay)
 	target = 1.0f;                  // 上电后以 1 rad/s 转动
+	target_m1 = target;
+	target_m2 = target;
+	target_m3 = target;
 
 	/* 启动TIM3/TIM4 PWM输出 */
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
@@ -136,22 +144,31 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while(1)
-	{
-		if(time1_cntr >= 200)  // 0.2s LED闪烁
-		{
-			time1_cntr = 0;
+ {
+ 		if(time1_cntr >= 200)  // 0.2s LED闪烁
+ 		{
+ 			time1_cntr = 0;
 			HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_0);  // PG0 LED
-			debug_timer++;
-			/* 每1秒打印一次状态 */
+			HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_1);  // PG1 → M2 工作指示
+			HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_2);  // PG2 → M3 工作指示
+ 			debug_timer++;
+ 			/* 每1秒打印一次状态 */
 			if(debug_timer >= 5)
 			{
 				debug_timer = 0;
-				printf("angle=%.3f  CCR1=%lu CCR2=%lu CCR3=%lu\r\n",
-					shaft_angle,
-					TIM1->CCR1, TIM1->CCR2, TIM1->CCR3);
+				printf("M1:%.3f[%lu %lu %lu]  M2:%.3f[%lu %lu %lu]  M3:%.3f[%lu %lu %lu]  Vq=%.2f\r\n",
+					shaft_angle[0],
+					TIM1->CCR1, TIM1->CCR2, TIM1->CCR3,
+					shaft_angle[1],
+					TIM3->CCR1, TIM3->CCR2, TIM3->CCR3,
+					shaft_angle[2],
+					TIM4->CCR1, TIM4->CCR2, TIM4->CCR3,
+					voltage_limit);
 			}
 		}
-		move(target);
+		move(target_m1, 0);   // M1
+		move(target_m2, 1);   // M2
+		move(target_m3, 2);   // M3
 		commander_run();
 	}
 
@@ -217,15 +234,38 @@ void commander_run(void)
 		switch(USART_RX_BUF[0])
 		{
 			case 'H':
-				printf("Hello World!\r\n");
+				printf("--- SimpleFOC 3-Motor Control ---\r\n"
+				       "H          Help\r\n"
+				       "U<val>     Set voltage_limit (all motors) [curr=%.2f]\r\n"
+				       "T<val>     Set target for ALL motors    [curr=%.2f]\r\n"
+				       "1<val>     Set target for M1            [curr=%.2f]\r\n"
+				       "2<val>     Set target for M2            [curr=%.2f]\r\n"
+				       "3<val>     Set target for M3            [curr=%.2f]\r\n"
+				       "Example: T6.28  or  12.5  or  3-3.14\r\n",
+				       voltage_limit, target, target_m1, target_m2, target_m3);
 				break;
 			case 'U':   // U5.0 - set voltage_limit
 				voltage_limit = atof((const char *)(USART_RX_BUF + 1));
 				printf("voltage_limit=%.4f\r\n", voltage_limit);
 				break;
-			case 'T':   // T6.28  — 设置目标值
+			case 'T':   // T6.28  — 设置所有电机目标速度
 				target = atof((const char *)(USART_RX_BUF + 1));
-				printf("RX=%.4f\r\n", target);
+				target_m1 = target;
+				target_m2 = target;
+				target_m3 = target;
+				printf("ALL target=%.4f  (M1/M2/M3)\r\n", target);
+				break;
+			case '1':   // 1-5.0  — M1 目标速度
+				target_m1 = atof((const char *)(USART_RX_BUF + 1));
+				printf("M1 target=%.4f\r\n", target_m1);
+				break;
+			case '2':   // 23.14  — M2 目标速度
+				target_m2 = atof((const char *)(USART_RX_BUF + 1));
+				printf("M2 target=%.4f\r\n", target_m2);
+				break;
+			case '3':   // 3-10.0 — M3 目标速度
+				target_m3 = atof((const char *)(USART_RX_BUF + 1));
+				printf("M3 target=%.4f\r\n", target_m3);
 				break;
 		}
 		USART_RX_STA = 0;

@@ -15,34 +15,34 @@ main中调用的接口函数都在当前文件中
 float voltage_power_supply;
 float voltage_limit;
 int  pole_pairs;
-unsigned long open_loop_timestamp;
+unsigned long open_loop_timestamp[3];
 float velocity_limit;
 /******************************************************************************/
-float velocityOpenloop(float target_velocity);
-float angleOpenloop(float target_angle);
+float velocityOpenloop(float target_velocity, int motor);
+float angleOpenloop(float target_angle, int motor);
 /******************************************************************************/
-void move(float new_target)
+void move(float new_target, int motor)
 {
 	switch(controller)
 	{
 		case Type_velocity_openloop:
 			// velocity control in open loop
-      shaft_velocity_sp = new_target;
-      voltage.q = velocityOpenloop(shaft_velocity_sp); // returns the voltage that is set to the motor
-      voltage.d = 0;
+      shaft_velocity_sp[motor] = new_target;
+      voltage[motor].q = velocityOpenloop(shaft_velocity_sp[motor], motor); // returns the voltage that is set to the motor
+      voltage[motor].d = 0;
 			break;
 		case Type_angle_openloop:
 			// angle control in open loop
-      shaft_angle_sp = new_target;
-      voltage.q = angleOpenloop(shaft_angle_sp); // returns the voltage that is set to the motor
-      voltage.d = 0;
+      shaft_angle_sp[motor] = new_target;
+      voltage[motor].q = angleOpenloop(shaft_angle_sp[motor], motor); // returns the voltage that is set to the motor
+      voltage[motor].d = 0;
 			break;
 		default:
 			break;
 	}
 }
 /******************************************************************************/
-void setPhaseVoltage(float Uq, float Ud, float angle_el)
+void setPhaseVoltage(float Uq, float Ud, float angle_el, int motor)
 {
 	float Uout;
 	uint32_t sector;
@@ -108,10 +108,24 @@ void setPhaseVoltage(float Uq, float Ud, float angle_el)
 			Tc = 0;
 	}
 
-	/* TIM1通道1~3输出PWM (PE9, PE11, PE13) */
-	TIM1->CCR1 = (uint32_t)(Ta * (PWM_Period_TIM1 + 1));
-	TIM1->CCR2 = (uint32_t)(Tb * (PWM_Period_TIM1 + 1));
-	TIM1->CCR3 = (uint32_t)(Tc * (PWM_Period_TIM1 + 1));
+	switch(motor)
+	{
+		case 0:  /* M1: TIM1 通道1~3 (PE9, PE11, PE13) */
+			TIM1->CCR1 = (uint32_t)(Ta * (PWM_Period_TIM1 + 1));
+			TIM1->CCR2 = (uint32_t)(Tb * (PWM_Period_TIM1 + 1));
+			TIM1->CCR3 = (uint32_t)(Tc * (PWM_Period_TIM1 + 1));
+			break;
+		case 1:  /* M2: TIM3 通道1~3 (PA6, PA7, PB0) */
+			TIM3->CCR1 = (uint32_t)(Ta * (PWM_Period_APB1 + 1));
+			TIM3->CCR2 = (uint32_t)(Tb * (PWM_Period_APB1 + 1));
+			TIM3->CCR3 = (uint32_t)(Tc * (PWM_Period_APB1 + 1));
+			break;
+		case 2:  /* M3: TIM4 通道1~3 (PD12, PD13, PD14) */
+			TIM4->CCR1 = (uint32_t)(Ta * (PWM_Period_APB1 + 1));
+			TIM4->CCR2 = (uint32_t)(Tb * (PWM_Period_APB1 + 1));
+			TIM4->CCR3 = (uint32_t)(Tc * (PWM_Period_APB1 + 1));
+			break;
+	}
 }
 /******************************************************************************/
 /* 使用SysTick获取微秒级时间戳
@@ -128,58 +142,58 @@ static unsigned long _micros(void)
 }
 
 /******************************************************************************/
-float velocityOpenloop(float target_velocity)
+float velocityOpenloop(float target_velocity, int motor)
 {
 	unsigned long now_us;
 	float Ts,Uq;
 
 	now_us = _micros();
-	if(now_us < open_loop_timestamp)
-		Ts = (float)(open_loop_timestamp - now_us) * 1e-6f / 21.0f;
+	if(now_us < open_loop_timestamp[motor])
+		Ts = (float)(open_loop_timestamp[motor] - now_us) * 1e-6f / 21.0f;
 	else
-		Ts = (float)(0xFFFFFF - now_us + open_loop_timestamp) * 1e-6f / 21.0f;
-	open_loop_timestamp=now_us;  //save timestamp for next call
+		Ts = (float)(0xFFFFFF - now_us + open_loop_timestamp[motor]) * 1e-6f / 21.0f;
+	open_loop_timestamp[motor]=now_us;  //save timestamp for next call
   // quick fix for strange cases (micros overflow)
   if(Ts == 0 || Ts > 0.5f) Ts = 1e-3f;
 
 	// calculate the necessary angle to achieve target velocity
-  shaft_angle = _normalizeAngle(shaft_angle + target_velocity*Ts);
+  shaft_angle[motor] = _normalizeAngle(shaft_angle[motor] + target_velocity*Ts);
 
 	Uq = voltage_limit;
 	// set the maximal allowed voltage (voltage_limit) with the necessary angle
-  setPhaseVoltage(Uq,  0, _electricalAngle(shaft_angle, pole_pairs));
+  setPhaseVoltage(Uq,  0, _electricalAngle(shaft_angle[motor], pole_pairs), motor);
 
 	return Uq;
 }
 /******************************************************************************/
-float angleOpenloop(float target_angle)
+float angleOpenloop(float target_angle, int motor)
 {
 	unsigned long now_us;
 	float Ts,Uq;
 
 	now_us = _micros();
-	if(now_us < open_loop_timestamp)
-		Ts = (float)(open_loop_timestamp - now_us) * 1e-6f / 21.0f;
+	if(now_us < open_loop_timestamp[motor])
+		Ts = (float)(open_loop_timestamp[motor] - now_us) * 1e-6f / 21.0f;
 	else
-		Ts = (float)(0xFFFFFF - now_us + open_loop_timestamp) * 1e-6f / 21.0f;
-	open_loop_timestamp = now_us;  //save timestamp for next call
+		Ts = (float)(0xFFFFFF - now_us + open_loop_timestamp[motor]) * 1e-6f / 21.0f;
+	open_loop_timestamp[motor] = now_us;  //save timestamp for next call
   // quick fix for strange cases (micros overflow)
   if(Ts == 0 || Ts > 0.5f) Ts = 1e-3f;
 
 	// calculate the necessary angle to move from current position towards target angle
   // with maximal velocity (velocity_limit)
-  if(fabsf( target_angle - shaft_angle ) > velocity_limit*Ts)
+  if(fabsf( target_angle - shaft_angle[motor] ) > velocity_limit*Ts)
 	{
-    shaft_angle += _sign(target_angle - shaft_angle) * velocity_limit * Ts;
+    shaft_angle[motor] += _sign(target_angle - shaft_angle[motor]) * velocity_limit * Ts;
   }
 	else
 	{
-    shaft_angle = target_angle;
+    shaft_angle[motor] = target_angle;
   }
 
 	Uq = voltage_limit;
 	// set the maximal allowed voltage (voltage_limit) with the necessary angle
-	setPhaseVoltage(Uq,  0, _electricalAngle(shaft_angle, pole_pairs));
+	setPhaseVoltage(Uq,  0, _electricalAngle(shaft_angle[motor], pole_pairs), motor);
 
   return Uq;
 }

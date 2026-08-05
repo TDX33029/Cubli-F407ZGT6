@@ -28,13 +28,13 @@ typedef enum
 extern TorqueControlType torque_controller;
 extern MotionControlType controller;
 /******************************************************************************/
-extern float shaft_angle;//!< current motor angle
-extern float electrical_angle;
-extern float shaft_velocity;
+extern float shaft_angle[3];//!< current motor angle [0]=M1, [1]=M2, [2]=M3
+extern float electrical_angle[3];
+extern float shaft_velocity[3];
 extern float current_sp;
-extern float shaft_velocity_sp;
-extern float shaft_angle_sp;
-extern DQVoltage_s voltage;
+extern float shaft_velocity_sp[3];
+extern float shaft_angle_sp[3];
+extern DQVoltage_s voltage[3];
 extern DQCurrent_s current;
 
 extern float sensor_offset;
@@ -42,7 +42,7 @@ extern float zero_electric_angle;
 /******************************************************************************/
 float shaftAngle(void);
 float shaftVelocity(void);
-float electricalAngle(void);
+float electricalAngle(int motor);
 /******************************************************************************/
 
 #endif
