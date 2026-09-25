@@ -445,18 +445,22 @@ void commander_run(void)
 				}
 			}
 				/* 6. 霍尔/磁编码角度查询: HALL 或 ENC */
-				else if(strncmp(cmd, "HALL", 4) == 0 || strncmp(cmd, "hall", 4) == 0 ||
-				        strncmp(cmd, "ENC", 3) == 0 || strncmp(cmd, "enc", 3) == 0)
-				{
-						printf("--- Motor Hall/Encoder Sensors (MT6701) ---\r\n"
-						       "M1 (I2C1): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d [HAL_Res=%d, Err=0x%02lX, PB6_SCL=%d, PB7_SDA=%d]\r\n"
-						       "M2 (I2C2): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d [Err=0x%02lX]\r\n"
-						       "M3 (I2C3): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d [Err=0x%02lX]\r\n",
-						       hall_raw[0], (uint16_t)hall_raw[0], hall_angle_deg[0], shaft_velocity[0], hall_online[0],
-						       i2c1_last_hal_res, i2c1_last_err, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6), HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7),
-						       hall_raw[1], (uint16_t)hall_raw[1], hall_angle_deg[1], shaft_velocity[1], hall_online[1], hi2c2.ErrorCode,
-						       hall_raw[2], (uint16_t)hall_raw[2], hall_angle_deg[2], shaft_velocity[2], hall_online[2], hi2c3.ErrorCode);
-				}
+					else if(strncmp(cmd, "HALL", 4) == 0 || strncmp(cmd, "hall", 4) == 0 ||
+					        strncmp(cmd, "ENC", 3) == 0 || strncmp(cmd, "enc", 3) == 0)
+					{
+							int16_t r[3];
+							float d[3];
+							uint8_t o1 = (i2c_mt6701_1_get_angle(&r[0], &d[0]) == 0);
+							uint8_t o2 = (i2c_mt6701_2_get_angle(&r[1], &d[1]) == 0);
+							uint8_t o3 = (i2c_mt6701_3_get_angle(&r[2], &d[2]) == 0);
+							printf("--- Motor Hall/Encoder Sensors (MT6701) ---\r\n"
+							       "M1 (I2C1): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d\r\n"
+							       "M2 (I2C2): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d\r\n"
+							       "M3 (I2C3): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d\r\n",
+							       r[0], (uint16_t)r[0], d[0], shaft_velocity[0], o1,
+							       r[1], (uint16_t)r[1], d[1], shaft_velocity[1], o2,
+							       r[2], (uint16_t)r[2], d[2], shaft_velocity[2], o3);
+					}
 			/* 7. 六轴陀螺仪与加速度计状态查询: IMU */
 			else if(strncmp(cmd, "IMU", 3) == 0 || strncmp(cmd, "imu", 3) == 0)
 			{
