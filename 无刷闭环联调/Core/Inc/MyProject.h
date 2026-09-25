@@ -40,4 +40,8 @@
 /* 外部变量声明 */
 extern uint32_t time1_cntr;
 
+/* 自检与状态指示功能接口 */
+void Boot_PG4_Blink_5s(void);
+void Motor_Encoder_OpenLoop_SelfTest(void);
+
 #endif

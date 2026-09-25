@@ -40,5 +40,26 @@ void TIM6_1ms_Init(void)
 	TIM6->CR1 |= TIM_CR1_CEN;
 }
 /***************************************************************************/
+/* TIM5 32位全硬件自由微秒计数器 (完全摆脱DWT与SysTick依赖)
+ * APB1 定时器时钟 = 84MHz
+ * Prescaler = 84 - 1 -> 计数频率严格等于 1.0MHz (1计数值 = 1.0微秒)
+ * Period = 0xFFFFFFFF (32位最大值，约 71.5 分钟溢出回绕一次，C语言uint32无缝跨界)
+ */
+void TIM5_Micros_Init(void)
+{
+	__HAL_RCC_TIM5_CLK_ENABLE();
+	TIM5->CR1 = 0;
+	TIM5->PSC = 84 - 1;
+	TIM5->ARR = 0xFFFFFFFF;
+	TIM5->CNT = 0;
+	TIM5->EGR |= TIM_EGR_UG;
+	TIM5->CR1 |= TIM_CR1_CEN;
+}
+
+uint32_t micros(void)
+{
+	return TIM5->CNT;
+}
+/***************************************************************************/
 
 /***************************************************************************/

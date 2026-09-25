@@ -28,6 +28,8 @@ void Motor_alignAll(void);
 void loopFOC(int motor);
 void move(float new_target, int motor);
 void setPhaseVoltage(float Uq, float Ud, float angle_el, int motor);
+float velocityOpenloop(float target_velocity, int motor);
+float angleOpenloop(float target_angle, int motor);
 /******************************************************************************/
 
 #endif
