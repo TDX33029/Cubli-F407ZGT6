@@ -140,9 +140,9 @@ int main(void)
 
 				/* SimpleFOC参数配置 */
 				voltage_power_supply = 12.0f;   // V (DRV8313 12V 硬件供电)
-				voltage_limit = 5.0f;           // V，相电压上限设为 5.0V (可在上位机中微调至 6.0V)，充沛发挥 12V 供电性能
-				velocity_limit = 20.0f;         // rad/s
-			controller = Type_velocity_openloop; // 默认开环安全待机，避免未标定零位时闭环自激扰动
+				voltage_limit = 6.0f;           // V，相电压上限拉到最高 6.0V (最大安全限幅 6.8V)，极大充沛发挥电磁力矩
+				velocity_limit = 60.0f;         // rad/s (最高转速提升至 60.0 rad/s)
+				controller = Type_velocity_openloop; // 默认开环安全待机，避免未标定零位时闭环自激扰动
 			pole_pairs = 7;                 // 极对数
 
 			SimpleFOC_PID_Init();           // 初始化速度闭环 PID 与低通滤波器
@@ -445,18 +445,22 @@ void commander_run(void)
 				}
 			}
 				/* 6. 霍尔/磁编码角度查询: HALL 或 ENC */
-				else if(strncmp(cmd, "HALL", 4) == 0 || strncmp(cmd, "hall", 4) == 0 ||
-				        strncmp(cmd, "ENC", 3) == 0 || strncmp(cmd, "enc", 3) == 0)
-				{
-						printf("--- Motor Hall/Encoder Sensors (MT6701) ---\r\n"
-						       "M1 (I2C1): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d [HAL_Res=%d, Err=0x%02lX, PB6_SCL=%d, PB7_SDA=%d]\r\n"
-						       "M2 (I2C2): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d [Err=0x%02lX]\r\n"
-						       "M3 (I2C3): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d [Err=0x%02lX]\r\n",
-						       hall_raw[0], (uint16_t)hall_raw[0], hall_angle_deg[0], shaft_velocity[0], hall_online[0],
-						       i2c1_last_hal_res, i2c1_last_err, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6), HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7),
-						       hall_raw[1], (uint16_t)hall_raw[1], hall_angle_deg[1], shaft_velocity[1], hall_online[1], hi2c2.ErrorCode,
-						       hall_raw[2], (uint16_t)hall_raw[2], hall_angle_deg[2], shaft_velocity[2], hall_online[2], hi2c3.ErrorCode);
-				}
+					else if(strncmp(cmd, "HALL", 4) == 0 || strncmp(cmd, "hall", 4) == 0 ||
+					        strncmp(cmd, "ENC", 3) == 0 || strncmp(cmd, "enc", 3) == 0)
+					{
+							int16_t r[3];
+							float d[3];
+							uint8_t o1 = (i2c_mt6701_1_get_angle(&r[0], &d[0]) == 0);
+							uint8_t o2 = (i2c_mt6701_2_get_angle(&r[1], &d[1]) == 0);
+							uint8_t o3 = (i2c_mt6701_3_get_angle(&r[2], &d[2]) == 0);
+							printf("--- Motor Hall/Encoder Sensors (MT6701) ---\r\n"
+							       "M1 (I2C1): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d\r\n"
+							       "M2 (I2C2): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d\r\n"
+							       "M3 (I2C3): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d\r\n",
+							       r[0], (uint16_t)r[0], d[0], shaft_velocity[0], o1,
+							       r[1], (uint16_t)r[1], d[1], shaft_velocity[1], o2,
+							       r[2], (uint16_t)r[2], d[2], shaft_velocity[2], o3);
+					}
 			/* 7. 六轴陀螺仪与加速度计状态查询: IMU */
 			else if(strncmp(cmd, "IMU", 3) == 0 || strncmp(cmd, "imu", 3) == 0)
 			{
@@ -650,24 +654,24 @@ void commander_run(void)
 				target_m3 = target;
 				printf("OK ALL:%.2f\r\n", target);
 			}
-			/* 13. 相电压上限设定: U<val> */
-			else if(cmd[0] == 'U' || cmd[0] == 'u')
-			{
-				float v = (float)atof(cmd + 1);
-				if(v < 0.1f) v = 0.1f;
-				if(v > 6.0f) v = 6.0f;
-				voltage_limit = v;
-				printf("OK Vq:%.2f\r\n", voltage_limit);
-			}
-			/* 14. 速度上限设定: L<val> */
-			else if(cmd[0] == 'L' || cmd[0] == 'l')
-			{
-				float l = (float)atof(cmd + 1);
-				if(l < 1.0f) l = 1.0f;
-				if(l > 50.0f) l = 50.0f;
-				velocity_limit = l;
-				printf("OK Vlim:%.2f\r\n", velocity_limit);
-			}
+				/* 13. 相电压上限设定: U<val> */
+				else if(cmd[0] == 'U' || cmd[0] == 'u')
+				{
+					float v = (float)atof(cmd + 1);
+					if(v < 0.1f) v = 0.1f;
+					if(v > 6.8f) v = 6.8f;
+					voltage_limit = v;
+					printf("OK Vq:%.2f\r\n", voltage_limit);
+				}
+				/* 14. 速度上限设定: L<val> */
+				else if(cmd[0] == 'L' || cmd[0] == 'l')
+				{
+					float l = (float)atof(cmd + 1);
+					if(l < 1.0f) l = 1.0f;
+					if(l > 80.0f) l = 80.0f;
+					velocity_limit = l;
+					printf("OK Vlim:%.2f\r\n", velocity_limit);
+				}
 			/* 15. 兼容单电机原始命令: 1<val>, 2<val>, 3<val> */
 			else if(cmd[0] == '1')
 			{

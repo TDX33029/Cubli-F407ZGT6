@@ -17,10 +17,22 @@
 unsigned char USART_RX_BUF[USART_REC_LEN];
 unsigned short USART_RX_STA = 0;
 
+/* 非阻塞高速环形发送缓冲区 (彻底杜绝 printf 阻塞 15ms 造成 FOC 控制环顿挫脉冲) */
+#define UART_TX_BUF_SIZE 1024
+static uint8_t uart_tx_buf[UART_TX_BUF_SIZE];
+static volatile uint16_t uart_tx_head = 0;
+static volatile uint16_t uart_tx_tail = 0;
+
 int fputc(int ch, FILE *f)
 {
-	while(!(USART2->SR & USART_SR_TXE));
-	USART2->DR = (ch & 0xFF);
+	uint16_t next_head = (uart_tx_head + 1) % UART_TX_BUF_SIZE;
+	while(next_head == uart_tx_tail)
+	{
+		USART2->CR1 |= USART_CR1_TXEIE; // 满缓冲区时触发发送
+	}
+	uart_tx_buf[uart_tx_head] = (uint8_t)ch;
+	uart_tx_head = next_head;
+	USART2->CR1 |= USART_CR1_TXEIE; // 使能发送中断，异步后台发送
 	return ch;
 }
 /* USER CODE END 0 */
@@ -128,6 +140,22 @@ void usart2_send_str(const char *str)
 void USART2_IRQHandler_User(void)
 {
 	unsigned char Res;
+
+	// 1. 发送空中断 (异步高效消费环形发送缓冲区，零等待)
+	if((USART2->CR1 & USART_CR1_TXEIE) && (USART2->SR & USART_SR_TXE))
+	{
+		if(uart_tx_head != uart_tx_tail)
+		{
+			USART2->DR = uart_tx_buf[uart_tx_tail];
+			uart_tx_tail = (uart_tx_tail + 1) % UART_TX_BUF_SIZE;
+		}
+		else
+		{
+			USART2->CR1 &= ~USART_CR1_TXEIE; // 发送完毕关闭发送中断
+		}
+	}
+
+	// 2. 接收中断
 	if(USART2->SR & USART_SR_RXNE)
 	{
 		Res = (unsigned char)(USART2->DR & 0xFF);

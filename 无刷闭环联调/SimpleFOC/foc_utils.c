@@ -71,12 +71,10 @@ float PID_operator(PIDController_t* pid, float error)
 	// 比例项
 	proportional = pid->P * error;
 
-		// 积分项 (采用梯形积分并带有抗饱和限制，防止加减速时积分积爆引发失控)
-		float i_limit = pid->limit * 0.40f;
-		if(i_limit < 1.5f) i_limit = 1.5f;
-		integral = pid->integral_prev + pid->I * error * Ts;
-		integral = _constrain(integral, -i_limit, i_limit);
-		pid->integral_prev = integral;
+	// 积分项 (标准抗饱和限幅，与 voltage_limit 对齐)
+	integral = pid->integral_prev + pid->I * error * Ts;
+	integral = _constrain(integral, -pid->limit, pid->limit);
+	pid->integral_prev = integral;
 
 	// 微分项 (带安全滤波与微分限幅，D=0时直接为0，绝不引入高频尖峰)
 	if(pid->D > 0.0f && Ts > 0.002f)

@@ -23,12 +23,13 @@ float voltage_sensor_align = 2.8f; // 电机校准电角度时的激励电压(V)
 float velocityOpenloop(float target_velocity, int motor);
 float angleOpenloop(float target_angle, int motor);
 /******************************************************************************/
-/* 对单个电机进行电角度零位对齐与旋转方向辨识 */
+/* 对单个电机进行电角度零位对齐与旋转方向辨识 (严格遵循官方 SimpleFOC 闭环校准算法) */
 uint8_t Motor_alignSensor(int motor)
 {
-	float angle1 = 0.0f;
-	float angle2 = 0.0f;
-	float d_angle = 0.0f;
+	int i;
+	float start_ang = 0.0f;
+	float mid_ang = 0.0f;
+	float d_rot = 0.0f;
 	float target_align_voltage = voltage_sensor_align;
 
 	if(motor < 0 || motor > 2) return 1;
@@ -49,39 +50,44 @@ uint8_t Motor_alignSensor(int motor)
 		return 0;
 	}
 
-	// 关键：校准时必须使能该电机的硬件驱动芯片 (DRV8313)
 	set_motor_enable(motor + 1, 1);
-	delay_ms(20);
+	delay_ms(50);
 
-	// 1. 定位到电角度 3PI/2 (setPhaseVoltage内部+PI/2使定子合成矢量稳定在0度，吸引转子静止对齐)
+	// 1. 定位到电角度 3PI/2 (定子合成磁矢量在 0 度) 并吸合稳定
 	setPhaseVoltage(target_align_voltage, 0, _3PI_2, motor);
-	delay_ms(800);
+	delay_ms(700);
 
-	// 采样初始机械角
+	// 2. 像官方 SimpleFOC 一样缓慢正向扫过 1 个完整电周期 (360度电角)
 	updateSensor(motor);
-	angle1 = shaftAngle(motor);
+	start_ang = shaftAngle(motor);
 
-	// 2. 旋转电气角度 +PI/2，检测转子运动方向
-	setPhaseVoltage(target_align_voltage, 0, _3PI_2 + _PI_2, motor);
-	delay_ms(800);
-
-	updateSensor(motor);
-	angle2 = shaftAngle(motor);
-
-	// 卸载激励电压，防止发热
-	setPhaseVoltage(0, 0, 0, motor);
-
-	// 计算位移辨识正反向 (机械角跨界解包保护)
-	d_angle = angle2 - angle1;
-	if(d_angle > _PI) d_angle -= _2PI;
-	else if(d_angle < -_PI) d_angle += _2PI;
-
-	if(fabsf(d_angle) < 0.01f)
+	for(i = 0; i <= 200; i++)
 	{
-		printf("Align M%d WARN: Movement too small (%.3f rad). Check motor power or mechanical friction!\r\n", motor+1, d_angle);
-		sensor_direction[motor] = 1;
+		float a = _3PI_2 + _2PI * ((float)i / 200.0f);
+		setPhaseVoltage(target_align_voltage, 0, a, motor);
+		updateSensor(motor);
+		delay_us(2000);
 	}
-	else if(d_angle > 0)
+	updateSensor(motor);
+	mid_ang = shaftAngle(motor);
+
+	// 缓慢反向扫过 1 个完整电周期返回
+	for(i = 200; i >= 0; i--)
+	{
+		float a = _3PI_2 + _2PI * ((float)i / 200.0f);
+		setPhaseVoltage(target_align_voltage, 0, a, motor);
+		updateSensor(motor);
+		delay_us(2000);
+	}
+	updateSensor(motor);
+	delay_ms(200);
+
+	// 计算正向旋转期间转子实际走过的机械弧度辨识旋向
+	d_rot = mid_ang - start_ang;
+	if(d_rot > _PI) d_rot -= _2PI;
+	else if(d_rot < -_PI) d_rot += _2PI;
+
+	if(d_rot > 0.0f)
 	{
 		sensor_direction[motor] = 1;  // CW
 	}
@@ -90,14 +96,13 @@ uint8_t Motor_alignSensor(int motor)
 		sensor_direction[motor] = -1; // CCW
 	}
 
-	// 3. 再次定位到 3PI/2，静止吸合稳定后准确测定零电角
+	// 3. 再次静止定位到 3PI/2 准确测量零电角
 	setPhaseVoltage(target_align_voltage, 0, _3PI_2, motor);
-	delay_ms(800);
+	delay_ms(700);
 	updateSensor(motor);
 	zero_electric_angle[motor] = 0.0f;
 	zero_electric_angle[motor] = electricalAngle(motor);
 
-	// 释放驱动电压
 	setPhaseVoltage(0, 0, 0, motor);
 	motor_aligned[motor] = 1;
 
@@ -148,64 +153,53 @@ void loopFOC(int motor)
 }
 
 /******************************************************************************/
+float open_loop_angle[3] = {0.0f, 0.0f, 0.0f};
+
+/******************************************************************************/
 void move(float new_target, int motor)
 {
 	float speed_err = 0.0f;
-	float uq_cmd = 0.0f;
-	float uq_ff = 0.0f;
-	float sign_sp = 0.0f;
 
 	if(motor < 0 || motor > 2) return;
 
 	switch(controller)
 	{
-				case Type_velocity:
-					// 速度闭环控制模式 (带 MT6701 反馈、摩擦力矩前馈与抗饱和 PID 闭环)
-					loopFOC(motor);
-					shaft_velocity_sp[motor] = new_target;
-					speed_err = shaft_velocity_sp[motor] - shaft_velocity[motor];
+		case Type_velocity:
+			// 速度闭环控制模式 (官方 SimpleFOC 纯净经典 PID 闭环)
+			loopFOC(motor);
+			shaft_velocity_sp[motor] = new_target;
+			speed_err = shaft_velocity_sp[motor] - shaft_velocity[motor];
 
-					// 零速死区保护：当目标为0且转速处于静止低速区时，复位积分并彻底输出0，杜绝静止发热与颤振
-					if(fabsf(shaft_velocity_sp[motor]) < 0.02f && fabsf(shaft_velocity[motor]) < 0.15f)
-					{
-						pid_velocity[motor].integral_prev = 0.0f;
-						pid_velocity[motor].error_prev = 0.0f;
-						voltage[motor].q = 0.0f;
-						voltage[motor].d = 0.0f;
-						setPhaseVoltage(0.0f, 0.0f, electrical_angle[motor], motor);
-						break;
-					}
+			// 零速彻底待机：当目标速度为 0 时立即输出 0V 并复位积分，彻底消除零速高频抖动与自激颤振
+			if(fabsf(shaft_velocity_sp[motor]) < 0.01f)
+			{
+				pid_velocity[motor].integral_prev = 0.0f;
+				pid_velocity[motor].error_prev = 0.0f;
+				voltage[motor].q = 0.0f;
+				voltage[motor].d = 0.0f;
+				setPhaseVoltage(0.0f, 0.0f, electrical_angle[motor], motor);
+				break;
+			}
 
-					// 1. 闭环 PID 速度误差调节器
-					pid_velocity[motor].limit = voltage_limit;
-					uq_cmd = PID_operator(&pid_velocity[motor], speed_err);
+			// 纯净 PID 速度闭环运算 (不叠加任何硬性摩擦前馈偏置，保证小无刷电机随动平稳丝滑)
+			pid_velocity[motor].limit = voltage_limit;
+			voltage[motor].q = PID_operator(&pid_velocity[motor], speed_err);
+			voltage[motor].d = 0.0f;
 
-					// 2. 基础电磁底压前馈 (像开环一样提供恒定基底磁拉力，瞬间克服定子齿槽死区阻力与静摩擦)
-					uq_ff = 0.0f;
-					if(fabsf(shaft_velocity_sp[motor]) >= 0.02f)
-					{
-						sign_sp = (shaft_velocity_sp[motor] > 0.0f) ? 1.0f : -1.0f;
-						// 0.55V 克服齿槽吸力与动量轮轴承静摩擦，加上随转速递增的反电势与动摩擦前馈
-						uq_ff = sign_sp * (0.55f + 0.04f * fabsf(shaft_velocity_sp[motor]));
-					}
-
-					// 3. 最终相电压合成与安全限幅 (绝对基于当前转速，无任何无界积分发散，停车加减速丝滑自如)
-					voltage[motor].q = _constrain(uq_cmd + uq_ff, -voltage_limit, voltage_limit);
-					voltage[motor].d = 0.0f;
-
-					// 驱动相电压输出
-					setPhaseVoltage(voltage[motor].q, voltage[motor].d, electrical_angle[motor], motor);
-					break;
+			// 驱动相电压输出
+			setPhaseVoltage(voltage[motor].q, voltage[motor].d, electrical_angle[motor], motor);
+			break;
 
 		case Type_velocity_openloop:
-			// 速度开环模式 (兼容模式，无需闭环电角度)
+			// 速度开环模式 (同时读取传感器，保证上位机与遥测实时监测真实机械角度)
+			updateSensor(motor);
 			shaft_velocity_sp[motor] = new_target;
 			voltage[motor].q = velocityOpenloop(shaft_velocity_sp[motor], motor);
 			voltage[motor].d = 0.0f;
 			break;
 
 		case Type_angle_openloop:
-			// 角度开环模式
+			updateSensor(motor);
 			shaft_angle_sp[motor] = new_target;
 			voltage[motor].q = angleOpenloop(shaft_angle_sp[motor], motor);
 			voltage[motor].d = 0.0f;
@@ -216,67 +210,36 @@ void move(float new_target, int motor)
 	}
 }
 /******************************************************************************/
+/* 官方 SimpleFOC 标准 SpaceVectorPWM (Midpoint Clamp 鞍形波空间矢量调制)
+ * 无扇区边界断点，全浮点硬件加速，相电压谐波最低，极其平滑连续
+ */
 void setPhaseVoltage(float Uq, float Ud, float angle_el, int motor)
 {
-	float Uout;
-	uint32_t sector;
-	float T0,T1,T2;
-	float Ta,Tb,Tc;
+	float _ca = cosf(angle_el);
+	float _sa = sinf(angle_el);
 
-	if(Ud) // only if Ud and Uq set
-	{
-		Uout = _sqrt(Ud*Ud + Uq*Uq) / voltage_power_supply;
-		angle_el = _normalizeAngle(angle_el + atan2f(Uq, Ud));
-	}
-	else
-	{
-		Uout = fabsf(Uq) / voltage_power_supply;
-		angle_el = _normalizeAngle(angle_el + (Uq >= 0.0f ? _PI_2 : -_PI_2));
-	}
+	// 1. Inverse Park transform (反 Park 变换)
+	float Ualpha = _ca * Ud - _sa * Uq;
+	float Ubeta  = _sa * Ud + _ca * Uq;
 
-	sector = (uint32_t)(angle_el / _PI_3) + 1;
-	T1 = _SQRT3*_sin(sector*_PI_3 - angle_el) * Uout;
-	T2 = _SQRT3*_sin(angle_el - (sector-1.0f)*_PI_3) * Uout;
-	T0 = 1.0f - T1 - T2;
+	// 2. Clarke transform (Clarke 变换)
+	float Ua = Ualpha;
+	float Ub = -0.5f * Ualpha + 0.8660254f * Ubeta;
+	float Uc = -0.5f * Ualpha - 0.8660254f * Ubeta;
 
-	// calculate the duty cycles(times)
-	switch(sector)
-	{
-		case 1:
-			Ta = T1 + T2 + T0/2;
-			Tb = T2 + T0/2;
-			Tc = T0/2;
-			break;
-		case 2:
-			Ta = T1 +  T0/2;
-			Tb = T1 + T2 + T0/2;
-			Tc = T0/2;
-			break;
-		case 3:
-			Ta = T0/2;
-			Tb = T1 + T2 + T0/2;
-			Tc = T2 + T0/2;
-			break;
-		case 4:
-			Ta = T0/2;
-			Tb = T1+ T0/2;
-			Tc = T1 + T2 + T0/2;
-			break;
-		case 5:
-			Ta = T2 + T0/2;
-			Tb = T0/2;
-			Tc = T1 + T2 + T0/2;
-			break;
-		case 6:
-			Ta = T1 + T2 + T0/2;
-			Tb = T0/2;
-			Tc = T1 + T0/2;
-			break;
-		default:  // possible error state
-			Ta = 0;
-			Tb = 0;
-			Tc = 0;
-	}
+	// 3. Space Vector PWM: 中点注入鞍形波 (Midpoint Clamp)
+	float Umin = Ua < Ub ? (Ua < Uc ? Ua : Uc) : (Ub < Uc ? Ub : Uc);
+	float Umax = Ua > Ub ? (Ua > Uc ? Ua : Uc) : (Ub > Uc ? Ub : Uc);
+	float center = (voltage_power_supply * 0.5f) - (Umax + Umin) * 0.5f;
+
+	Ua += center;
+	Ub += center;
+	Uc += center;
+
+	// 4. 占空比归一化 [0.0, 1.0]
+	float Ta = _constrain(Ua / voltage_power_supply, 0.0f, 1.0f);
+	float Tb = _constrain(Ub / voltage_power_supply, 0.0f, 1.0f);
+	float Tc = _constrain(Uc / voltage_power_supply, 0.0f, 1.0f);
 
 	switch(motor)
 	{
@@ -298,14 +261,6 @@ void setPhaseVoltage(float Uq, float Ud, float angle_el, int motor)
 	}
 }
 /******************************************************************************/
-/* 使用SysTick获取微秒级时间戳
- * HCLK=168MHz, SysTick时钟 = HCLK/8 = 21MHz
- * 计数器递减频率 = 21MHz
- * 因此1个计数值 = 1/21 us  (但计算时取整)
- * 本函数使用 SysTick->VAL 获取当前计数值
- * 配合 0xFFFFFF 重装载值（24位计数器）
- */
-/******************************************************************************/
 /* 使用 TIM5 32位全硬件微秒时间戳 (1MHz) */
 static unsigned long _micros(void)
 {
@@ -315,10 +270,9 @@ static unsigned long _micros(void)
 /******************************************************************************/
 float velocityOpenloop(float target_velocity, int motor)
 {
-	unsigned long now_us;
-	float Ts,Uq;
+	unsigned long now_us = _micros();
+	float Ts;
 
-	now_us = _micros();
 	if(open_loop_timestamp[motor] == 0)
 	{
 		Ts = 1e-3f;
@@ -331,13 +285,13 @@ float velocityOpenloop(float target_velocity, int motor)
 
 	if(Ts <= 0.0f || Ts > 0.5f) Ts = 1e-3f;
 
-	// calculate the necessary angle to achieve target velocity
-	shaft_angle[motor] = _normalizeAngle(shaft_angle[motor] + target_velocity * Ts);
+	// 专用独立开环角度累加器 (不污染 shaft_angle 多圈传感器真值)
+	open_loop_angle[motor] = _normalizeAngle(open_loop_angle[motor] + target_velocity * Ts);
 
-	Uq = voltage_limit;
-	setPhaseVoltage(Uq, 0, _electricalAngle(shaft_angle[motor], pole_pairs), motor);
+	// 电角度 = 机械角度 * 极对数
+	setPhaseVoltage(voltage_limit, 0, _normalizeAngle(open_loop_angle[motor] * (float)pole_pairs), motor);
 
-	return Uq;
+	return voltage_limit;
 }
 /******************************************************************************/
 float angleOpenloop(float target_angle, int motor)
