@@ -38,10 +38,25 @@ from PyQt5.QtGui import (
 
 import pyqtgraph as pg
 
-# 配置 pyqtgraph 全局样式
-pg.setConfigOption('background', '#181b20')
-pg.setConfigOption('foreground', '#d0d7de')
+# 配置 pyqtgraph 全局浅色高对比度样式
+pg.setConfigOption('background', '#ffffff')
+pg.setConfigOption('foreground', '#334155')
 pg.setConfigOption('antialias', True)
+
+
+# =========================================================================
+# 禁用鼠标滚轮调整的自定义控件 (防止在滚动面板时误触修改速度与参数)
+# =========================================================================
+class NoWheelSlider(QSlider):
+    """水平滑块组件：禁用鼠标滚轮，防止在滚动左侧控制面板时误触更改速度"""
+    def wheelEvent(self, event):
+        event.ignore()
+
+
+class NoWheelDoubleSpinBox(QDoubleSpinBox):
+    """数值输入框组件：禁用鼠标滚轮，防止滚轮滑动时误改转速与参数"""
+    def wheelEvent(self, event):
+        event.ignore()
 
 
 # =========================================================================
@@ -477,10 +492,10 @@ class Cubli3DWidget(QWidget):
         cx = w / 2.0
         cy = h / 2.0
 
-        # 背景渐变 (素雅深色工控夜空质感)
+        # 背景渐变 (素雅浅色现代质感)
         bg_grad = QRadialGradient(cx, cy, max(w, h) * 0.7)
-        bg_grad.setColorAt(0.0, QColor(24, 28, 35))
-        bg_grad.setColorAt(1.0, QColor(14, 16, 20))
+        bg_grad.setColorAt(0.0, QColor(255, 255, 255))
+        bg_grad.setColorAt(1.0, QColor(241, 245, 249))
         painter.fillRect(0, 0, w, h, bg_grad)
 
         s = self.cube_size
@@ -514,15 +529,15 @@ class Cubli3DWidget(QWidget):
             # 顶面 (+Z, M3 动量轮)
             ([4, 5, 6, 7], (0, 0, 1), QColor(41, 128, 185), f"M3: {self.encoder_angles[2]:05.1f}°", 2),
             # 底面 (-Z)
-            ([3, 2, 1, 0], (0, 0, -1), QColor(52, 73, 94), "BOTTOM", None),
+            ([3, 2, 1, 0], (0, 0, -1), QColor(100, 116, 139), "BOTTOM", None),
             # 右侧面 (+X, M1 动量轮)
-            ([1, 2, 6, 5], (1, 0, 0), QColor(22, 160, 133), f"M1: {self.encoder_angles[0]:05.1f}°", 0),
+            ([1, 2, 6, 5], (1, 0, 0), QColor(13, 148, 136), f"M1: {self.encoder_angles[0]:05.1f}°", 0),
             # 左侧面 (-X)
-            ([0, 4, 7, 3], (-1, 0, 0), QColor(44, 62, 80), "LEFT", None),
+            ([0, 4, 7, 3], (-1, 0, 0), QColor(71, 85, 105), "LEFT", None),
             # 前侧面 (+Y, M2 动量轮)
-            ([2, 3, 7, 6], (0, 1, 0), QColor(211, 84, 0), f"M2: {self.encoder_angles[1]:05.1f}°", 1),
+            ([2, 3, 7, 6], (0, 1, 0), QColor(217, 119, 6), f"M2: {self.encoder_angles[1]:05.1f}°", 1),
             # 后侧面 (-Y)
-            ([0, 1, 5, 4], (0, -1, 0), QColor(52, 73, 94), "BACK", None),
+            ([0, 1, 5, 4], (0, -1, 0), QColor(100, 116, 139), "BACK", None),
         ]
 
         # 4. 计算每个面的平均相机景深 (Z) 并按深度排序 (画家算法: 远 -> 近)
@@ -571,12 +586,12 @@ class Cubli3DWidget(QWidget):
                 int(c.red() * item['intensity']),
                 int(c.green() * item['intensity']),
                 int(c.blue() * item['intensity']),
-                220
+                230
             )
 
-            # 填充多边形
+            # 填充多边形 (浅色背景下描绘利落的灰色边框)
             painter.setBrush(QBrush(shaded_color))
-            painter.setPen(QPen(QColor(230, 240, 255, 180), 1.5))
+            painter.setPen(QPen(QColor(51, 65, 85, 200), 1.5))
             painter.drawPolygon(poly)
 
             # 如果朝向观察者 (norm_z < 0.25)，绘制面中心文字与动量轮
@@ -628,8 +643,8 @@ class Cubli3DWidget(QWidget):
             corners_2d.append(p_2d)
 
         ground_poly = QPolygonF(corners_2d)
-        painter.setBrush(QBrush(QColor(18, 22, 28, 190)))
-        painter.setPen(QPen(QColor(48, 58, 74, 180), 1.2))
+        painter.setBrush(QBrush(QColor(241, 245, 249, 220)))
+        painter.setPen(QPen(QColor(203, 213, 225, 200), 1.2))
         painter.drawPolygon(ground_poly)
 
         # 2. 绘制立方体在静止地面上的柔和投影阴影 (增强空间高度感与着地感)
@@ -638,15 +653,15 @@ class Cubli3DWidget(QWidget):
 
         painter.setPen(Qt.NoPen)
         shadow_grad = QRadialGradient(cg_2d.x(), cg_2d.y(), s * 1.2)
-        shadow_grad.setColorAt(0.0, QColor(8, 10, 14, 180))
-        shadow_grad.setColorAt(0.65, QColor(12, 15, 20, 90))
-        shadow_grad.setColorAt(1.0, QColor(18, 22, 28, 0))
+        shadow_grad.setColorAt(0.0, QColor(148, 163, 184, 110))
+        shadow_grad.setColorAt(0.65, QColor(203, 213, 225, 50))
+        shadow_grad.setColorAt(1.0, QColor(241, 245, 249, 0))
         painter.setBrush(QBrush(shadow_grad))
         painter.drawEllipse(cg_2d, s * 0.95, s * 0.50)
 
         # 3. 绘制地面正交参考网格 (仅由世界坐标投射，绝不随机体姿态倾斜)
-        pen_grid = QPen(QColor(38, 48, 62, 130), 1, Qt.SolidLine)
-        pen_axis = QPen(QColor(64, 82, 108, 200), 1.4, Qt.SolidLine)
+        pen_grid = QPen(QColor(203, 213, 225, 180), 1, Qt.SolidLine)
+        pen_axis = QPen(QColor(148, 163, 184, 230), 1.4, Qt.SolidLine)
 
         for i in range(-steps, steps + 1):
             is_center = (i == 0)
@@ -667,14 +682,14 @@ class Cubli3DWidget(QWidget):
             painter.drawLine(p3_2d, p4_2d)
 
         # 4. 地面中心同心基准圆环
-        painter.setPen(QPen(QColor(75, 95, 122, 140), 1.0, Qt.DashLine))
+        painter.setPen(QPen(QColor(148, 163, 184, 160), 1.0, Qt.DashLine))
         painter.setBrush(Qt.NoBrush)
         painter.drawEllipse(cg_2d, s * 0.40, s * 0.20)
 
         # 5. 静止地面台角基准文字与世界水平标识
         corner_label_cam = self._world_to_cam((grid_half - 12, -grid_half + 12, ground_z))
         cl_2d, _ = self._project(corner_label_cam, cx, cy)
-        painter.setPen(QColor(94, 114, 138, 160))
+        painter.setPen(QColor(100, 116, 139))
         painter.setFont(QFont("Segoe UI", 8, QFont.Bold))
         painter.drawText(int(cl_2d.x() - 110), int(cl_2d.y() - 14), 120, 14, Qt.AlignRight, "水平静止地面基准")
 
@@ -684,13 +699,13 @@ class Cubli3DWidget(QWidget):
         r2 = math.hypot(pts[1].x() - fc_x, pts[1].y() - fc_y)
         r = (r1 + r2) * 0.35
 
-        painter.setPen(QPen(QColor(255, 255, 255, 160), 2))
-        painter.setBrush(QBrush(QColor(20, 25, 32, 180)))
+        painter.setPen(QPen(QColor(255, 255, 255, 200), 2))
+        painter.setBrush(QBrush(QColor(30, 41, 59, 180)))
         painter.drawEllipse(QPointF(fc_x, fc_y), r, r)
 
         # 旋转辐条
         ang = self.wheel_angles[wheel_idx]
-        painter.setPen(QPen(QColor(241, 196, 15, 200), 1.5))
+        painter.setPen(QPen(QColor(251, 191, 36, 220), 1.5))
         for k in range(4):
             spoke_a = ang + k * (math.pi / 2.0)
             sx = fc_x + r * 0.85 * math.cos(spoke_a)
@@ -700,7 +715,7 @@ class Cubli3DWidget(QWidget):
         # 红色指针精准指示当前 MT6701 实际角度
         px = fc_x + r * 0.90 * math.cos(ang)
         py = fc_y + r * 0.90 * math.sin(ang)
-        painter.setPen(QPen(QColor(231, 76, 60), 2.5))
+        painter.setPen(QPen(QColor(239, 68, 68), 2.5))
         painter.drawLine(QPointF(fc_x, fc_y), QPointF(px, py))
 
     def _draw_axes(self, painter, cx, cy):
@@ -710,9 +725,9 @@ class Cubli3DWidget(QWidget):
         o_2d, _ = self._project(origin_cam, cx, cy)
 
         axes = [
-            ((axis_len, 0, 0), QColor(231, 76, 60), "X"),
-            ((0, axis_len, 0), QColor(46, 204, 113), "Y"),
-            ((0, 0, axis_len), QColor(52, 152, 219), "Z"),
+            ((axis_len, 0, 0), QColor(220, 38, 38), "X"),
+            ((0, axis_len, 0), QColor(22, 163, 74), "Y"),
+            ((0, 0, axis_len), QColor(37, 99, 235), "Z"),
         ]
 
         for pt_local, color, name in axes:
@@ -734,24 +749,24 @@ class Cubli3DWidget(QWidget):
         p_deg = self.pitch - self.pitch_offset
         y_deg = self.yaw - self.yaw_offset
 
-        hud_bg = QColor(20, 24, 30, 210)
+        hud_bg = QColor(255, 255, 255, 220)
         painter.fillRect(10, 10, 240, 106, hud_bg)
-        painter.setPen(QPen(QColor(50, 60, 75), 1))
+        painter.setPen(QPen(QColor(203, 213, 225), 1))
         painter.drawRect(10, 10, 240, 106)
 
-        painter.setPen(QColor(231, 76, 60))
+        painter.setPen(QColor(220, 38, 38))
         painter.drawText(18, 28, f"Roll (X) : {r_deg:+.1f} deg")
-        painter.setPen(QColor(46, 204, 113))
+        painter.setPen(QColor(22, 163, 74))
         painter.drawText(18, 48, f"Pitch(Y) : {p_deg:+.1f} deg")
-        painter.setPen(QColor(52, 152, 219))
+        painter.setPen(QColor(37, 99, 235))
         painter.drawText(18, 68, f"Yaw  (Z) : {y_deg:+.1f} deg")
 
-        painter.setPen(QColor(16, 185, 129))
+        painter.setPen(QColor(2, 132, 199))
         painter.drawText(18, 92, f"MT6701: {self.encoder_angles[0]:05.1f}°|{self.encoder_angles[1]:05.1f}°|{self.encoder_angles[2]:05.1f}°")
 
         # 底部操作提示 (更新说明：地面保持绝对静止，鼠标仅改变水平环视观察方向，视角为低仰视角 20°)
         painter.setFont(QFont("Segoe UI", 8))
-        painter.setPen(QColor(130, 145, 165))
+        painter.setPen(QColor(100, 116, 139))
         painter.drawText(10, h - 10, "水平拖拽鼠标改变环视方向 | 固定低仰观察视角(20°) | 地面基准水平静止 | 双击重置视角")
 
 
@@ -775,19 +790,19 @@ class MotorControlCard(QGroupBox):
         self.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
-                border: 1px solid #363d4a;
+                border: 1px solid #e2e8f0;
                 border-radius: 6px;
                 margin-top: 10px;
                 padding-top: 12px;
-                background-color: #1a1e24;
-                color: #e2e8f0;
+                background-color: #ffffff;
+                color: #0f172a;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 left: 12px;
                 padding: 0 4px;
-                color: #cbd5e1;
+                color: #334155;
             }
         """)
 
@@ -799,12 +814,12 @@ class MotorControlCard(QGroupBox):
         top_row = QHBoxLayout()
         self.chk_enable = QCheckBox("驱动使能 (DRV8313)")
         self.chk_enable.setChecked(True)
-        self.chk_enable.setStyleSheet("font-weight: bold; color: #34d399;")
+        self.chk_enable.setStyleSheet("font-weight: bold; color: #059669;")
         self.chk_enable.toggled.connect(self._on_enable_toggled)
 
         self.lbl_rpm = QLabel("0.0 RPM")
         self.lbl_rpm.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.lbl_rpm.setStyleSheet("font-size: 13px; font-weight: bold; color: #e2e8f0;")
+        self.lbl_rpm.setStyleSheet("font-size: 13px; font-weight: bold; color: #0f172a;")
 
         top_row.addWidget(self.chk_enable)
         top_row.addStretch()
@@ -815,8 +830,8 @@ class MotorControlCard(QGroupBox):
         hall_box = QFrame()
         hall_box.setStyleSheet("""
             QFrame {
-                background-color: #16191f;
-                border: 1px solid #2d333f;
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
                 border-radius: 4px;
                 padding: 4px 6px;
             }
@@ -827,14 +842,14 @@ class MotorControlCard(QGroupBox):
 
         hall_header = QHBoxLayout()
         lbl_h_title = QLabel("MT6701 角度/转速:")
-        lbl_h_title.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+        lbl_h_title.setStyleSheet("font-size: 11px; font-weight: bold; color: #64748b;")
         self.lbl_hall_status = QLabel("[离线]")
         self.lbl_hall_status.setStyleSheet("font-size: 10px; font-weight: bold; color: #94a3b8;")
         self.lbl_act_speed = QLabel("0.0 rad/s")
-        self.lbl_act_speed.setStyleSheet("font-size: 11px; font-weight: bold; color: #38bdf8; margin-right: 4px;")
+        self.lbl_act_speed.setStyleSheet("font-size: 11px; font-weight: bold; color: #0284c7; margin-right: 4px;")
         self.lbl_hall_val = QLabel("0.0°")
         self.lbl_hall_val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.lbl_hall_val.setStyleSheet("font-size: 13px; font-weight: bold; color: #e2e8f0;")
+        self.lbl_hall_val.setStyleSheet("font-size: 13px; font-weight: bold; color: #0f172a;")
 
         hall_header.addWidget(lbl_h_title)
         hall_header.addWidget(self.lbl_hall_status)
@@ -851,24 +866,24 @@ class MotorControlCard(QGroupBox):
         self.progress_angle.setFixedHeight(5)
         self.progress_angle.setStyleSheet("""
             QProgressBar {
-                background-color: #121519;
-                border: 1px solid #242a34;
+                background-color: #f1f5f9;
+                border: 1px solid #e2e8f0;
                 border-radius: 2px;
             }
             QProgressBar::chunk {
-                background-color: #4a5d78;
+                background-color: #3b82f6;
                 border-radius: 1px;
             }
         """)
         hall_layout.addWidget(self.progress_angle)
         layout.addWidget(hall_box)
 
-        # 中部：SpinBox + 滑条调节
+        # 中部：SpinBox + 滑条调节 (使用 NoWheel 控件，禁用滚轮误触)
         mid_row = QHBoxLayout()
         lbl_target = QLabel("目标转速:")
-        lbl_target.setStyleSheet("font-size: 12px; color: #cbd5e1;")
+        lbl_target.setStyleSheet("font-size: 12px; color: #475569;")
 
-        self.spin_speed = QDoubleSpinBox()
+        self.spin_speed = NoWheelDoubleSpinBox()
         self.spin_speed.setRange(-60.0, 60.0)
         self.spin_speed.setSingleStep(0.5)
         self.spin_speed.setDecimals(2)
@@ -878,12 +893,15 @@ class MotorControlCard(QGroupBox):
         self.spin_speed.setMinimumWidth(100)
         self.spin_speed.setStyleSheet("""
             QDoubleSpinBox {
-                background-color: #232832;
-                border: 1px solid #363d4a;
+                background-color: #ffffff;
+                border: 1px solid #cbd5e1;
                 border-radius: 4px;
                 padding: 2px 6px;
                 font-size: 12px;
-                color: #ffffff;
+                color: #0f172a;
+            }
+            QDoubleSpinBox:focus {
+                border-color: #3b82f6;
             }
         """)
         self.spin_speed.valueChanged.connect(self._on_spin_changed)
@@ -892,33 +910,34 @@ class MotorControlCard(QGroupBox):
         mid_row.addWidget(self.spin_speed)
         layout.addLayout(mid_row)
 
-        # 滑条 (-60.0 ~ +60.0，以 10 倍整数映射: -600 ~ 600)
-        self.slider = QSlider(Qt.Horizontal)
+        # 禁用鼠标滚轮的水平滑块 (-60.0 ~ +60.0，以 10 倍整数映射: -600 ~ 600)
+        self.slider = NoWheelSlider(Qt.Horizontal)
         self.slider.setRange(-600, 600)
         self.slider.setValue(0)
         self.slider.setTickPosition(QSlider.TicksBelow)
         self.slider.setTickInterval(100)
         self.slider.setStyleSheet("""
             QSlider::groove:horizontal {
-                border: 1px solid #363d4a;
+                border: 1px solid #cbd5e1;
                 height: 6px;
-                background: #232832;
+                background: #e2e8f0;
                 border-radius: 3px;
             }
             QSlider::sub-page:horizontal {
-                background: #475569;
+                background: #3b82f6;
                 border-radius: 3px;
             }
             QSlider::handle:horizontal {
-                background: #94a3b8;
-                border: 1px solid #cbd5e1;
+                background: #ffffff;
+                border: 2px solid #3b82f6;
                 width: 14px;
                 margin-top: -5px;
                 margin-bottom: -5px;
                 border-radius: 7px;
             }
             QSlider::handle:horizontal:hover {
-                background: #e2e8f0;
+                background: #eff6ff;
+                border-color: #1d4ed8;
             }
         """)
         self.slider.valueChanged.connect(self._on_slider_changed)
@@ -927,11 +946,11 @@ class MotorControlCard(QGroupBox):
         # 刻度标记
         scale_row = QHBoxLayout()
         lbl_scale_min = QLabel("-60")
-        lbl_scale_min.setStyleSheet("font-size: 10px; color: #64748b;")
+        lbl_scale_min.setStyleSheet("font-size: 10px; color: #94a3b8;")
         lbl_scale_mid = QLabel("0")
-        lbl_scale_mid.setStyleSheet("font-size: 10px; color: #64748b;")
+        lbl_scale_mid.setStyleSheet("font-size: 10px; color: #94a3b8;")
         lbl_scale_max = QLabel("+60 rad/s")
-        lbl_scale_max.setStyleSheet("font-size: 10px; color: #64748b;")
+        lbl_scale_max.setStyleSheet("font-size: 10px; color: #94a3b8;")
 
         scale_row.addWidget(lbl_scale_min)
         scale_row.addStretch()
@@ -952,26 +971,26 @@ class MotorControlCard(QGroupBox):
             btn.setFixedHeight(26)
             btn.setStyleSheet("""
                 QPushButton {
-                    background-color: #242932;
-                    border: 1px solid #363d4a;
+                    background-color: #f8fafc;
+                    border: 1px solid #cbd5e1;
                     border-radius: 4px;
-                    color: #cbd5e1;
+                    color: #334155;
                     font-size: 11px;
                     padding: 2px 4px;
                     min-width: 32px;
                 }
                 QPushButton:hover {
-                    background-color: #323946;
-                    border-color: #4f596b;
-                    color: #ffffff;
+                    background-color: #e2e8f0;
+                    border-color: #94a3b8;
+                    color: #0f172a;
                 }
                 QPushButton:pressed {
-                    background-color: #1a1e24;
+                    background-color: #cbd5e1;
                 }
                 QPushButton:disabled {
-                    background-color: #1a1e24;
-                    border-color: #262b35;
-                    color: #475569;
+                    background-color: #f1f5f9;
+                    border-color: #e2e8f0;
+                    color: #94a3b8;
                 }
             """)
             btn.clicked.connect(lambda _, v=val: self.set_speed(v, emit=True))
@@ -982,26 +1001,26 @@ class MotorControlCard(QGroupBox):
         self.btn_rev.setFixedHeight(26)
         self.btn_rev.setStyleSheet("""
             QPushButton {
-                background-color: #242932;
-                border: 1px solid #363d4a;
+                background-color: #f1f5f9;
+                border: 1px solid #cbd5e1;
                 border-radius: 4px;
-                color: #cbd5e1;
+                color: #334155;
                 font-size: 11px;
                 padding: 2px 4px;
                 min-width: 36px;
             }
             QPushButton:hover {
-                background-color: #323946;
-                border-color: #4f596b;
-                color: #ffffff;
+                background-color: #e2e8f0;
+                border-color: #94a3b8;
+                color: #0f172a;
             }
             QPushButton:pressed {
-                background-color: #1a1e24;
+                background-color: #cbd5e1;
             }
             QPushButton:disabled {
-                background-color: #1a1e24;
-                border-color: #262b35;
-                color: #475569;
+                background-color: #f1f5f9;
+                border-color: #e2e8f0;
+                color: #94a3b8;
             }
         """)
         self.btn_rev.clicked.connect(self._on_reverse_clicked)
@@ -1022,10 +1041,9 @@ class MotorControlCard(QGroupBox):
 
     def _on_enable_toggled(self, checked):
         if checked:
-            self.chk_enable.setStyleSheet("font-weight: bold; color: #34d399;")
+            self.chk_enable.setStyleSheet("font-weight: bold; color: #059669;")
         else:
-            self.chk_enable.setStyleSheet("font-weight: bold; color: #f87171;")
-        self.sig_enable_changed.emit(self.motor_id, checked)
+            self.chk_enable.setStyleSheet("font-weight: bold; color: #dc2626;")
         self.sig_enable_changed.emit(self.motor_id, checked)
 
     def _on_spin_changed(self, val):
@@ -1063,15 +1081,15 @@ class MotorControlCard(QGroupBox):
 
         if online:
             self.lbl_hall_status.setText("[正常]")
-            self.lbl_hall_status.setStyleSheet("font-size: 10px; font-weight: bold; color: #34d399;")
+            self.lbl_hall_status.setStyleSheet("font-size: 10px; font-weight: bold; color: #059669;")
             self.lbl_hall_val.setText(f"{norm_deg:05.1f}°")
-            self.lbl_hall_val.setStyleSheet("font-size: 13px; font-weight: bold; color: #e2e8f0;")
+            self.lbl_hall_val.setStyleSheet("font-size: 13px; font-weight: bold; color: #0f172a;")
             self.progress_angle.setValue(int(norm_deg * 10))
         else:
             self.lbl_hall_status.setText("[离线]")
             self.lbl_hall_status.setStyleSheet("font-size: 10px; font-weight: bold; color: #94a3b8;")
             self.lbl_hall_val.setText(f"{norm_deg:05.1f}°")
-            self.lbl_hall_val.setStyleSheet("font-size: 13px; font-weight: bold; color: #64748b;")
+            self.lbl_hall_val.setStyleSheet("font-size: 13px; font-weight: bold; color: #94a3b8;")
             self.progress_angle.setValue(0)
 
     def set_actual_speed(self, speed_rad_s):
@@ -1093,9 +1111,9 @@ class MotorControlCard(QGroupBox):
         self.chk_enable.blockSignals(True)
         self.chk_enable.setChecked(enabled)
         if enabled:
-            self.chk_enable.setStyleSheet("font-weight: bold; color: #34d399;")
+            self.chk_enable.setStyleSheet("font-weight: bold; color: #059669;")
         else:
-            self.chk_enable.setStyleSheet("font-weight: bold; color: #f87171;")
+            self.chk_enable.setStyleSheet("font-weight: bold; color: #dc2626;")
         self.chk_enable.blockSignals(False)
 
 
@@ -1114,19 +1132,19 @@ class SelfTestCard(QGroupBox):
         self.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
-                border: 1px solid #363d4a;
+                border: 1px solid #e2e8f0;
                 border-radius: 6px;
                 margin-top: 8px;
                 padding-top: 10px;
-                background-color: #1a1e24;
-                color: #e2e8f0;
+                background-color: #ffffff;
+                color: #0f172a;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 left: 12px;
                 padding: 0 4px;
-                color: #cbd5e1;
+                color: #334155;
             }
         """)
         layout = QVBoxLayout(self)
@@ -1151,22 +1169,22 @@ class SelfTestCard(QGroupBox):
         self.btn_run_test.setFixedHeight(28)
         self.btn_run_test.setStyleSheet("""
             QPushButton {
-                background-color: #242932;
-                border: 1px solid #363d4a;
+                background-color: #f1f5f9;
+                border: 1px solid #cbd5e1;
                 border-radius: 4px;
                 font-size: 12px;
                 font-weight: bold;
-                color: #e2e8f0;
+                color: #0f172a;
             }
             QPushButton:hover {
-                background-color: #323946;
-                border-color: #4f596b;
-                color: #ffffff;
+                background-color: #e2e8f0;
+                border-color: #94a3b8;
+                color: #0f172a;
             }
             QPushButton:disabled {
-                background-color: #1a1e24;
-                border-color: #262b35;
-                color: #64748b;
+                background-color: #f8fafc;
+                border-color: #e2e8f0;
+                color: #94a3b8;
             }
         """)
         self.btn_run_test.clicked.connect(self.sig_start_test.emit)
@@ -1369,111 +1387,111 @@ class MainWindow(QMainWindow):
         self.refresh_ports()
 
     def init_ui(self):
-        # 全局深色现代工控风格 (素雅朴素、无多余彩色条框、无 emoji)
+        # 全局浅色现代工控风格 (清爽明亮、高对比度专业质感)
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #121417;
+                background-color: #f8fafc;
             }
             QWidget {
-                color: #e2e8f0;
+                color: #0f172a;
                 font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
             }
             QFrame#TopBar {
-                background-color: #1a1e24;
-                border-bottom: 1px solid #2d333f;
+                background-color: #ffffff;
+                border-bottom: 1px solid #e2e8f0;
                 padding: 4px 8px;
             }
             QLabel {
                 font-size: 12px;
-                color: #cbd5e1;
+                color: #475569;
             }
             QPushButton {
-                background-color: #242932;
-                border: 1px solid #363d4a;
+                background-color: #ffffff;
+                border: 1px solid #cbd5e1;
                 border-radius: 4px;
                 padding: 4px 8px;
-                color: #e2e8f0;
+                color: #334155;
                 font-size: 12px;
                 min-height: 20px;
             }
             QPushButton:hover {
-                background-color: #323946;
-                border-color: #4f596b;
-                color: #ffffff;
+                background-color: #f1f5f9;
+                border-color: #94a3b8;
+                color: #0f172a;
             }
             QPushButton:pressed {
-                background-color: #1a1e24;
-                border-color: #242932;
+                background-color: #e2e8f0;
+                border-color: #cbd5e1;
             }
             QPushButton:disabled {
-                background-color: #1a1e24;
-                border-color: #2d333f;
-                color: #64748b;
+                background-color: #f8fafc;
+                border-color: #e2e8f0;
+                color: #94a3b8;
             }
             QComboBox {
-                background-color: #20242c;
-                border: 1px solid #363d4a;
+                background-color: #ffffff;
+                border: 1px solid #cbd5e1;
                 border-radius: 4px;
                 padding: 3px 6px;
-                color: #ffffff;
+                color: #0f172a;
                 font-size: 12px;
                 min-width: 80px;
                 min-height: 20px;
             }
             QComboBox:hover {
-                border-color: #4f596b;
+                border-color: #94a3b8;
             }
             QDoubleSpinBox {
-                background-color: #20242c;
-                border: 1px solid #363d4a;
+                background-color: #ffffff;
+                border: 1px solid #cbd5e1;
                 border-radius: 4px;
                 padding: 2px 4px;
-                color: #ffffff;
+                color: #0f172a;
                 font-size: 12px;
             }
             QDoubleSpinBox:hover {
-                border-color: #4f596b;
+                border-color: #94a3b8;
             }
             QLineEdit {
-                background-color: #1a1e24;
-                border: 1px solid #363d4a;
+                background-color: #ffffff;
+                border: 1px solid #cbd5e1;
                 border-radius: 4px;
                 padding: 3px 6px;
-                color: #ffffff;
+                color: #0f172a;
                 font-size: 12px;
             }
             QLineEdit:hover {
-                border-color: #4f596b;
+                border-color: #94a3b8;
             }
             QTextEdit {
-                background-color: #121418;
-                border: 1px solid #282d37;
+                background-color: #ffffff;
+                border: 1px solid #e2e8f0;
                 border-radius: 4px;
                 font-family: "Consolas", "Courier New", monospace;
                 font-size: 11px;
-                color: #94a3b8;
+                color: #1e293b;
             }
             QStatusBar {
-                background-color: #1a1e24;
-                color: #94a3b8;
+                background-color: #ffffff;
+                color: #64748b;
                 font-size: 11px;
-                border-top: 1px solid #282d37;
+                border-top: 1px solid #e2e8f0;
             }
             QCheckBox {
                 font-size: 12px;
-                color: #cbd5e1;
+                color: #334155;
                 spacing: 6px;
             }
             QCheckBox::indicator {
                 width: 14px;
                 height: 14px;
-                border: 1px solid #475569;
+                border: 1px solid #cbd5e1;
                 border-radius: 3px;
-                background-color: #1a1e24;
+                background-color: #ffffff;
             }
             QCheckBox::indicator:checked {
-                background-color: #3b82f6;
-                border-color: #60a5fa;
+                background-color: #2563eb;
+                border-color: #1d4ed8;
             }
         """)
 
@@ -1520,7 +1538,7 @@ class MainWindow(QMainWindow):
 
         # 标题标签 (素雅高亮中性白，无多余彩色)
         lbl_brand = QLabel("Cubli 联调监控")
-        lbl_brand.setStyleSheet("font-size: 14px; font-weight: bold; color: #f1f5f9; margin-right: 6px;")
+        lbl_brand.setStyleSheet("font-size: 14px; font-weight: bold; color: #0f172a; margin-right: 6px;")
         layout.addWidget(lbl_brand)
 
         # 串口选择
@@ -1548,14 +1566,15 @@ class MainWindow(QMainWindow):
         self.btn_connect.setFixedHeight(26)
         self.btn_connect.setStyleSheet("""
             QPushButton {
-                background-color: #242932;
-                border: 1px solid #363d4a;
+                background-color: #f1f5f9;
+                border: 1px solid #cbd5e1;
                 font-weight: bold;
+                color: #0f172a;
                 padding: 3px 10px;
             }
             QPushButton:hover {
-                background-color: #323946;
-                border-color: #4f596b;
+                background-color: #e2e8f0;
+                border-color: #94a3b8;
             }
         """)
         self.btn_connect.clicked.connect(self.toggle_connection)
@@ -1577,6 +1596,7 @@ class MainWindow(QMainWindow):
         # 全部归零 (平稳停止)
         self.btn_stop_all = QPushButton("全部归零")
         self.btn_stop_all.setFixedHeight(26)
+        self.btn_stop_all.setStyleSheet("background-color: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; font-weight: bold;")
         self.btn_stop_all.clicked.connect(self.action_stop_all)
         layout.addWidget(self.btn_stop_all)
 
@@ -1640,19 +1660,19 @@ class MainWindow(QMainWindow):
         self.sync_group.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
-                border: 1px solid #363d4a;
+                border: 1px solid #e2e8f0;
                 border-radius: 6px;
                 margin-top: 8px;
                 padding-top: 10px;
-                background-color: #1a1e24;
-                color: #e2e8f0;
+                background-color: #ffffff;
+                color: #0f172a;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 left: 12px;
                 padding: 0 4px;
-                color: #cbd5e1;
+                color: #334155;
             }
         """)
         sync_layout = QVBoxLayout(self.sync_group)
@@ -1674,11 +1694,11 @@ class MainWindow(QMainWindow):
         self.spin_sync.setFixedHeight(26)
         self.spin_sync.setStyleSheet("""
             QDoubleSpinBox {
-                background-color: #232832;
-                border: 1px solid #363d4a;
+                background-color: #ffffff;
+                border: 1px solid #cbd5e1;
                 border-radius: 4px;
                 padding: 2px 6px;
-                color: #ffffff;
+                color: #0f172a;
             }
         """)
         row_sync.addWidget(self.spin_sync)
@@ -1689,31 +1709,32 @@ class MainWindow(QMainWindow):
         row_sync.addWidget(btn_sync_apply)
         sync_layout.addLayout(row_sync)
 
-        # 同步滑条 (素雅灰蓝槽体与滑块)
-        self.slider_sync = QSlider(Qt.Horizontal)
+        # 禁用鼠标滚轮的同步滑条
+        self.slider_sync = NoWheelSlider(Qt.Horizontal)
         self.slider_sync.setRange(-600, 600)
         self.slider_sync.setValue(0)
         self.slider_sync.setStyleSheet("""
             QSlider::groove:horizontal {
                 height: 6px;
-                background: #232832;
-                border: 1px solid #363d4a;
+                background: #e2e8f0;
+                border: 1px solid #cbd5e1;
                 border-radius: 3px;
             }
             QSlider::sub-page:horizontal {
-                background: #475569;
+                background: #3b82f6;
                 border-radius: 3px;
             }
             QSlider::handle:horizontal {
-                background: #94a3b8;
-                border: 1px solid #cbd5e1;
+                background: #ffffff;
+                border: 2px solid #3b82f6;
                 width: 14px;
                 margin-top: -5px;
                 margin-bottom: -5px;
                 border-radius: 7px;
             }
             QSlider::handle:horizontal:hover {
-                background: #e2e8f0;
+                background: #eff6ff;
+                border-color: #1d4ed8;
             }
         """)
         self.slider_sync.valueChanged.connect(lambda v: self.spin_sync.setValue(v / 10.0))
@@ -1727,19 +1748,19 @@ class MainWindow(QMainWindow):
         self.param_group.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
-                border: 1px solid #363d4a;
+                border: 1px solid #e2e8f0;
                 border-radius: 6px;
                 margin-top: 8px;
                 padding-top: 10px;
-                background-color: #1a1e24;
-                color: #e2e8f0;
+                background-color: #ffffff;
+                color: #0f172a;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 left: 12px;
                 padding: 0 4px;
-                color: #cbd5e1;
+                color: #334155;
             }
         """)
         param_layout = QGridLayout(self.param_group)
@@ -1820,19 +1841,19 @@ class MainWindow(QMainWindow):
         self.cl_group.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
-                border: 1px solid #363d4a;
+                border: 1px solid #e2e8f0;
                 border-radius: 6px;
                 margin-top: 8px;
                 padding-top: 10px;
-                background-color: #1a1e24;
-                color: #e2e8f0;
+                background-color: #ffffff;
+                color: #0f172a;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 left: 12px;
                 padding: 0 4px;
-                color: #cbd5e1;
+                color: #334155;
             }
         """)
         cl_layout = QVBoxLayout(self.cl_group)
@@ -1847,14 +1868,13 @@ class MainWindow(QMainWindow):
         self.btn_mode_toggle.setFixedHeight(26)
         self.btn_mode_toggle.setStyleSheet("""
             QPushButton {
-                background-color: #1e3a5f;
-                border: 1px solid #2563eb;
+                background-color: #dbeafe;
+                border: 1px solid #3b82f6;
                 font-weight: bold;
-                color: #60a5fa;
+                color: #1d4ed8;
             }
             QPushButton:hover {
-                background-color: #2563eb;
-                color: #ffffff;
+                background-color: #bfdbfe;
             }
         """)
         self.btn_mode_toggle.clicked.connect(self.action_toggle_control_mode)
@@ -1926,7 +1946,7 @@ class MainWindow(QMainWindow):
                 border: none;
             }
             QWidget#LeftPanelContent {
-                background-color: #121417;
+                background-color: #f8fafc;
             }
             QScrollBar:vertical {
                 background: #121417;
@@ -2053,7 +2073,7 @@ class MainWindow(QMainWindow):
 
         # Tab 1: MT6701 实时角度波形 (0° ~ 360°)
         self.plot_angle = pg.PlotWidget(title="三轴 MT6701 实时编码器角度 (0° ~ 360°)")
-        self.plot_angle.showGrid(x=True, y=True, alpha=0.35)
+        self.plot_angle.showGrid(x=True, y=True, alpha=0.15)
         self.plot_angle.addLegend(offset=(10, 10))
         self.plot_angle.setLabel('left', 'Angle', units='deg')
         self.plot_angle.setLabel('bottom', 'Time', units='s')
@@ -2061,7 +2081,7 @@ class MainWindow(QMainWindow):
         self.plot_angle.setXRange(0.0, 10.0, padding=0.0)
 
         for pos in [90.0, 180.0, 270.0]:
-            self.plot_angle.addItem(pg.InfiniteLine(pos=pos, angle=0, pen=pg.mkPen('#334155', width=1, style=Qt.DashLine)))
+            self.plot_angle.addItem(pg.InfiniteLine(pos=pos, angle=0, pen=pg.mkPen('#cbd5e1', width=1, style=Qt.DashLine)))
 
         self.curve_h1 = self.plot_angle.plot(pen=pg.mkPen('#00bcd4', width=2.4), name="M1 MT6701 (I2C1)")
         self.curve_h2 = self.plot_angle.plot(pen=pg.mkPen('#ff9800', width=2.4), name="M2 MT6701 (I2C2)")
@@ -2070,25 +2090,25 @@ class MainWindow(QMainWindow):
 
         # Tab 2: 电机目标与闭环实测转速波形
         self.plot_speed = pg.PlotWidget(title="三轴电机速度闭环监控 (rad/s | 虚线:目标设定, 实线:实测反馈)")
-        self.plot_speed.showGrid(x=True, y=True, alpha=0.35)
+        self.plot_speed.showGrid(x=True, y=True, alpha=0.15)
         self.plot_speed.addLegend(offset=(10, 10))
         self.plot_speed.setLabel('left', 'Speed', units='rad/s')
         self.plot_speed.setLabel('bottom', 'Time', units='s')
-        self.plot_speed.setYRange(-25, 25, padding=0.05)
+        self.plot_speed.setYRange(-65, 65, padding=0.05)
         self.plot_speed.setXRange(0, 10, padding=0.0)
-        self.plot_speed.addItem(pg.InfiniteLine(pos=0.0, angle=0, pen=pg.mkPen('#445566', width=1.2, style=Qt.DashLine)))
+        self.plot_speed.addItem(pg.InfiniteLine(pos=0.0, angle=0, pen=pg.mkPen('#cbd5e1', width=1.2, style=Qt.DashLine)))
 
-        self.curve_m1_tgt = self.plot_speed.plot(pen=pg.mkPen('#00bcd4', width=1.5, style=Qt.DashLine), name="M1 目标")
-        self.curve_s1_act = self.plot_speed.plot(pen=pg.mkPen('#38bdf8', width=2.4), name="M1 实测")
-        self.curve_m2_tgt = self.plot_speed.plot(pen=pg.mkPen('#ff9800', width=1.5, style=Qt.DashLine), name="M2 目标")
-        self.curve_s2_act = self.plot_speed.plot(pen=pg.mkPen('#facc15', width=2.4), name="M2 实测")
-        self.curve_m3_tgt = self.plot_speed.plot(pen=pg.mkPen('#e91e63', width=1.5, style=Qt.DashLine), name="M3 目标")
-        self.curve_s3_act = self.plot_speed.plot(pen=pg.mkPen('#f43f5e', width=2.4), name="M3 实测")
+        self.curve_m1_tgt = self.plot_speed.plot(pen=pg.mkPen('#0284c7', width=1.5, style=Qt.DashLine), name="M1 目标")
+        self.curve_s1_act = self.plot_speed.plot(pen=pg.mkPen('#0369a1', width=2.4), name="M1 实测")
+        self.curve_m2_tgt = self.plot_speed.plot(pen=pg.mkPen('#f59e0b', width=1.5, style=Qt.DashLine), name="M2 目标")
+        self.curve_s2_act = self.plot_speed.plot(pen=pg.mkPen('#d97706', width=2.4), name="M2 实测")
+        self.curve_m3_tgt = self.plot_speed.plot(pen=pg.mkPen('#e11d48', width=1.5, style=Qt.DashLine), name="M3 目标")
+        self.curve_s3_act = self.plot_speed.plot(pen=pg.mkPen('#be123c', width=2.4), name="M3 实测")
         self.tab_curves.addTab(self.plot_speed, "电机转速波形 (rad/s)")
 
         # Tab 3: 陀螺仪角速度波形
         self.plot_gyro = pg.PlotWidget(title="陀螺仪三轴角速度 (dps = °/s)")
-        self.plot_gyro.showGrid(x=True, y=True, alpha=0.35)
+        self.plot_gyro.showGrid(x=True, y=True, alpha=0.15)
         self.plot_gyro.addLegend(offset=(10, 10))
         self.plot_gyro.setLabel('left', 'Angular Velocity', units='dps')
         self.plot_gyro.setLabel('bottom', 'Time', units='s')
@@ -2101,7 +2121,7 @@ class MainWindow(QMainWindow):
 
         # Tab 4: 加速度计波形
         self.plot_accel = pg.PlotWidget(title="三轴重力加速度 (g)")
-        self.plot_accel.showGrid(x=True, y=True, alpha=0.35)
+        self.plot_accel.showGrid(x=True, y=True, alpha=0.15)
         self.plot_accel.addLegend(offset=(10, 10))
         self.plot_accel.setLabel('left', 'Acceleration', units='g')
         self.plot_accel.setLabel('bottom', 'Time', units='s')
@@ -2120,19 +2140,19 @@ class MainWindow(QMainWindow):
         log_group.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
-                border: 1px solid #363d4a;
+                border: 1px solid #e2e8f0;
                 border-radius: 6px;
                 margin-top: 4px;
                 padding-top: 6px;
-                background-color: #16181d;
-                color: #e2e8f0;
+                background-color: #ffffff;
+                color: #0f172a;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 left: 12px;
                 padding: 0 4px;
-                color: #cbd5e1;
+                color: #334155;
             }
         """)
         log_layout = QVBoxLayout(log_group)
@@ -2183,8 +2203,8 @@ class MainWindow(QMainWindow):
         box = QFrame()
         box.setStyleSheet("""
             QFrame {
-                background-color: #1a1e24;
-                border: 1px solid #363d4a;
+                background-color: #ffffff;
+                border: 1px solid #e2e8f0;
                 border-radius: 4px;
                 padding: 4px 8px;
             }
@@ -2448,10 +2468,10 @@ class MainWindow(QMainWindow):
             self.btn_mode_toggle.setText("开环模式 [已切换]")
             self.btn_mode_toggle.setStyleSheet("""
                 QPushButton {
-                    background-color: #242932;
-                    border: 1px solid #363d4a;
+                    background-color: #f1f5f9;
+                    border: 1px solid #cbd5e1;
                     font-weight: bold;
-                    color: #94a3b8;
+                    color: #475569;
                 }
             """)
             self.status_bar.showMessage("已向固件发送切换开环速度模式指令 (MODE 0)")
@@ -2460,14 +2480,13 @@ class MainWindow(QMainWindow):
             self.btn_mode_toggle.setText("闭环调速模式 [已开启]")
             self.btn_mode_toggle.setStyleSheet("""
                 QPushButton {
-                    background-color: #1e3a5f;
-                    border: 1px solid #2563eb;
+                    background-color: #dbeafe;
+                    border: 1px solid #3b82f6;
                     font-weight: bold;
-                    color: #60a5fa;
+                    color: #1d4ed8;
                 }
                 QPushButton:hover {
-                    background-color: #2563eb;
-                    color: #ffffff;
+                    background-color: #bfdbfe;
                 }
             """)
             self.status_bar.showMessage("已向固件发送切换闭环速度模式指令 (MODE 1)")
