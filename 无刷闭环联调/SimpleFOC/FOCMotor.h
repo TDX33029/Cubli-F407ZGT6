@@ -41,6 +41,8 @@ extern float sensor_offset[3];
 extern float zero_electric_angle[3];
 extern int   sensor_direction[3];   // 编码器旋转方向 (CW: 1, CCW: -1)
 extern uint8_t motor_aligned[3];    // 电角度对齐完成标志 (1:已对齐, 0:未对齐)
+extern uint8_t motor_sensor_map[3]; // 电机驱动通道到编码器传感器的映射 (默认 0->1, 1->2, 2->0)
+extern float angle_prev[3];         // 当前单圈绝对弧度 [0, 2PI)
 
 extern PIDController_t pid_velocity[3]; // 速度环 PID
 extern LowPassFilter_t lpf_velocity[3]; // 速度测量低通滤波器

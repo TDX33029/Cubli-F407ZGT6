@@ -55,6 +55,20 @@ class SerialWorker(QThread):
     sig_log_rx = pyqtSignal(str)
     sig_log_tx = pyqtSignal(str)
     sig_telemetry = pyqtSignal(dict)
+    sig_test_step = pyqtSignal(str)     # 自检单步进度: "M1", "M2", "M3"
+    sig_test_report = pyqtSignal(dict)  # 自检总结结果字典
+
+    # 自检协议正则:
+    # 步骤帧: $TEST_STEP,M1#
+    # 总结帧: $TEST_REPORT,M1:PASS:100:432.1,M2:PASS:100:428.9,M3:PASS:100:435.0,ALL:PASS#
+    TEST_STEP_PATTERN = re.compile(r'\$TEST_STEP,(M[123])#')
+    TEST_REPORT_PATTERN = re.compile(
+        r'\$TEST_REPORT,'
+        r'M1:([A-Za-z0-9_()]+):(\d+):([0-9.-]+),'
+        r'M2:([A-Za-z0-9_()]+):(\d+):([0-9.-]+),'
+        r'M3:([A-Za-z0-9_()]+):(\d+):([0-9.-]+),'
+        r'ALL:(PASS|FAIL)#'
+    )
 
     # 遥测帧正则:
     # 基础帧: $TELE,M1:%.2f,M2:%.2f,M3:%.2f,Vq:%.2f,EN:%d%d%d,A1:%.2f,A2:%.2f,A3:%.2f#
@@ -224,6 +238,41 @@ class SerialWorker(QThread):
                 self.sig_telemetry.emit(tele_data)
             except Exception:
                 pass
+
+        # 解析自检单步步骤帧: $TEST_STEP,M1#
+        match_step = self.TEST_STEP_PATTERN.search(line)
+        if match_step:
+            self.sig_test_step.emit(match_step.group(1))
+
+        # 解析自检汇总报表帧: $TEST_REPORT,M1:PASS:100:432.1,M2:PASS:100:428.9,M3:PASS:100:435.0,ALL:PASS#
+        match_rep = self.TEST_REPORT_PATTERN.search(line)
+        if match_rep:
+            try:
+                rep_data = {
+                    'm1': {'status': match_rep.group(1), 'comm': int(match_rep.group(2)), 'deg': float(match_rep.group(3))},
+                    'm2': {'status': match_rep.group(4), 'comm': int(match_rep.group(5)), 'deg': float(match_rep.group(6))},
+                    'm3': {'status': match_rep.group(7), 'comm': int(match_rep.group(8)), 'deg': float(match_rep.group(9))},
+                    'all_pass': match_rep.group(10) == 'PASS'
+                }
+                self.sig_test_report.emit(rep_data)
+            except Exception:
+                pass
+        elif "ALL 3 MOTORS & ENCODERS ARE HEALTHY (PASS)" in line:
+            # 兼容终端回退文本
+            self.sig_test_report.emit({
+                'all_pass': True,
+                'm1': {'status': 'PASS', 'comm': 100, 'deg': 360.0},
+                'm2': {'status': 'PASS', 'comm': 100, 'deg': 360.0},
+                'm3': {'status': 'PASS', 'comm': 100, 'deg': 360.0}
+            })
+        elif "ENCODER/MOTOR ANOMALY DETECTED (FAIL)" in line:
+            self.sig_test_report.emit({
+                'all_pass': False,
+                'm1': {'status': 'FAIL', 'comm': 0, 'deg': 0.0},
+                'm2': {'status': 'FAIL', 'comm': 0, 'deg': 0.0},
+                'm3': {'status': 'FAIL', 'comm': 0, 'deg': 0.0}
+            })
+
         self.sig_log_rx.emit(line)
 
 
@@ -896,6 +945,7 @@ class MotorControlCard(QGroupBox):
         btn_row.setSpacing(4)
         btn_row.setContentsMargins(0, 0, 0, 0)
 
+        self.preset_buttons = []
         presets = [("-10", -10.0), ("-5", -5.0), ("0 停", 0.0), ("+5", 5.0), ("+10", 10.0)]
         for text, val in presets:
             btn = QPushButton(text)
@@ -918,13 +968,19 @@ class MotorControlCard(QGroupBox):
                 QPushButton:pressed {
                     background-color: #1a1e24;
                 }
+                QPushButton:disabled {
+                    background-color: #1a1e24;
+                    border-color: #262b35;
+                    color: #475569;
+                }
             """)
             btn.clicked.connect(lambda _, v=val: self.set_speed(v, emit=True))
+            self.preset_buttons.append(btn)
             btn_row.addWidget(btn)
 
-        btn_rev = QPushButton("反转")
-        btn_rev.setFixedHeight(26)
-        btn_rev.setStyleSheet("""
+        self.btn_rev = QPushButton("反转")
+        self.btn_rev.setFixedHeight(26)
+        self.btn_rev.setStyleSheet("""
             QPushButton {
                 background-color: #242932;
                 border: 1px solid #363d4a;
@@ -942,11 +998,27 @@ class MotorControlCard(QGroupBox):
             QPushButton:pressed {
                 background-color: #1a1e24;
             }
+            QPushButton:disabled {
+                background-color: #1a1e24;
+                border-color: #262b35;
+                color: #475569;
+            }
         """)
-        btn_rev.clicked.connect(self._on_reverse_clicked)
-        btn_row.addWidget(btn_rev)
+        self.btn_rev.clicked.connect(self._on_reverse_clicked)
+        btn_row.addWidget(self.btn_rev)
 
         layout.addLayout(btn_row)
+
+    def set_operable(self, operable: bool):
+        """启用或禁用所有主动控制控件 (滑条、数值框、使能复选框、预设按键)，但保持遥测读数显示"""
+        self.chk_enable.setEnabled(operable)
+        self.spin_speed.setEnabled(operable)
+        self.slider.setEnabled(operable)
+        if hasattr(self, 'btn_rev'):
+            self.btn_rev.setEnabled(operable)
+        if hasattr(self, 'preset_buttons'):
+            for btn in self.preset_buttons:
+                btn.setEnabled(operable)
 
     def _on_enable_toggled(self, checked):
         if checked:
@@ -1028,6 +1100,198 @@ class MotorControlCard(QGroupBox):
 
 
 # =========================================================================
+# 硬件自检与安全互锁卡片组件 (SelfTestCard)
+# =========================================================================
+class SelfTestCard(QGroupBox):
+    """三轴电机与霍尔磁编码器安全自检与互锁控制面板"""
+    sig_start_test = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__("硬件安全检测与互锁状态", parent)
+        self.init_ui()
+
+    def init_ui(self):
+        self.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #363d4a;
+                border-radius: 6px;
+                margin-top: 8px;
+                padding-top: 10px;
+                background-color: #1a1e24;
+                color: #e2e8f0;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top left;
+                left: 12px;
+                padding: 0 4px;
+                color: #cbd5e1;
+            }
+        """)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 12, 10, 10)
+        layout.setSpacing(8)
+
+        # 1. 顶部互锁状态标签
+        status_row = QHBoxLayout()
+        status_row.setSpacing(6)
+        lbl_status_title = QLabel("互锁状态:")
+        lbl_status_title.setStyleSheet("font-size: 12px; font-weight: bold; color: #94a3b8;")
+        status_row.addWidget(lbl_status_title)
+
+        self.lbl_badge = QLabel("未自检 (电机控制锁定)")
+        self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #f59e0b;")
+        status_row.addWidget(self.lbl_badge)
+        status_row.addStretch()
+        layout.addLayout(status_row)
+
+        # 2. 执行检测主按钮
+        self.btn_run_test = QPushButton("开始硬件自检")
+        self.btn_run_test.setFixedHeight(28)
+        self.btn_run_test.setStyleSheet("""
+            QPushButton {
+                background-color: #242932;
+                border: 1px solid #363d4a;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: bold;
+                color: #e2e8f0;
+            }
+            QPushButton:hover {
+                background-color: #323946;
+                border-color: #4f596b;
+                color: #ffffff;
+            }
+            QPushButton:disabled {
+                background-color: #1a1e24;
+                border-color: #262b35;
+                color: #64748b;
+            }
+        """)
+        self.btn_run_test.clicked.connect(self.sig_start_test.emit)
+        layout.addWidget(self.btn_run_test)
+
+        # 3. 三轴诊断明细网格
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(8)
+        grid.setVerticalSpacing(4)
+        grid.setContentsMargins(2, 4, 2, 4)
+
+        self.lbl_m_tags = []
+        self.lbl_m_details = []
+
+        motors_meta = [
+            ("M1", "TIM1 / I2C1"),
+            ("M2", "TIM3 / I2C2"),
+            ("M3", "TIM4 / I2C3"),
+        ]
+
+        for i, (name, bus) in enumerate(motors_meta):
+            lbl_name = QLabel(f"{name} ({bus}):")
+            lbl_name.setStyleSheet("font-size: 11px; font-weight: bold; color: #cbd5e1;")
+            grid.addWidget(lbl_name, i, 0)
+
+            lbl_status = QLabel("待检测")
+            lbl_status.setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+            lbl_status.setAlignment(Qt.AlignCenter)
+            grid.addWidget(lbl_status, i, 1)
+            self.lbl_m_tags.append(lbl_status)
+
+            lbl_det = QLabel("通信: -- | 转角: --")
+            lbl_det.setStyleSheet("font-size: 11px; color: #64748b;")
+            lbl_det.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            grid.addWidget(lbl_det, i, 2)
+            self.lbl_m_details.append(lbl_det)
+
+        layout.addLayout(grid)
+
+        # 4. 底部说明提示标签
+        self.lbl_hint = QLabel("提示: 控制电机前必须先执行检测，确认三轴电机与霍尔编码器正常。")
+        self.lbl_hint.setWordWrap(True)
+        self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
+        layout.addWidget(self.lbl_hint)
+
+    def set_testing_state(self, step_str=""):
+        self.btn_run_test.setEnabled(False)
+        self.btn_run_test.setText("正在执行检测...")
+        msg = f"自检中 ({step_str})" if step_str else "自检中 (三轴低速开环测试)"
+        self.lbl_badge.setText(msg)
+        self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #38bdf8;")
+        self.lbl_hint.setText("正在低速驱动电机换向并采样霍尔角度，请勿触碰动量轮。")
+        self.lbl_hint.setStyleSheet("font-size: 10px; color: #94a3b8;")
+
+    def set_step(self, motor_str):
+        try:
+            idx = int(motor_str[1]) - 1
+            if 0 <= idx < 3:
+                self.lbl_m_tags[idx].setText("检测中...")
+                self.lbl_m_tags[idx].setStyleSheet("font-size: 11px; font-weight: bold; color: #38bdf8;")
+                self.lbl_badge.setText(f"正在检测 {motor_str} (低速开环与I2C采样)...")
+        except Exception:
+            pass
+
+    def set_result(self, report):
+        self.btn_run_test.setEnabled(True)
+        self.btn_run_test.setText("重新自检")
+
+        all_pass = report.get('all_pass', False)
+        for i, key in enumerate(['m1', 'm2', 'm3']):
+            info = report.get(key, {})
+            st = info.get('status', 'FAIL')
+            comm = info.get('comm', 0)
+            deg = info.get('deg', 0.0)
+
+            if st == 'PASS':
+                self.lbl_m_tags[i].setText("正常")
+                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #34d399;")
+                self.lbl_m_details[i].setText(f"通信: {comm}% | 转角: {deg:.1f}°")
+                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #34d399;")
+            elif st in ('SKIP', 'NONE', 'UNINSTALLED'):
+                self.lbl_m_tags[i].setText("未安装")
+                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #64748b;")
+                self.lbl_m_details[i].setText("未安装 (已跳过)")
+                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #64748b;")
+            else:
+                tag = "离线" if "I2C" in st else "堵转"
+                self.lbl_m_tags[i].setText(tag)
+                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #f87171;")
+                self.lbl_m_details[i].setText(f"通信: {comm}% | 转角: {deg:.1f}°")
+                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #f87171;")
+
+        if all_pass:
+            self.lbl_badge.setText("自检通过 (已解锁)")
+            self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #34d399;")
+            self.lbl_hint.setText("已安装的电机与霍尔编码器自检合格，通道已自动校准，控制功能已解锁。")
+            self.lbl_hint.setStyleSheet("font-size: 10px; color: #94a3b8;")
+        else:
+            self.lbl_badge.setText("自检失败 (控制锁定)")
+            self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #f87171;")
+            self.lbl_hint.setText("存在异常轴，请检查对应I2C连接、3.3V供电、上拉电阻或电机相线后重测。")
+            self.lbl_hint.setStyleSheet("font-size: 10px; color: #94a3b8;")
+
+    def reset_state(self, connected=False):
+        self.btn_run_test.setEnabled(connected)
+        self.btn_run_test.setText("开始硬件自检")
+        if connected:
+            self.lbl_badge.setText("待自检 (控制锁定)")
+            self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #f59e0b;")
+            self.lbl_hint.setText("串口已连接。请点击上方“开始硬件自检”以激活电机控制权限。")
+            self.lbl_hint.setStyleSheet("font-size: 10px; color: #94a3b8;")
+        else:
+            self.lbl_badge.setText("串口未连接 (控制锁定)")
+            self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #94a3b8;")
+            self.lbl_hint.setText("提示: 请先打开串口，然后执行硬件自检以解锁电机控制。")
+            self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
+
+        for i in range(3):
+            self.lbl_m_tags[i].setText("待检测")
+            self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
+            self.lbl_m_details[i].setText("通信: -- | 转角: --")
+            self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #64748b;")
+
+
+# =========================================================================
 # 主窗口 (MainWindow)
 # =========================================================================
 class MainWindow(QMainWindow):
@@ -1045,6 +1309,12 @@ class MainWindow(QMainWindow):
         self.worker.sig_log_rx.connect(self.on_log_rx)
         self.worker.sig_log_tx.connect(self.on_log_tx)
         self.worker.sig_telemetry.connect(self.on_telemetry_received)
+        self.worker.sig_test_step.connect(self.on_self_test_step)
+        self.worker.sig_test_report.connect(self.on_self_test_report)
+
+        # 硬件自检与安全互锁状态 (True: 自检通过，允许操作; False: 锁定拦截)
+        self.self_test_passed = False
+        self.self_test_running = False
 
         # 波形历史数据队列 (示波器式平滑滚动缓冲)
         self.MAX_POINTS = 800
@@ -1237,6 +1507,10 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage("就绪 - 请选择串口并打开连接")
 
+        # 初始安全互锁：锁定所有电机致动控制，等待串口连接并执行自检
+        self.set_motor_controls_locked(True)
+        self.card_self_test.reset_state(connected=False)
+
     def _create_top_bar(self):
         bar = QFrame()
         bar.setObjectName("TopBar")
@@ -1301,10 +1575,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(btn_zero_att)
 
         # 全部归零 (平稳停止)
-        btn_stop_all = QPushButton("全部归零")
-        btn_stop_all.setFixedHeight(26)
-        btn_stop_all.clicked.connect(self.action_stop_all)
-        layout.addWidget(btn_stop_all)
+        self.btn_stop_all = QPushButton("全部归零")
+        self.btn_stop_all.setFixedHeight(26)
+        self.btn_stop_all.clicked.connect(self.action_stop_all)
+        layout.addWidget(self.btn_stop_all)
 
         # 紧急停止按钮 (素雅工控暗红警示，避免刺眼彩色外框)
         btn_estop = QPushButton("紧急停止 [ESTOP]")
@@ -1339,7 +1613,12 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
 
-        # 1. 三轴独立控制卡片 (素雅工控风，标题清晰注明定时器和引脚)
+        # 1. 硬件自检与安全互锁卡片 (处于最顶端，必须首先自检通过方可解锁操作)
+        self.card_self_test = SelfTestCard()
+        self.card_self_test.sig_start_test.connect(self.action_start_self_test)
+        layout.addWidget(self.card_self_test)
+
+        # 2. 三轴独立控制卡片 (素雅工控风，标题清晰注明定时器和引脚)
         self.card_m1 = MotorControlCard(1, "电机 1 (M1) - [TIM1: PE9/11/13 | EN: PD0]")
         self.card_m2 = MotorControlCard(2, "电机 2 (M2) - [TIM3: PA6/7 PB0 | EN: PD1]")
         self.card_m3 = MotorControlCard(3, "电机 3 (M3) - [TIM4: PD12/13/14 | EN: PD2]")
@@ -1356,9 +1635,9 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.card_m2)
         layout.addWidget(self.card_m3)
 
-        # 2. 三轴联动同步卡片 (去除刺眼紫色边框和背景，统一素雅风格)
-        sync_group = QGroupBox("三轴同步联动 (Master / Sync)")
-        sync_group.setStyleSheet("""
+        # 3. 三轴联动同步卡片 (去除刺眼紫色边框和背景，统一素雅风格)
+        self.sync_group = QGroupBox("三轴同步联动 (Master / Sync)")
+        self.sync_group.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
                 border: 1px solid #363d4a;
@@ -1376,7 +1655,7 @@ class MainWindow(QMainWindow):
                 color: #cbd5e1;
             }
         """)
-        sync_layout = QVBoxLayout(sync_group)
+        sync_layout = QVBoxLayout(self.sync_group)
         sync_layout.setContentsMargins(10, 12, 10, 10)
         sync_layout.setSpacing(8)
 
@@ -1441,11 +1720,11 @@ class MainWindow(QMainWindow):
         self.spin_sync.valueChanged.connect(lambda v: self.slider_sync.setValue(int(round(v * 10))))
         sync_layout.addWidget(self.slider_sync)
 
-        layout.addWidget(sync_group)
+        layout.addWidget(self.sync_group)
 
-        # 3. 电源与相电压安全参数 (去除彩色边框与刺眼青绿背景，规范排版与尺寸)
-        param_group = QGroupBox("参数配置与驱动限制")
-        param_group.setStyleSheet("""
+        # 4. 电源与相电压安全参数 (去除彩色边框与刺眼青绿背景，规范排版与尺寸)
+        self.param_group = QGroupBox("参数配置与驱动限制")
+        self.param_group.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
                 border: 1px solid #363d4a;
@@ -1463,7 +1742,7 @@ class MainWindow(QMainWindow):
                 color: #cbd5e1;
             }
         """)
-        param_layout = QGridLayout(param_group)
+        param_layout = QGridLayout(self.param_group)
         param_layout.setVerticalSpacing(8)
         param_layout.setHorizontalSpacing(8)
         param_layout.setContentsMargins(10, 12, 10, 10)
@@ -1476,13 +1755,13 @@ class MainWindow(QMainWindow):
         self.spin_vq.setValue(2.5)
         self.spin_vq.setSuffix(" V")
         self.spin_vq.setFixedHeight(26)
-        btn_set_vq = QPushButton("设定Vq")
-        btn_set_vq.setFixedHeight(26)
-        btn_set_vq.clicked.connect(self.action_set_voltage_limit)
+        self.btn_set_vq = QPushButton("设定Vq")
+        self.btn_set_vq.setFixedHeight(26)
+        self.btn_set_vq.clicked.connect(self.action_set_voltage_limit)
 
         param_layout.addWidget(lbl_vq, 0, 0)
         param_layout.addWidget(self.spin_vq, 0, 1)
-        param_layout.addWidget(btn_set_vq, 0, 2)
+        param_layout.addWidget(self.btn_set_vq, 0, 2)
 
         # 速度上限 limit
         lbl_vlim = QLabel("开环极速限制:")
@@ -1492,13 +1771,13 @@ class MainWindow(QMainWindow):
         self.spin_vlim.setValue(20.0)
         self.spin_vlim.setSuffix(" rad/s")
         self.spin_vlim.setFixedHeight(26)
-        btn_set_vlim = QPushButton("设定Limit")
-        btn_set_vlim.setFixedHeight(26)
-        btn_set_vlim.clicked.connect(self.action_set_velocity_limit)
+        self.btn_set_vlim = QPushButton("设定Limit")
+        self.btn_set_vlim.setFixedHeight(26)
+        self.btn_set_vlim.clicked.connect(self.action_set_velocity_limit)
 
         param_layout.addWidget(lbl_vlim, 1, 0)
         param_layout.addWidget(self.spin_vlim, 1, 1)
-        param_layout.addWidget(btn_set_vlim, 1, 2)
+        param_layout.addWidget(self.btn_set_vlim, 1, 2)
 
         # 遥测输出与状态查询
         self.chk_tele = QCheckBox("开启固件遥测流 ($TELE)")
@@ -1534,11 +1813,11 @@ class MainWindow(QMainWindow):
 
         param_layout.addLayout(sensor_row, 3, 0, 1, 3)
 
-        layout.addWidget(param_group)
+        layout.addWidget(self.param_group)
 
-        # 4. 速度闭环与电角度标定卡片 (MT6701)
-        cl_group = QGroupBox("速度闭环控制与电角度标定 (MT6701)")
-        cl_group.setStyleSheet("""
+        # 5. 速度闭环与电角度标定卡片 (MT6701)
+        self.cl_group = QGroupBox("速度闭环控制与电角度标定 (MT6701)")
+        self.cl_group.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
                 border: 1px solid #363d4a;
@@ -1556,7 +1835,7 @@ class MainWindow(QMainWindow):
                 color: #cbd5e1;
             }
         """)
-        cl_layout = QVBoxLayout(cl_group)
+        cl_layout = QVBoxLayout(self.cl_group)
         cl_layout.setContentsMargins(10, 12, 10, 10)
         cl_layout.setSpacing(8)
 
@@ -1596,27 +1875,27 @@ class MainWindow(QMainWindow):
         lbl_p.setStyleSheet("font-size: 11px; color: #94a3b8;")
         self.spin_p = QDoubleSpinBox()
         self.spin_p.setRange(0.01, 5.0)
-        self.spin_p.setSingleStep(0.05)
+        self.spin_p.setSingleStep(0.02)
         self.spin_p.setDecimals(2)
-        self.spin_p.setValue(0.20)
+        self.spin_p.setValue(0.15)
         self.spin_p.setFixedHeight(24)
 
         lbl_i = QLabel("I:")
         lbl_i.setStyleSheet("font-size: 11px; color: #94a3b8;")
         self.spin_i = QDoubleSpinBox()
         self.spin_i.setRange(0.0, 20.0)
-        self.spin_i.setSingleStep(0.2)
+        self.spin_i.setSingleStep(0.05)
         self.spin_i.setDecimals(2)
-        self.spin_i.setValue(1.20)
+        self.spin_i.setValue(0.35)
         self.spin_i.setFixedHeight(24)
 
         lbl_d = QLabel("D:")
         lbl_d.setStyleSheet("font-size: 11px; color: #94a3b8;")
         self.spin_d = QDoubleSpinBox()
-        self.spin_d.setRange(0.0, 0.1)
+        self.spin_d.setRange(0.0, 1.0)
         self.spin_d.setSingleStep(0.001)
         self.spin_d.setDecimals(4)
-        self.spin_d.setValue(0.001)
+        self.spin_d.setValue(0.0000)
         self.spin_d.setFixedHeight(24)
 
         btn_send_pid = QPushButton("下发PID")
@@ -1632,7 +1911,7 @@ class MainWindow(QMainWindow):
         pid_row.addWidget(btn_send_pid)
         cl_layout.addLayout(pid_row)
 
-        layout.addWidget(cl_group)
+        layout.addWidget(self.cl_group)
         layout.addStretch()
 
         # 使用 QScrollArea 容器包裹左侧控制面板，彻底避免小屏下垂直挤压导致的文字变形与截断
@@ -1975,7 +2254,13 @@ class MainWindow(QMainWindow):
         """)
         self.lbl_status_led.setText(f"[在线 {port}@{baud}]")
         self.lbl_status_led.setStyleSheet("color: #34d399; font-weight: bold; margin-left: 4px;")
-        self.status_bar.showMessage(f"已连接串口: {port}，波特率: {baud} 8N1")
+        self.status_bar.showMessage(f"已连接串口: {port}，系统处于安全锁定状态，请先执行硬件自检！")
+
+        # 连接成功后，重置自检状态并锁定电机操作
+        self.self_test_passed = False
+        self.self_test_running = False
+        self.set_motor_controls_locked(True)
+        self.card_self_test.reset_state(connected=True)
 
         # 重置时间原点，确保曲线从 t=0 开始平稳推进
         self.start_time = time.time()
@@ -2013,11 +2298,78 @@ class MainWindow(QMainWindow):
         self.lbl_status_led.setText("[离线]")
         self.lbl_status_led.setStyleSheet("color: #94a3b8; font-weight: bold; margin-left: 4px;")
         self.status_bar.showMessage("串口已断开")
-        self.status_bar.showMessage("串口已断开")
+
+        # 断开连接时，恢复互锁锁定状态
+        self.self_test_passed = False
+        self.self_test_running = False
+        self.set_motor_controls_locked(True)
+        self.card_self_test.reset_state(connected=False)
 
     def on_serial_error(self, err_msg):
         self.status_bar.showMessage(f"错误: {err_msg}")
         self.append_log(f"<span style='color: #e74c3c;'>[ERROR] {err_msg}</span>")
+
+    # =====================================================================
+    # 硬件自检与安全互锁机制
+    # =====================================================================
+    def set_motor_controls_locked(self, locked: bool, active_motors=(True, True, True)):
+        """设置电机主动控制互锁状态 (True: 锁定禁止操作; False: 解锁允许操作，仅激活已安装电机)"""
+        if hasattr(self, 'card_m1'):
+            self.card_m1.set_operable(not locked and active_motors[0])
+        if hasattr(self, 'card_m2'):
+            self.card_m2.set_operable(not locked and active_motors[1])
+        if hasattr(self, 'card_m3'):
+            self.card_m3.set_operable(not locked and active_motors[2])
+        if hasattr(self, 'sync_group'):
+            self.sync_group.setEnabled(not locked)
+        if hasattr(self, 'cl_group'):
+            self.cl_group.setEnabled(not locked)
+        if hasattr(self, 'btn_set_vq'):
+            self.btn_set_vq.setEnabled(not locked)
+        if hasattr(self, 'btn_set_vlim'):
+            self.btn_set_vlim.setEnabled(not locked)
+        if hasattr(self, 'btn_stop_all'):
+            self.btn_stop_all.setEnabled(not locked)
+        # 注意: 紧急停止按键 btn_estop 始终保持启用，绝不互锁锁定！
+
+    def action_start_self_test(self):
+        """用户点击开始自检按钮"""
+        if not (self.worker.ser and self.worker.ser.is_open):
+            QMessageBox.warning(self, "未连接串口", "请先在上方选择并打开串口，然后再执行硬件自检！")
+            return
+
+        self.self_test_passed = False
+        self.self_test_running = True
+        self.set_motor_controls_locked(True)
+        self.card_self_test.set_testing_state()
+        self.worker.send_cmd("TEST")
+        self.status_bar.showMessage("已向单片机发送自检指令 (TEST)，正在执行低速开环与编码器测试...")
+        self.append_log("<span style='color: #38bdf8;'>[自检] 开始三轴电机与霍尔磁编码器硬件自检...</span>")
+
+    def on_self_test_step(self, step_str):
+        """自检步骤更新: M1 / M2 / M3"""
+        self.card_self_test.set_step(step_str)
+        self.status_bar.showMessage(f"正在自检 {step_str} 电机及对应霍尔编码器...")
+
+    def on_self_test_report(self, report_data):
+        """自检完成汇总数据接收与结果展示"""
+        self.self_test_running = False
+        all_pass = report_data.get('all_pass', False)
+        self.self_test_passed = all_pass
+        self.card_self_test.set_result(report_data)
+
+        m1_active = report_data.get('m1', {}).get('status') == 'PASS'
+        m2_active = report_data.get('m2', {}).get('status') == 'PASS'
+        m3_active = report_data.get('m3', {}).get('status') == 'PASS'
+
+        if all_pass:
+            self.set_motor_controls_locked(False, (m1_active, m2_active, m3_active))
+            self.status_bar.showMessage("硬件自检通过：已安装的电机与编码器正常，控制权限已解锁。")
+            self.append_log("<span style='color: #34d399; font-weight: bold;'>[自检] 自检通过：已安装的电机与编码器均正常，控制功能已解锁。</span>")
+        else:
+            self.set_motor_controls_locked(True)
+            self.status_bar.showMessage("硬件自检未通过：检测到异常，保持电机控制安全锁定。")
+            self.append_log("<span style='color: #f87171; font-weight: bold;'>[自检] 自检失败：检测到异常轴，请检查硬件连接后重试。</span>")
 
     # =====================================================================
     # 电机控制动作
@@ -2138,9 +2490,21 @@ class MainWindow(QMainWindow):
 
     def action_send_custom_cmd(self):
         cmd = self.edt_custom_cmd.text().strip()
-        if cmd:
-            self.worker.send_cmd(cmd)
-            self.edt_custom_cmd.clear()
+        if not cmd:
+            return
+
+        # 互锁拦截：如果尚未通过硬件自检，拦截致动类电机控制指令，保护设备安全
+        if not self.self_test_passed:
+            cmd_upper = cmd.upper()
+            allowed_prefixes = ("TEST", "CHECK", "?", "H", "HELP", "IMU", "HALL", "ENC", "TELE", "SENSOR", "STOP")
+            if not any(cmd_upper.startswith(p) for p in allowed_prefixes):
+                self.status_bar.showMessage("操作已被互锁拦截：必须先执行并通过硬件自检后方可控制电机。")
+                self.append_log(f"<span style='color: #f59e0b;'>[拦截] 未通过硬件自检，拒绝执行电机控制指令: {cmd}</span>")
+                self.edt_custom_cmd.clear()
+                return
+
+        self.worker.send_cmd(cmd)
+        self.edt_custom_cmd.clear()
 
     # =====================================================================
     # 遥测与波形数据处理 (解决曲线显示异常与滑动视口)

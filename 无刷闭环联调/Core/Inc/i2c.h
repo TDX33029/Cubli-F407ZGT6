@@ -30,17 +30,20 @@ extern "C" {
 
 /* USER CODE BEGIN Includes */
 
-#define MT6701_SLAVE_ADDR		  0x06 << 1
+#define MT6701_SLAVE_ADDR		  (0x06 << 1)
 #define MT6701_Timeout            50
 
 #define MT6701_REG_ANGLE_14b      0x03
 
 #define mt6701_log		printf
 
-
+void i2c_bus_recover(I2C_HandleTypeDef *hi2c);
 uint8_t i2c_mt6701_1_get_angle(int16_t *angle, float *angle_f);
 uint8_t i2c_mt6701_2_get_angle(int16_t *angle, float *angle_f);
 uint8_t i2c_mt6701_3_get_angle(int16_t *angle, float *angle_f);
+
+extern uint32_t i2c1_last_err;
+extern uint8_t i2c1_last_hal_res;
 
 /* USER CODE END Includes */
 

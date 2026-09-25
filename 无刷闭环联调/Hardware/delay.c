@@ -1,50 +1,29 @@
 
 #include "delay.h"
-
+#include "timer.h"
 
 /******************************************************************************/
-/* HCLK=168MHz, SysTick clock = HCLK/8 = 21MHz */
+void DWT_Init(void)
+{
+	// 保留函数兼容，系统已全面切换至 TIM5 32位全硬件微秒定时器
+}
 
-//延时nus
+// 延时nus (基于 TIM5 32位 1MHz 全硬件计数器，绝对可靠)
 void delay_us(unsigned long nus)
 {
-	unsigned long temp;
-
-	SysTick->LOAD = nus * 21;   //21 = 针对168MHz (168MHz/8 = 21MHz)
-	SysTick->VAL = 0;
-	SysTick->CTRL = SysTick_CTRL_ENABLE_Msk;   //HCLK/8
-	do
-	{
-		temp = SysTick->CTRL;
-	}while((temp & 0x01) && !(temp & (1 << 16)));
-
-	SysTick->CTRL = 0;
-	SysTick->VAL = 0;
+	uint32_t start = micros();
+	while((uint32_t)(micros() - start) < (uint32_t)nus);
 }
-/******************************************************************************/
-//延时nms
-//最大延时时间=0xFFFFFF/21MHz=798ms
+
+// 延时nms (基于 TIM6 1ms 中断驱动的 HAL_GetTick()，无上限且不受任务阻塞影响)
 void delay_ms(unsigned short nms)
 {
-	unsigned long temp;
-
-	SysTick->LOAD = (uint32_t)nms * 21000;   //21000 = 针对168MHz
-	SysTick->VAL = 0;
-	SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;  //HCLK/8
-	do
-	{
-		temp = SysTick->CTRL;
-	}while((temp & 0x01) && !(temp & (1 << 16)));
-
-	SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
-	SysTick->VAL = 0;
+	uint32_t start = HAL_GetTick();
+	while((uint32_t)(HAL_GetTick() - start) < (uint32_t)nms);
 }
-/******************************************************************************/
-//0xFFFFFF到0循环计数 (用于velocityOpenloop时间戳)
+
+// 兼容空函数
 void systick_CountMode(void)
 {
-	SysTick->LOAD = 0xFFFFFF - 1;      //set reload register
-	SysTick->VAL  = 0;
-	SysTick->CTRL = SysTick_CTRL_ENABLE_Msk; //Enable SysTick Timer, HCLK/8
 }
 /******************************************************************************/
