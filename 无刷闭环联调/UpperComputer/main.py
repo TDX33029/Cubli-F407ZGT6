@@ -869,8 +869,8 @@ class MotorControlCard(QGroupBox):
         lbl_target.setStyleSheet("font-size: 12px; color: #cbd5e1;")
 
         self.spin_speed = QDoubleSpinBox()
-        self.spin_speed.setRange(-30.0, 30.0)
-        self.spin_speed.setSingleStep(0.2)
+        self.spin_speed.setRange(-60.0, 60.0)
+        self.spin_speed.setSingleStep(0.5)
         self.spin_speed.setDecimals(2)
         self.spin_speed.setSuffix(" rad/s")
         self.spin_speed.setValue(0.0)
@@ -892,12 +892,12 @@ class MotorControlCard(QGroupBox):
         mid_row.addWidget(self.spin_speed)
         layout.addLayout(mid_row)
 
-        # 滑条 (-30.0 ~ +30.0，以 10 倍整数映射: -300 ~ 300)
+        # 滑条 (-60.0 ~ +60.0，以 10 倍整数映射: -600 ~ 600)
         self.slider = QSlider(Qt.Horizontal)
-        self.slider.setRange(-300, 300)
+        self.slider.setRange(-600, 600)
         self.slider.setValue(0)
         self.slider.setTickPosition(QSlider.TicksBelow)
-        self.slider.setTickInterval(50)
+        self.slider.setTickInterval(100)
         self.slider.setStyleSheet("""
             QSlider::groove:horizontal {
                 border: 1px solid #363d4a;
@@ -926,11 +926,11 @@ class MotorControlCard(QGroupBox):
 
         # 刻度标记
         scale_row = QHBoxLayout()
-        lbl_scale_min = QLabel("-30")
+        lbl_scale_min = QLabel("-60")
         lbl_scale_min.setStyleSheet("font-size: 10px; color: #64748b;")
         lbl_scale_mid = QLabel("0")
         lbl_scale_mid.setStyleSheet("font-size: 10px; color: #64748b;")
-        lbl_scale_max = QLabel("+30 rad/s")
+        lbl_scale_max = QLabel("+60 rad/s")
         lbl_scale_max.setStyleSheet("font-size: 10px; color: #64748b;")
 
         scale_row.addWidget(lbl_scale_min)
@@ -946,7 +946,7 @@ class MotorControlCard(QGroupBox):
         btn_row.setContentsMargins(0, 0, 0, 0)
 
         self.preset_buttons = []
-        presets = [("-10", -10.0), ("-5", -5.0), ("0 停", 0.0), ("+5", 5.0), ("+10", 10.0)]
+        presets = [("-20", -20.0), ("-10", -10.0), ("0 停", 0.0), ("+10", 10.0), ("+20", 20.0)]
         for text, val in presets:
             btn = QPushButton(text)
             btn.setFixedHeight(26)
@@ -1666,7 +1666,7 @@ class MainWindow(QMainWindow):
         row_sync.addWidget(lbl_s_target)
 
         self.spin_sync = QDoubleSpinBox()
-        self.spin_sync.setRange(-30.0, 30.0)
+        self.spin_sync.setRange(-60.0, 60.0)
         self.spin_sync.setSingleStep(0.5)
         self.spin_sync.setDecimals(2)
         self.spin_sync.setSuffix(" rad/s")
@@ -1691,7 +1691,7 @@ class MainWindow(QMainWindow):
 
         # 同步滑条 (素雅灰蓝槽体与滑块)
         self.slider_sync = QSlider(Qt.Horizontal)
-        self.slider_sync.setRange(-300, 300)
+        self.slider_sync.setRange(-600, 600)
         self.slider_sync.setValue(0)
         self.slider_sync.setStyleSheet("""
             QSlider::groove:horizontal {
@@ -1747,12 +1747,12 @@ class MainWindow(QMainWindow):
         param_layout.setHorizontalSpacing(8)
         param_layout.setContentsMargins(10, 12, 10, 10)
 
-        # 相电压限制 Vq limit
+        # 相电压限制 Vq limit (最高可拉至 6.8V，充沛发挥 12V 硬件供电性能)
         lbl_vq = QLabel("相电压限制 (Vq):")
         self.spin_vq = QDoubleSpinBox()
-        self.spin_vq.setRange(0.5, 6.0)
+        self.spin_vq.setRange(0.5, 6.8)
         self.spin_vq.setSingleStep(0.1)
-        self.spin_vq.setValue(5.0)
+        self.spin_vq.setValue(6.0)
         self.spin_vq.setSuffix(" V")
         self.spin_vq.setFixedHeight(26)
         self.btn_set_vq = QPushButton("设定Vq")
@@ -1764,11 +1764,11 @@ class MainWindow(QMainWindow):
         param_layout.addWidget(self.btn_set_vq, 0, 2)
 
         # 速度上限 limit
-        lbl_vlim = QLabel("开环极速限制:")
+        lbl_vlim = QLabel("极速限制 Limit:")
         self.spin_vlim = QDoubleSpinBox()
-        self.spin_vlim.setRange(1.0, 50.0)
-        self.spin_vlim.setSingleStep(1.0)
-        self.spin_vlim.setValue(20.0)
+        self.spin_vlim.setRange(1.0, 80.0)
+        self.spin_vlim.setSingleStep(5.0)
+        self.spin_vlim.setValue(60.0)
         self.spin_vlim.setSuffix(" rad/s")
         self.spin_vlim.setFixedHeight(26)
         self.btn_set_vlim = QPushButton("设定Limit")
@@ -1877,16 +1877,16 @@ class MainWindow(QMainWindow):
         self.spin_p.setRange(0.0, 10.0)
         self.spin_p.setSingleStep(0.05)
         self.spin_p.setDecimals(3)
-        self.spin_p.setValue(0.30)
+        self.spin_p.setValue(0.150)
         self.spin_p.setFixedHeight(24)
 
         lbl_i = QLabel("I:")
         lbl_i.setStyleSheet("font-size: 11px; color: #94a3b8;")
         self.spin_i = QDoubleSpinBox()
         self.spin_i.setRange(0.0, 50.0)
-        self.spin_i.setSingleStep(0.5)
+        self.spin_i.setSingleStep(0.2)
         self.spin_i.setDecimals(2)
-        self.spin_i.setValue(5.00)
+        self.spin_i.setValue(1.20)
         self.spin_i.setFixedHeight(24)
 
         lbl_d = QLabel("D:")

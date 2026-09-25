@@ -36,19 +36,19 @@ void SimpleFOC_PID_Init(void)
 	int i;
 	for(i = 0; i < 3; i++)
 	{
-		// 官方 SimpleFOC 经典速度环 PID 参数：P=0.30, I=5.00, D=0
-		pid_velocity[i].P = 0.30f;
-		pid_velocity[i].I = 5.00f;           // 充沛的积分增益保证极低转速(0.2~0.5 rad/s)到高速(5~20 rad/s)全量程稳态精度与纯净平滑
+		// 速度环 PID 参数：适中比例 + 温和积分，彻底根除 15~25 rad/s 高频共振
+		pid_velocity[i].P = 0.15f;           // 适中比例增益，避免中高转速相位延迟放大引起共振
+		pid_velocity[i].I = 1.20f;           // 稳健积分增益，兼顾低速稳态消除残差与高速平稳
 		pid_velocity[i].D = 0.000f;          // 速度环严格置零 D 项，彻底消除高频毛刺与抖动
 		pid_velocity[i].output_ramp = 0.0f;  // 不人为限制输出斜率，消除相角滞后
-		pid_velocity[i].limit = 5.0f;        // 默认与 voltage_limit (5.0V) 对齐
+		pid_velocity[i].limit = 6.0f;        // 默认与 voltage_limit (6.0V) 对齐，释放充沛电磁转矩
 		pid_velocity[i].error_prev = 0.0f;
 		pid_velocity[i].output_prev = 0.0f;
 		pid_velocity[i].integral_prev = 0.0f;
 		pid_velocity[i].timestamp_prev = 0;
 
-		// 速度测量低通滤波器 (时间常数 15ms，官方 SimpleFOC 标准推荐，极小相移，绝不引起低频脉冲震荡)
-		lpf_velocity[i].Tf = 0.015f;
+		// 速度测量低通滤波器 (时间常数 8ms，超低相位滞后，彻底消灭 15~25 rad/s 相位反转高频蜂鸣)
+		lpf_velocity[i].Tf = 0.008f;
 		lpf_velocity[i].y_prev = 0.0f;
 		lpf_velocity[i].timestamp_prev = 0;
 	}

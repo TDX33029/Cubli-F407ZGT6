@@ -170,8 +170,8 @@ void move(float new_target, int motor)
 			shaft_velocity_sp[motor] = new_target;
 			speed_err = shaft_velocity_sp[motor] - shaft_velocity[motor];
 
-			// 零速死区保护：当目标为0且转速处于静止低速区时彻底输出0，杜绝静止发热与颤振
-			if(fabsf(shaft_velocity_sp[motor]) < 0.02f && fabsf(shaft_velocity[motor]) < 0.15f)
+			// 零速彻底待机：当目标速度为 0 时立即输出 0V 并复位积分，彻底消除零速高频抖动与自激颤振
+			if(fabsf(shaft_velocity_sp[motor]) < 0.01f)
 			{
 				pid_velocity[motor].integral_prev = 0.0f;
 				pid_velocity[motor].error_prev = 0.0f;

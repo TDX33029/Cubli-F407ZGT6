@@ -140,9 +140,9 @@ int main(void)
 
 				/* SimpleFOC参数配置 */
 				voltage_power_supply = 12.0f;   // V (DRV8313 12V 硬件供电)
-				voltage_limit = 5.0f;           // V，相电压上限设为 5.0V (可在上位机中微调至 6.0V)，充沛发挥 12V 供电性能
-				velocity_limit = 20.0f;         // rad/s
-			controller = Type_velocity_openloop; // 默认开环安全待机，避免未标定零位时闭环自激扰动
+				voltage_limit = 6.0f;           // V，相电压上限拉到最高 6.0V (最大安全限幅 6.8V)，极大充沛发挥电磁力矩
+				velocity_limit = 60.0f;         // rad/s (最高转速提升至 60.0 rad/s)
+				controller = Type_velocity_openloop; // 默认开环安全待机，避免未标定零位时闭环自激扰动
 			pole_pairs = 7;                 // 极对数
 
 			SimpleFOC_PID_Init();           // 初始化速度闭环 PID 与低通滤波器
@@ -654,24 +654,24 @@ void commander_run(void)
 				target_m3 = target;
 				printf("OK ALL:%.2f\r\n", target);
 			}
-			/* 13. 相电压上限设定: U<val> */
-			else if(cmd[0] == 'U' || cmd[0] == 'u')
-			{
-				float v = (float)atof(cmd + 1);
-				if(v < 0.1f) v = 0.1f;
-				if(v > 6.0f) v = 6.0f;
-				voltage_limit = v;
-				printf("OK Vq:%.2f\r\n", voltage_limit);
-			}
-			/* 14. 速度上限设定: L<val> */
-			else if(cmd[0] == 'L' || cmd[0] == 'l')
-			{
-				float l = (float)atof(cmd + 1);
-				if(l < 1.0f) l = 1.0f;
-				if(l > 50.0f) l = 50.0f;
-				velocity_limit = l;
-				printf("OK Vlim:%.2f\r\n", velocity_limit);
-			}
+				/* 13. 相电压上限设定: U<val> */
+				else if(cmd[0] == 'U' || cmd[0] == 'u')
+				{
+					float v = (float)atof(cmd + 1);
+					if(v < 0.1f) v = 0.1f;
+					if(v > 6.8f) v = 6.8f;
+					voltage_limit = v;
+					printf("OK Vq:%.2f\r\n", voltage_limit);
+				}
+				/* 14. 速度上限设定: L<val> */
+				else if(cmd[0] == 'L' || cmd[0] == 'l')
+				{
+					float l = (float)atof(cmd + 1);
+					if(l < 1.0f) l = 1.0f;
+					if(l > 80.0f) l = 80.0f;
+					velocity_limit = l;
+					printf("OK Vlim:%.2f\r\n", velocity_limit);
+				}
 			/* 15. 兼容单电机原始命令: 1<val>, 2<val>, 3<val> */
 			else if(cmd[0] == '1')
 			{
