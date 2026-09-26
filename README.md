@@ -1,4 +1,4 @@
-# Cubli-F407ZGT6 Dialogs
+# Cubli-STM32F407ZGT6 Dialogs
 # Cubli STM32F407ZGT6 版本更新日志
 
 [260327]Version0.7版本，初版物料选型已完成确定
