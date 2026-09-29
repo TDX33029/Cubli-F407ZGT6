@@ -145,8 +145,9 @@ int main(void)
 				controller = Type_velocity_openloop; // 默认开环安全待机，避免未标定零位时闭环自激扰动
 			pole_pairs = 7;                 // 极对数
 
-			SimpleFOC_PID_Init();           // 初始化速度闭环 PID 与低通滤波器
-			set_motor_enable(0, 0);         // 上电默认失能三路电机，等待上位机自检指令解锁
+				SimpleFOC_PID_Init();           // 初始化速度闭环 PID 与低通滤波器
+				reset_closed_loop_state(-1);    // 初始化闭环同步电角度与控制时间戳
+				set_motor_enable(0, 0);         // 上电默认失能三路电机，等待上位机自检指令解锁
 			printf("3 motors initialized and IDLE (Safe Lock Mode).\r\n");
 
 	/* 初始化陀螺仪/IMU */
@@ -350,19 +351,19 @@ void set_motor_enable(uint8_t motor, uint8_t en)
 	if(motor == 0 || motor == 1)
 	{
 		m1_enabled = en ? 1 : 0;
-		if(m1_enabled) { M1_Enable; }
+		if(m1_enabled) { reset_closed_loop_state(0); M1_Enable; }
 		else { M1_Disable; TIM1->CCR1 = 0; TIM1->CCR2 = 0; TIM1->CCR3 = 0; }
 	}
 	if(motor == 0 || motor == 2)
 	{
 		m2_enabled = en ? 1 : 0;
-		if(m2_enabled) { M2_Enable; }
+		if(m2_enabled) { reset_closed_loop_state(1); M2_Enable; }
 		else { M2_Disable; TIM3->CCR1 = 0; TIM3->CCR2 = 0; TIM3->CCR3 = 0; }
 	}
 	if(motor == 0 || motor == 3)
 	{
 		m3_enabled = en ? 1 : 0;
-		if(m3_enabled) { M3_Enable; }
+		if(m3_enabled) { reset_closed_loop_state(2); M3_Enable; }
 		else { M3_Disable; TIM4->CCR1 = 0; TIM4->CCR2 = 0; TIM4->CCR3 = 0; }
 	}
 }
@@ -399,25 +400,26 @@ void commander_run(void)
 				telemetry_enabled = (uint8_t)(atoi(cmd + 4) != 0);
 				printf("OK TELE:%d\r\n", telemetry_enabled);
 			}
-			/* 3. 控制模式切换: MODE <0/1> (0=开环, 1=闭环) */
-			else if(strncmp(cmd, "MODE", 4) == 0 || strncmp(cmd, "mode", 4) == 0)
-			{
-				int m = atoi(cmd + 4);
-				if(m == 1)
+				/* 3. 控制模式切换: MODE <0/1> (0=开环, 1=闭环) */
+				else if(strncmp(cmd, "MODE", 4) == 0 || strncmp(cmd, "mode", 4) == 0)
 				{
-					controller = Type_velocity;
-					printf("OK MODE:1 (Closed-loop Speed)\r\n");
+					int m = atoi(cmd + 4);
+					if(m == 1)
+					{
+						reset_closed_loop_state(-1);
+						controller = Type_velocity;
+						printf("OK MODE:1 (Closed-loop Speed)\r\n");
+					}
+					else if(m == 0)
+					{
+						controller = Type_velocity_openloop;
+						printf("OK MODE:0 (Open-loop Speed)\r\n");
+					}
+					else
+					{
+						printf("ERR MODE format (Usage: MODE 1 for Closed-loop, MODE 0 for Open-loop)\r\n");
+					}
 				}
-				else if(m == 0)
-				{
-					controller = Type_velocity_openloop;
-					printf("OK MODE:0 (Open-loop Speed)\r\n");
-				}
-				else
-				{
-					printf("ERR MODE format (Usage: MODE 1 for Closed-loop, MODE 0 for Open-loop)\r\n");
-				}
-			}
 			/* 4. 紧急全停: STOP 或 S */
 			else if(strncmp(cmd, "STOP", 4) == 0 || strncmp(cmd, "stop", 4) == 0 ||
 			        ((cmd[0] == 'S' || cmd[0] == 's') && (cmd[1] == '\0' || cmd[1] == ' ' || cmd[1] == '\t')))
@@ -1024,21 +1026,12 @@ void Motor_Encoder_OpenLoop_SelfTest(void)
 			}
 			HAL_GPIO_WritePin(GPIOG, GPIO_PIN_4, GPIO_PIN_RESET);
 
-			/* 目标转速与 PID 积分器全面复位清零，杜绝切入闭环瞬间产生自检历史积分冲击 */
-			target = 0.0f;
-			target_m1 = 0.0f;
-			target_m2 = 0.0f;
-			target_m3 = 0.0f;
-			for(m = 0; m < 3; m++)
-			{
-				pid_velocity[m].error_prev = 0.0f;
-				pid_velocity[m].output_prev = 0.0f;
-				pid_velocity[m].integral_prev = 0.0f;
-				pid_velocity[m].timestamp_prev = 0;
-				lpf_velocity[m].y_prev = 0.0f;
-				lpf_velocity[m].timestamp_prev = 0;
-				shaft_velocity[m] = 0.0f;
-			}
+				/* 目标转速与闭环同步电角度全面复位清零，杜绝切入闭环瞬间产生自检历史冲击 */
+				target = 0.0f;
+				target_m1 = 0.0f;
+				target_m2 = 0.0f;
+				target_m3 = 0.0f;
+				reset_closed_loop_state(-1);
 
 			/* 使能已安装通过的电机，并切换到速度闭环模式 */
 			controller = Type_velocity;

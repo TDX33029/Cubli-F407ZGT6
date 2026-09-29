@@ -47,8 +47,12 @@ extern float angle_prev[3];         // 当前单圈绝对弧度 [0, 2PI)
 extern PIDController_t pid_velocity[3]; // 速度环 PID
 extern LowPassFilter_t lpf_velocity[3]; // 速度测量低通滤波器
 
+extern float target_angle_el[3];        // 闭环同步磁场连续电角度
+extern unsigned long move_timestamp_prev[3]; // 闭环控制更新微秒时间戳
+
 /******************************************************************************/
 void SimpleFOC_PID_Init(void);
+void reset_closed_loop_state(int motor);
 float shaftAngle(int motor);
 float shaftVelocity(int motor);
 float electricalAngle(int motor);

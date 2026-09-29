@@ -29,6 +29,32 @@ static unsigned long vel_prev_ts[3] = {0, 0, 0};     // 上一次计算速度时
 PIDController_t pid_velocity[3];
 LowPassFilter_t lpf_velocity[3];
 
+/* 闭环虚拟同步旋转磁场电角度与微秒时间戳 */
+float target_angle_el[3] = {0.0f, 0.0f, 0.0f};
+unsigned long move_timestamp_prev[3] = {0, 0, 0};
+
+/******************************************************************************/
+/* 复位指定电机的闭环同步电角度与 PID/滤波状态 (motor: 0~2为指定轴, -1为全部) */
+void reset_closed_loop_state(int motor)
+{
+	int start = (motor >= 0 && motor < 3) ? motor : 0;
+	int end   = (motor >= 0 && motor < 3) ? motor : 2;
+	int k;
+	for(k = start; k <= end; k++)
+	{
+		float rotor_el = (float)sensor_direction[k] * shaft_angle[k] * (float)pole_pairs - zero_electric_angle[k];
+		target_angle_el[k] = rotor_el;
+		move_timestamp_prev[k] = micros();
+		pid_velocity[k].error_prev = 0.0f;
+		pid_velocity[k].output_prev = 0.0f;
+		pid_velocity[k].integral_prev = 0.0f;
+		pid_velocity[k].timestamp_prev = 0;
+		lpf_velocity[k].y_prev = 0.0f;
+		lpf_velocity[k].timestamp_prev = 0;
+		shaft_velocity[k] = 0.0f;
+	}
+}
+
 /******************************************************************************/
 /* 初始化速度环 PID 和低通滤波器参数 */
 void SimpleFOC_PID_Init(void)
@@ -36,10 +62,10 @@ void SimpleFOC_PID_Init(void)
 	int i;
 	for(i = 0; i < 3; i++)
 	{
-		// 速度环 PID 参数：适中比例 + 温和积分，彻底根除 15~25 rad/s 高频共振
-		pid_velocity[i].P = 0.15f;           // 适中比例增益，避免中高转速相位延迟放大引起共振
-		pid_velocity[i].I = 1.20f;           // 稳健积分增益，兼顾低速稳态消除残差与高速平稳
-		pid_velocity[i].D = 0.000f;          // 速度环严格置零 D 项，彻底消除高频毛刺与抖动
+		// 速度环 PID 参数：配合反电势前馈与全速域混合架构
+		pid_velocity[i].P = 0.20f;           // 适中比例增益
+		pid_velocity[i].I = 1.50f;           // 稳健积分增益
+		pid_velocity[i].D = 0.000f;          // 速度环置零 D 项，彻底消除高频毛刺与抖动
 		pid_velocity[i].output_ramp = 0.0f;  // 不人为限制输出斜率，消除相角滞后
 		pid_velocity[i].limit = 6.0f;        // 默认与 voltage_limit (6.0V) 对齐，释放充沛电磁转矩
 		pid_velocity[i].error_prev = 0.0f;
@@ -47,8 +73,8 @@ void SimpleFOC_PID_Init(void)
 		pid_velocity[i].integral_prev = 0.0f;
 		pid_velocity[i].timestamp_prev = 0;
 
-		// 速度测量低通滤波器 (时间常数 8ms，超低相位滞后，彻底消灭 15~25 rad/s 相位反转高频蜂鸣)
-		lpf_velocity[i].Tf = 0.008f;
+		// 速度测量低通滤波器 (时间常数 12ms，适中相位延迟，完美压制高频噪声)
+		lpf_velocity[i].Tf = 0.012f;
 		lpf_velocity[i].y_prev = 0.0f;
 		lpf_velocity[i].timestamp_prev = 0;
 	}
@@ -104,36 +130,38 @@ void updateSensor(int motor)
 	// 4. 连续多圈绝对机械角位移平滑累加
 	shaft_angle[motor] += d_angle;
 
-	// 5. 严格同步的速度差分与平滑滤波 (定频 5ms 速度计算窗口: 5000us，响应灵敏无相位滞后)
+	// 5. 对齐官方 SimpleFOC Sensor::getVelocity 高精度自适应测速引擎
+	// 避免固定 5ms 强制截断引起的离散零阶跃跳变与量化毛刺
 	d_us = now_us - (uint32_t)vel_prev_ts[motor];
 
-	if(d_us >= 200000)
+	if(d_us >= 1000) // 采样窗口至少 1ms 以上
 	{
-		// 超时停顿重置：同步基准点，消除长停顿跨越，等待下一个 5ms 计算
-		angle_vel_prev[motor] = rad;
-		vel_prev_ts[motor] = now_us;
-	}
-	else if(d_us >= 5000) // 5ms ~ 200ms 快速计算区间
-	{
-		Ts = (float)d_us * 1e-6f;
-
-		// 计算自上一次 vel_prev 以来真实转过的全部角位移
 		float d_vel = rad - angle_vel_prev[motor];
 		if (d_vel > _PI) d_vel -= _2PI;
 		else if (d_vel < -_PI) d_vel += _2PI;
 
-		// 速度带旋向归一化：保证无论编码器正装/反装，电机正向转动时反馈速度恒为正
-		raw_vel = (float)sensor_direction[motor] * (d_vel / Ts);
+		// 当机械角位移达到或超过 14-bit 编码器有效步进 (1 LSB ≈ 0.0003835 rad) 时更新速度
+		if(fabsf(d_vel) >= 0.00030f)
+		{
+			Ts = (float)d_us * 1e-6f;
+			raw_vel = (float)sensor_direction[motor] * (d_vel / Ts);
 
-		angle_vel_prev[motor] = rad;
-		vel_prev_ts[motor] = now_us;
+			angle_vel_prev[motor] = rad;
+			vel_prev_ts[motor] = now_us;
 
-		// 极值限幅保护
-		if(raw_vel > 100.0f) raw_vel = 100.0f;
-		else if(raw_vel < -100.0f) raw_vel = -100.0f;
+			// 极值限幅保护
+			if(raw_vel > 100.0f) raw_vel = 100.0f;
+			else if(raw_vel < -100.0f) raw_vel = -100.0f;
 
-		// 一阶低通滤波 (Tf = 15ms)
-		shaft_velocity[motor] = LPF_operator(&lpf_velocity[motor], raw_vel);
+			// 一阶低通滤波 (Tf = 12ms)
+			shaft_velocity[motor] = LPF_operator(&lpf_velocity[motor], raw_vel);
+		}
+		else if(d_us >= 50000) // 超过 50ms (速度低于 0.007 rad/s) 无位置变化判定停转
+		{
+			angle_vel_prev[motor] = rad;
+			vel_prev_ts[motor] = now_us;
+			shaft_velocity[motor] = LPF_operator(&lpf_velocity[motor], 0.0f);
+		}
 	}
 }
 
