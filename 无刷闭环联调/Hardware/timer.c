@@ -1,5 +1,6 @@
 
 #include "timer.h"
+#include "enc_quad.h"
 
 /***************************************************************************/
 /* TIM1已由CubeMX的MX_TIM1_Init()初始化 (Core/Src/tim.c)
@@ -39,14 +40,47 @@ void TIM6_1ms_Init(void)
 	/* 使能定时器 */
 	TIM6->CR1 |= TIM_CR1_CEN;
 }
+
 /***************************************************************************/
-/* TIM5 32位全硬件自由微秒计数器 (完全摆脱DWT与SysTick依赖)
- * APB1 定时器时钟 = 84MHz
- * Prescaler = 84 - 1 -> 计数频率严格等于 1.0MHz (1计数值 = 1.0微秒)
- * Period = 0xFFFFFFFF (32位最大值，约 71.5 分钟溢出回绕一次，C语言uint32无缝跨界)
+/* 微秒时基定时器
+ *
+ * 默认模式 (ENC_USE_HW_QUAD=0): 使用 TIM5 32位自由计数器, 1MHz, 约71.5分钟回绕。
+ * 硬件正交解码模式 (ENC_USE_HW_QUAD=1): TIM5 让位给 M2 编码器 (PA0/PA1 只能
+ * 映射到 TIM2/TIM5, 而 TIM2 被 M1 占用), 微秒时基迁移到 TIM7:
+ *   TIM7: 16位, 1MHz (PSC=84-1, ARR=0xFFFF), 每65.536ms溢出一次,
+ *   由更新中断维护32位高16位扩展, micros() 组合输出, uint32 回绕特性与
+ *   原实现完全一致 (所有 (uint32_t)(now - last) 差值计算无需改动)。
  */
+static volatile uint32_t g_micros_hi16 = 0;   /* 65536us 单元计数 (TIM7 溢出中断维护) */
+
+void TIM7_IRQHandler(void)
+{
+	if (TIM7->SR & TIM_SR_UIF)
+	{
+		TIM7->SR = ~TIM_SR_UIF;
+		g_micros_hi16++;
+	}
+}
+
 void TIM5_Micros_Init(void)
 {
+#if ENC_USE_HW_QUAD
+	__HAL_RCC_TIM7_CLK_ENABLE();
+
+	/* TIM7 时基: 1MHz 自由计数 */
+	TIM7->CR1 = 0;
+	TIM7->PSC = 84 - 1;
+	TIM7->ARR = 0xFFFF;
+	TIM7->CNT = 0;
+	TIM7->DIER = TIM_DIER_UIE;
+	TIM7->EGR |= TIM_EGR_UG;
+
+	/* 溢出中断优先级设为最高, 确保 65.536ms 周期的溢出计数绝不丢失 */
+	HAL_NVIC_SetPriority(TIM7_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(TIM7_IRQn);
+
+	TIM7->CR1 |= TIM_CR1_CEN;
+#else
 	__HAL_RCC_TIM5_CLK_ENABLE();
 	TIM5->CR1 = 0;
 	TIM5->PSC = 84 - 1;
@@ -54,11 +88,26 @@ void TIM5_Micros_Init(void)
 	TIM5->CNT = 0;
 	TIM5->EGR |= TIM_EGR_UG;
 	TIM5->CR1 |= TIM_CR1_CEN;
+#endif
 }
 
 uint32_t micros(void)
 {
+#if ENC_USE_HW_QUAD
+	uint32_t hi;
+	uint16_t cnt;
+
+	/* 无竞态读取: 溢出中断若在读序列间触发 (高16位已变), 则重读一遍 */
+	do
+	{
+		hi = g_micros_hi16;
+		cnt = (uint16_t)(TIM7->CNT & 0xFFFFU);
+	} while (hi != g_micros_hi16);
+
+	return (uint32_t)((hi << 16) | cnt);
+#else
 	return TIM5->CNT;
+#endif
 }
 /***************************************************************************/
 

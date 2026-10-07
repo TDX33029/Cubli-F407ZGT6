@@ -3,19 +3,27 @@
 Cubli 三轴无刷电机联调上位机 (PyQt5 + pyqtgraph + pyserial)
 -------------------------------------------------------------------------
 适用硬件: STM32F407ZGT6 + 3x DRV8313 (M1/M2/M3) + LSM6DSRTR / MPU-6050
-通信协议: USART2 (PD5-TX, PD6-RX), 115200 8N1
+         + 板载 ESP32-WROOM32E 无线链路
+通信协议: 
+  - 有线模式: USART2 (PD5-TX, PD6-RX), 115200 8N1
+  - 无线模式: F407 USART1 (PA9/PA10) -> ESP32 (IO25/IO26) -> WiFi TCP :3333
+    两种链路字节流协议完全一致, 可在下拉框中随时切换
 主要特性:
   1. 无多余 emoji，工控简洁高对比度深色风格
   2. 左侧电机调控与参数面板，右侧 3D 姿态立方体与电机转速实时曲线
   3. 修复转速曲线显示异常问题 (采用示波器式平滑滚动时间窗，修复 autoRange 导致的数据出界)
   4. 纯 QPainter 高性能 3D 立方体引擎，与陀螺仪/加速度计互补滤波姿态实时同步，默认水平朝上
   5. 飞轮转速联动动画、坐标轴指示与鼠标自由旋转视角
+  6. 支持 WiFi(TCP) 无线连接 ESP32 (AP 热点直连默认 192.168.4.1:3333)
+  7. 修复 QComboBox 下拉弹层在系统深色模式下回落到暗色调色板的显示异常
 """
 
 import sys
 import time
 import math
 import re
+import socket
+import select
 from collections import deque
 
 import serial
@@ -42,6 +50,59 @@ import pyqtgraph as pg
 pg.setConfigOption('background', '#ffffff')
 pg.setConfigOption('foreground', '#334155')
 pg.setConfigOption('antialias', True)
+
+
+# =========================================================================
+# WiFi(TCP) 链路封装: 与 pyserial.Serial 接口语义对齐
+# 用于连接板载 ESP32-WROOM32E 的 TCP 服务器 (默认 192.168.4.1:3333),
+# 数据流与有线串口完全一致 ($TELE...# 帧 / ASCII 命令行)
+# =========================================================================
+class TcpLink:
+    """TCP 链路, 提供 is_open / in_waiting / read / write / close 接口"""
+
+    def __init__(self, host, port, timeout=0.1):
+        self._sock = socket.create_connection((host, int(port)), timeout=3.0)
+        self._sock.settimeout(timeout)
+        self._sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
+    @property
+    def is_open(self):
+        return self._sock is not None
+
+    def close(self):
+        if self._sock is not None:
+            try:
+                self._sock.close()
+            except Exception:
+                pass
+            self._sock = None
+
+    def write(self, data):
+        if self._sock is None:
+            raise OSError("TCP link closed")
+        self._sock.sendall(data)
+
+    @property
+    def in_waiting(self):
+        if self._sock is None:
+            return 0
+        try:
+            readable, _, _ = select.select([self._sock], [], [], 0)
+            if not readable:
+                return 0
+            return len(self._sock.recv(65536, socket.MSG_PEEK))
+        except Exception:
+            return 0
+
+    def read(self, n=1):
+        if self._sock is None:
+            return b""
+        try:
+            return self._sock.recv(min(int(n), 65536))
+        except socket.timeout:
+            return b""
+        except Exception:
+            return b""
 
 
 # =========================================================================
@@ -140,6 +201,19 @@ class SerialWorker(QThread):
             self.sig_connected.emit(port_name, baud_rate)
         except Exception as e:
             self.sig_error.emit(f"无法打开串口 {port_name}: {str(e)}")
+
+    def connect_wifi(self, host, port=3333, baud_rate=115200):
+        """请求连接 ESP32 WiFi(TCP) 无线链路 (字节流协议与串口一致)"""
+        try:
+            if self.ser and self.ser.is_open:
+                self.ser.close()
+            self.ser = TcpLink(host, port)
+            self.is_running = True
+            if not self.isRunning():
+                self.start()
+            self.sig_connected.emit(f"{host}:{port}(WiFi)", baud_rate)
+        except Exception as e:
+            self.sig_error.emit(f"无法连接 WiFi 设备 {host}:{port}: {str(e)}")
 
     def disconnect_port(self):
         """请求断开串口"""
@@ -1441,6 +1515,20 @@ class MainWindow(QMainWindow):
             QComboBox:hover {
                 border-color: #94a3b8;
             }
+            /* 修复下拉弹层(QAbstractItemView)未设置样式时回落到全局暗色 QPalette,
+             * 导致系统深色模式下下拉列表背景暗色、文字不可读的问题 */
+            QComboBox QAbstractItemView {
+                background-color: #ffffff;
+                color: #0f172a;
+                border: 1px solid #cbd5e1;
+                selection-background-color: #dbeafe;
+                selection-color: #0f172a;
+                outline: none;
+            }
+            QComboBox QAbstractItemView::item {
+                min-height: 22px;
+                padding: 2px 4px;
+            }
             QDoubleSpinBox {
                 background-color: #ffffff;
                 border: 1px solid #cbd5e1;
@@ -1541,6 +1629,23 @@ class MainWindow(QMainWindow):
         lbl_brand.setStyleSheet("font-size: 14px; font-weight: bold; color: #0f172a; margin-right: 6px;")
         layout.addWidget(lbl_brand)
 
+        # 连接链路选择: 有线串口 或 WiFi(TCP) 无线 (ESP32)
+        layout.addWidget(QLabel("链路:"))
+        self.combo_link = QComboBox()
+        self.combo_link.addItem("串口", "serial")
+        self.combo_link.addItem("WiFi(TCP)", "wifi")
+        self.combo_link.setMinimumWidth(90)
+        self.combo_link.currentIndexChanged.connect(self._on_link_mode_changed)
+        layout.addWidget(self.combo_link)
+
+        # WiFi 模式下的 ESP32 地址输入 (AP 热点直连默认 192.168.4.1)
+        self.edit_wifi_ip = QLineEdit("192.168.4.1")
+        self.edit_wifi_ip.setMaximumWidth(130)
+        self.edit_wifi_ip.setToolTip(
+            "ESP32 的 IP 地址\nAP 热点模式默认: 192.168.4.1\nSTA 模式: 查看 ESP32 USB 串口启动日志")
+        self.edit_wifi_ip.setVisible(False)
+        layout.addWidget(self.edit_wifi_ip)
+
         # 串口选择
         layout.addWidget(QLabel("串口:"))
         self.combo_ports = QComboBox()
@@ -1551,6 +1656,7 @@ class MainWindow(QMainWindow):
         btn_refresh.setFixedHeight(26)
         btn_refresh.clicked.connect(self.refresh_ports)
         layout.addWidget(btn_refresh)
+        self.btn_refresh = btn_refresh   # 保存引用供链路模式切换可见性使用
 
         # 波特率选择
         layout.addWidget(QLabel("波特率:"))
@@ -2244,18 +2350,37 @@ class MainWindow(QMainWindow):
             self.combo_ports.setCurrentIndex(0)
         self.combo_ports.blockSignals(False)
 
+    def _on_link_mode_changed(self):
+        """链路模式切换: 串口 <-> WiFi(TCP), 切换对应输入控件的可见性"""
+        is_wifi = (self.combo_link.currentData() == "wifi")
+        self.edit_wifi_ip.setVisible(is_wifi)
+        self.combo_ports.setVisible(not is_wifi)
+        self.btn_refresh.setVisible(not is_wifi)
+        self.combo_baud.setVisible(not is_wifi)
+        # 未连接时同步更新连接按钮文案
+        if not (self.worker.ser and self.worker.ser.is_open):
+            self.btn_connect.setText("连接 WiFi" if is_wifi else "打开串口")
+
     def toggle_connection(self):
         if self.worker.ser and self.worker.ser.is_open:
             self.worker.disconnect_port()
         else:
-            port = self.combo_ports.currentData()
-            if not port:
-                port = self.combo_ports.currentText().split()[0]
-            if not port:
-                QMessageBox.warning(self, "提示", "未检测到可用串口！")
-                return
-            baud = int(self.combo_baud.currentText())
-            self.worker.connect_port(port, baud)
+            if self.combo_link.currentData() == "wifi":
+                host = self.edit_wifi_ip.text().strip()
+                if not host:
+                    QMessageBox.warning(self, "提示", "请输入 ESP32 的 IP 地址！")
+                    return
+                baud = int(self.combo_baud.currentText())
+                self.worker.connect_wifi(host, 3333, baud)
+            else:
+                port = self.combo_ports.currentData()
+                if not port:
+                    port = self.combo_ports.currentText().split()[0]
+                if not port:
+                    QMessageBox.warning(self, "提示", "未检测到可用串口！")
+                    return
+                baud = int(self.combo_baud.currentText())
+                self.worker.connect_port(port, baud)
 
     def on_serial_connected(self, port, baud):
         self.btn_connect.setText("关闭串口")

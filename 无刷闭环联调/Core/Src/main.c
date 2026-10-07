@@ -115,6 +115,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_USART1_UART_Init();   /* 板载 ESP32-WROOM32E 无线上位机链路 (PA9/PA10) */
   MX_I2C2_Init();
   MX_I2C1_Init();
   MX_I2C3_Init();
@@ -145,8 +146,9 @@ int main(void)
 				controller = Type_velocity_openloop; // 默认开环安全待机，避免未标定零位时闭环自激扰动
 			pole_pairs = 7;                 // 极对数
 
-				SimpleFOC_PID_Init();           // 初始化速度闭环 PID 与低通滤波器
-				reset_closed_loop_state(-1);    // 初始化闭环同步电角度与控制时间戳
+					SimpleFOC_PID_Init();           // 初始化速度闭环 PID 与低通滤波器
+					LQR_Balance_Init();             // 初始化 Cubli 反作用飞轮 LQR 平衡控制器
+					reset_closed_loop_state(-1);    // 初始化闭环同步电角度与控制时间戳
 				set_motor_enable(0, 0);         // 上电默认失能三路电机，等待上位机自检指令解锁
 			printf("3 motors initialized and IDLE (Safe Lock Mode).\r\n");
 
@@ -180,11 +182,20 @@ int main(void)
 		}
 	}
 
-		/* MT6701 磁编码器上电自检 */
-		printf("Init MT6701 encoders on I2C1 (PB6/PB7), I2C2 (PF1/PF0), I2C3 (PA8/PC9)...\r\n");
-		hall_online[0] = (i2c_mt6701_1_get_angle(&hall_raw[0], &hall_angle_deg[0]) == 0);
-		hall_online[1] = (i2c_mt6701_2_get_angle(&hall_raw[1], &hall_angle_deg[1]) == 0);
-		hall_online[2] = (i2c_mt6701_3_get_angle(&hall_raw[2], &hall_angle_deg[2]) == 0);
+		/* MT6701 磁编码器上电自检
+		 * 编码器读取方式由编译期宏 ENC_USE_HW_QUAD 决定 (enc_quad.h):
+		 *   0 = 三路 I2C 绝对式读取 (原方法, 默认)
+		 *   1 = TIM2/TIM5/TIM8 硬件正交解码 (新方法, ABZ 增量输出, 需先初始化定时器)
+		 */
+#if ENC_USE_HW_QUAD
+		ENC_Quad_Init();
+		printf("Encoder mode: HW Quadrature (TIM2=M1 PA5/PB3, TIM5=M2 PA0/PA1, TIM8=M3 PC6/PC7), %d counts/rev\r\n", ENC_QUAD_COUNTS_PER_REV);
+#else
+		printf("Encoder mode: I2C absolute (I2C1 PB6/PB7, I2C2 PF1/PF0, I2C3 PA8/PC9)\r\n");
+#endif
+		hall_online[0] = (ENC_GetAngle(0, &hall_raw[0], &hall_angle_deg[0]) == 0);
+		hall_online[1] = (ENC_GetAngle(1, &hall_raw[1], &hall_angle_deg[1]) == 0);
+		hall_online[2] = (ENC_GetAngle(2, &hall_raw[2], &hall_angle_deg[2]) == 0);
 		printf("MT6701: M1=%s(%.1f deg), M2=%s(%.1f deg), M3=%s(%.1f deg)\r\n",
 			hall_online[0] ? "ONLINE" : "OFFLINE", hall_angle_deg[0],
 			hall_online[1] ? "ONLINE" : "OFFLINE", hall_angle_deg[1],
@@ -208,48 +219,68 @@ int main(void)
 		target_m3 = target;
   /* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-	while(1)
-	{
-			/* 40ms (25Hz) 周期任务：读取陀螺仪、遥测上报与工作指示 (降低串口阻塞比重，保障FOC高频连续换向) */
-			if(time1_cntr >= 40)
-			{
-				time1_cntr = 0;
-				tele_counter++;
+	  /* Infinite loop */
+	  /* USER CODE BEGIN WHILE */
+		static uint32_t last_bal_tick = 0;
 
-				/* 读取六轴 IMU 数据 */
-				if (imu_online)
+		while(1)
+		{
+				/* 5ms (200Hz) 高频平衡与姿态控制任务: IMU数据采集、卡尔曼滤波姿态解算与LQR控制循环 */
+				uint32_t cur_tick = HAL_GetTick();
+				if((cur_tick - last_bal_tick) >= 5)
 				{
-					if (imu_active_type == IMU_TYPE_LSM6DSR)
+					float dt_bal = (float)(cur_tick - last_bal_tick) * 0.001f;
+					last_bal_tick = cur_tick;
+
+					/* 读取六轴 IMU 数据 */
+					if (imu_online)
 					{
-						LSM6DSR_Get_Data(imu_accel, imu_gyro);
+						if (imu_active_type == IMU_TYPE_LSM6DSR)
+						{
+							LSM6DSR_Get_Data(imu_accel, imu_gyro);
+						}
+						else if (imu_active_type == IMU_TYPE_MPU6050)
+						{
+							MPU6050_Get_Data(imu_accel, imu_gyro);
+						}
+
+						/* 卡尔曼滤波更新机体倾角与角速度 */
+						LQR_Attitude_Update(imu_accel, imu_gyro, dt_bal);
 					}
-					else if (imu_active_type == IMU_TYPE_MPU6050)
+
+					/* 执行 LQR 状态反馈平衡控制计算 (仅在平衡激活或校准时接管电机) */
+					if(cubli_bal.state != BAL_STATE_DISABLED)
 					{
-						MPU6050_Get_Data(imu_accel, imu_gyro);
+						LQR_Balance_Loop();
 					}
 				}
 
-				/* 依据动态映射表获取每个电机对应的编码器实时机械角度 (直接读取FOC核心更新的角度，避免总线重复阻塞) */
-				float m_angle_deg[3];
-				m_angle_deg[0] = angle_prev[0] * 180.0f / _PI;
-				m_angle_deg[1] = angle_prev[1] * 180.0f / _PI;
-				m_angle_deg[2] = angle_prev[2] * 180.0f / _PI;
-
-				if(telemetry_enabled)
+				/* 40ms (25Hz) 周期任务：遥测上报与工作指示 (降低串口阻塞比重，保障FOC高频连续换向) */
+				if(time1_cntr >= 40)
 				{
-					/* 扩展标准化遥测格式 (包含三电机目标速度、相电压、使能状态、电角度、六轴陀螺仪加速度、通道映射后MT6701角度H1/H2/H3，以及实测滤波转速S1/S2/S3) */
-					printf("$TELE,M1:%.2f,M2:%.2f,M3:%.2f,Vq:%.2f,EN:%d%d%d,A1:%.2f,A2:%.2f,A3:%.2f,Gx:%.1f,Gy:%.1f,Gz:%.1f,Ax:%.2f,Ay:%.2f,Az:%.2f,H1:%.1f,H2:%.1f,H3:%.1f,S1:%.2f,S2:%.2f,S3:%.2f#\r\n",
-						target_m1, target_m2, target_m3,
-						voltage_limit,
-						m1_enabled, m2_enabled, m3_enabled,
-						shaft_angle[0], shaft_angle[1], shaft_angle[2],
-						imu_gyro[0], imu_gyro[1], imu_gyro[2],
-						imu_accel[0], imu_accel[1], imu_accel[2],
-						m_angle_deg[0], m_angle_deg[1], m_angle_deg[2],
-						shaft_velocity[0], shaft_velocity[1], shaft_velocity[2]);
-				}
+					time1_cntr = 0;
+					tele_counter++;
+
+					/* 依据动态映射表获取每个电机对应的编码器实时机械角度 (直接读取FOC核心更新的角度，避免总线重复阻塞) */
+					float m_angle_deg[3];
+					m_angle_deg[0] = angle_prev[0] * 180.0f / _PI;
+					m_angle_deg[1] = angle_prev[1] * 180.0f / _PI;
+					m_angle_deg[2] = angle_prev[2] * 180.0f / _PI;
+
+						if(telemetry_enabled)
+						{
+							/* 扩展标准化遥测格式 (包含三电机目标速度、相电压、使能状态、电角度、六轴陀螺仪加速度、通道映射后MT6701角度H1/H2/H3、实测滤波转速S1/S2/S3、解算Pitch/Roll姿态角及平衡状态Bal) */
+							printf("$TELE,M1:%.2f,M2:%.2f,M3:%.2f,Vq:%.2f,EN:%d%d%d,A1:%.2f,A2:%.2f,A3:%.2f,Gx:%.1f,Gy:%.1f,Gz:%.1f,Ax:%.2f,Ay:%.2f,Az:%.2f,H1:%.1f,H2:%.1f,H3:%.1f,S1:%.2f,S2:%.2f,S3:%.2f,Pit:%.2f,Rol:%.2f,Bal:%d#\r\n",
+								target_m1, target_m2, target_m3,
+								voltage_limit,
+								m1_enabled, m2_enabled, m3_enabled,
+								shaft_angle[0], shaft_angle[1], shaft_angle[2],
+								imu_gyro[0], imu_gyro[1], imu_gyro[2],
+								imu_accel[0], imu_accel[1], imu_accel[2],
+								m_angle_deg[0], m_angle_deg[1], m_angle_deg[2],
+								shaft_velocity[0], shaft_velocity[1], shaft_velocity[2],
+								cubli_bal.attitude.pitch_deg, cubli_bal.attitude.roll_deg, cubli_bal.state);
+						}
 
 				/* 200ms (5次) 翻转LED指示灯: PG0对应M1, PG1对应M2, PG2对应M3 */
 				if((tele_counter % 5) == 0)
@@ -282,10 +313,13 @@ int main(void)
 				}
 			}
 
-		/* 无刷电机三轴驱动更新 (若使能则输出FOC开环矢量PWM，若失能则关闭PWM输出) */
-		if(m1_enabled) move(target_m1, 0); else { TIM1->CCR1 = 0; TIM1->CCR2 = 0; TIM1->CCR3 = 0; }
-		if(m2_enabled) move(target_m2, 1); else { TIM3->CCR1 = 0; TIM3->CCR2 = 0; TIM3->CCR3 = 0; }
-		if(m3_enabled) move(target_m3, 2); else { TIM4->CCR1 = 0; TIM4->CCR2 = 0; TIM4->CCR3 = 0; }
+			/* 无刷电机驱动输出: 平衡失能状态下执行常规速度控制; 平衡开启时由 LQR_Balance_Loop 接管相电压 */
+			if(cubli_bal.state == BAL_STATE_DISABLED)
+			{
+				if(m1_enabled) move(target_m1, 0); else { TIM1->CCR1 = 0; TIM1->CCR2 = 0; TIM1->CCR3 = 0; }
+				if(m2_enabled) move(target_m2, 1); else { TIM3->CCR1 = 0; TIM3->CCR2 = 0; TIM3->CCR3 = 0; }
+				if(m3_enabled) move(target_m3, 2); else { TIM4->CCR1 = 0; TIM4->CCR2 = 0; TIM4->CCR3 = 0; }
+			}
 
 		/* 串口命令解析处理 */
 		commander_run();
@@ -420,16 +454,17 @@ void commander_run(void)
 						printf("ERR MODE format (Usage: MODE 1 for Closed-loop, MODE 0 for Open-loop)\r\n");
 					}
 				}
-			/* 4. 紧急全停: STOP 或 S */
-			else if(strncmp(cmd, "STOP", 4) == 0 || strncmp(cmd, "stop", 4) == 0 ||
-			        ((cmd[0] == 'S' || cmd[0] == 's') && (cmd[1] == '\0' || cmd[1] == ' ' || cmd[1] == '\t')))
-			{
-				target = 0.0f;
-				target_m1 = 0.0f;
-				target_m2 = 0.0f;
-				target_m3 = 0.0f;
-				printf("OK STOP\r\n");
-			}
+				/* 4. 紧急全停: STOP 或 S */
+				else if(strncmp(cmd, "STOP", 4) == 0 || strncmp(cmd, "stop", 4) == 0 ||
+				        ((cmd[0] == 'S' || cmd[0] == 's') && (cmd[1] == '\0' || cmd[1] == ' ' || cmd[1] == '\t')))
+				{
+					target = 0.0f;
+					target_m1 = 0.0f;
+					target_m2 = 0.0f;
+					target_m3 = 0.0f;
+					LQR_Balance_Enable(false);
+					printf("OK STOP\r\n");
+				}
 			/* 5. 传感器切换: SENSOR <1/2> */
 			else if(strncmp(cmd, "SENSOR", 6) == 0 || strncmp(cmd, "sensor", 6) == 0)
 			{
@@ -446,15 +481,15 @@ void commander_run(void)
 					printf("ERR SENSOR format (Usage: SENSOR 1 for LSM6DSR, SENSOR 2 for MPU6050)\r\n");
 				}
 			}
-				/* 6. 霍尔/磁编码角度查询: HALL 或 ENC */
+					/* 6. 霍尔/磁编码角度查询: HALL 或 ENC */
 					else if(strncmp(cmd, "HALL", 4) == 0 || strncmp(cmd, "hall", 4) == 0 ||
 					        strncmp(cmd, "ENC", 3) == 0 || strncmp(cmd, "enc", 3) == 0)
 					{
 							int16_t r[3];
 							float d[3];
-							uint8_t o1 = (i2c_mt6701_1_get_angle(&r[0], &d[0]) == 0);
-							uint8_t o2 = (i2c_mt6701_2_get_angle(&r[1], &d[1]) == 0);
-							uint8_t o3 = (i2c_mt6701_3_get_angle(&r[2], &d[2]) == 0);
+							uint8_t o1 = (ENC_GetAngle(0, &r[0], &d[0]) == 0);
+							uint8_t o2 = (ENC_GetAngle(1, &r[1], &d[1]) == 0);
+							uint8_t o3 = (ENC_GetAngle(2, &r[2], &d[2]) == 0);
 							printf("--- Motor Hall/Encoder Sensors (MT6701) ---\r\n"
 							       "M1 (I2C1): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d\r\n"
 							       "M2 (I2C2): Raw=%d (0x%04X), Angle=%.2f deg, Spd=%.2f rad/s, Online=%d\r\n"
@@ -545,12 +580,129 @@ void commander_run(void)
 						}
 						printf("OK ALL PID: P=%.3f, I=%.3f, D=%.4f\r\n", p_val, i_val, d_val);
 					}
-					else
-					{
-						printf("ERR PID format (Usage: PID <P> <I> [D])\r\n");
+						else
+						{
+							printf("ERR PID format (Usage: PID <P> <I> [D])\r\n");
+						}
 					}
 				}
-			}
+				/* 9.1 平衡控制使能开关: BAL <0/1> */
+				else if(strncmp(cmd, "BAL ", 4) == 0 || strncmp(cmd, "bal ", 4) == 0)
+				{
+					int en = atoi(cmd + 4);
+					if(en == 1)
+					{
+						/* 确保电机驱动硬件使能并切入闭环 */
+						set_motor_enable(0, 1);
+						LQR_Balance_Enable(true);
+						printf("OK BAL:1 (Balance Enabled, Mode=%d)\r\n", cubli_bal.mode);
+					}
+					else
+					{
+						LQR_Balance_Enable(false);
+						printf("OK BAL:0 (Balance Disabled)\r\n");
+					}
+				}
+				/* 9.2 平衡模式切换: BMODE <1/2/3/4> (1=M1边沿, 2=M2边沿, 3=M3边沿, 4=顶点3D) */
+				else if(strncmp(cmd, "BMODE", 5) == 0 || strncmp(cmd, "bmode", 5) == 0 ||
+				        strncmp(cmd, "BAL_MODE", 8) == 0 || strncmp(cmd, "bal_mode", 8) == 0)
+				{
+					char *p = cmd + 5;
+					if(strncmp(cmd, "BAL_MODE", 8) == 0 || strncmp(cmd, "bal_mode", 8) == 0) p = cmd + 8;
+					while(*p == ' ' || *p == '\t') p++;
+					int bm = atoi(p);
+					if(bm >= 1 && bm <= 4)
+					{
+						LQR_Balance_SetMode((BalanceMode_e)(bm - 1));
+						printf("OK BMODE:%d\r\n", bm);
+					}
+					else
+					{
+						printf("ERR BMODE format (Usage: BMODE 1~3 for Edge M1~M3, 4 for 3D Corner)\r\n");
+					}
+				}
+				/* 9.3 LQR 参数设定: LQR <Kp> <Kd> <Kw> [Ki] 或 LQR1/2/3 <Kp> <Kd> <Kw> [Ki] */
+				else if(strncmp(cmd, "LQR", 3) == 0 || strncmp(cmd, "lqr", 3) == 0)
+				{
+					float kp = 0.0f, kd = 0.0f, kw = 0.0f, ki = 0.0f;
+					int motor_idx = (int)cubli_bal.mode; // 默认对当前平衡电机调整
+					char *p_str = cmd + 3;
+
+					if(cmd[3] == '1' || cmd[3] == '2' || cmd[3] == '3')
+					{
+						motor_idx = cmd[3] - '1';
+						p_str = cmd + 4;
+					}
+
+					int n = sscanf(p_str, "%f %f %f %f", &kp, &kd, &kw, &ki);
+					if(n >= 3)
+					{
+						LQR_SetGains((uint8_t)motor_idx, kp, kd, kw, (n == 4) ? ki : cubli_bal.gains[motor_idx].K_i);
+						printf("OK LQR%d: Kp=%.2f, Kd=%.2f, Kw=%.4f, Ki=%.4f\r\n",
+						       motor_idx + 1,
+						       cubli_bal.gains[motor_idx].K_theta,
+						       cubli_bal.gains[motor_idx].K_dtheta,
+						       cubli_bal.gains[motor_idx].K_w,
+						       cubli_bal.gains[motor_idx].K_i);
+					}
+					else
+					{
+						printf("ERR LQR format (Usage: LQR[1/2/3] <Kp> <Kd> <Kw> [Ki])\r\n");
+					}
+				}
+				/* 9.4 陀螺仪静态零偏校准: CAL_IMU 或 IMU_CAL */
+				else if(strncmp(cmd, "CAL_IMU", 7) == 0 || strncmp(cmd, "cal_imu", 7) == 0 ||
+				        strncmp(cmd, "IMU_CAL", 7) == 0 || strncmp(cmd, "imu_cal", 7) == 0)
+				{
+					LQR_Balance_StartCalib();
+					printf("OK CAL_IMU (Keep Cubli still for 1 second)\r\n");
+				}
+				/* 9.5 机械零位偏置微调: ZERO <deg> 或 ZERO1/2/3 <deg> */
+				else if(strncmp(cmd, "ZERO", 4) == 0 || strncmp(cmd, "zero", 4) == 0)
+				{
+					int motor_idx = (int)cubli_bal.mode;
+					char *p_str = cmd + 4;
+					if(cmd[4] == '1' || cmd[4] == '2' || cmd[4] == '3')
+					{
+						motor_idx = cmd[4] - '1';
+						p_str = cmd + 5;
+					}
+					float z_deg = (float)atof(p_str);
+					LQR_SetZeroAngle((uint8_t)motor_idx, z_deg);
+					printf("OK ZERO%d: %.2f deg\r\n", motor_idx + 1, z_deg);
+				}
+				/* 9.6 姿态解算与平衡状态详情: ATT 或 BAL_STAT */
+				else if(strncmp(cmd, "ATT", 3) == 0 || strncmp(cmd, "att", 3) == 0 ||
+				        strncmp(cmd, "BAL_STAT", 8) == 0 || strncmp(cmd, "bal_stat", 8) == 0)
+				{
+					const char *s_str = "DISABLED";
+					if(cubli_bal.state == BAL_STATE_CALIBRATING) s_str = "CALIBRATING";
+					else if(cubli_bal.state == BAL_STATE_STANDBY) s_str = "STANDBY";
+					else if(cubli_bal.state == BAL_STATE_BALANCING) s_str = "BALANCING";
+					else if(cubli_bal.state == BAL_STATE_FALL_PROTECT) s_str = "FALL_PROTECT";
+
+					printf("--- Cubli LQR Balance & Attitude Status ---\r\n"
+					       "State: %s (code=%d), Mode=%d (%s)\r\n"
+					       "Angles: Pitch=%.2f deg (%.3f rad), Roll=%.2f deg (%.3f rad)\r\n"
+					       "Rates (rad/s): Gx=%.3f, Gy=%.3f, Gz=%.3f\r\n"
+					       "Zero-bias (rad/s): X=%.4f, Y=%.4f, Z=%.4f (calib=%d)\r\n"
+					       "LQR U (V): M1=%.2f, M2=%.2f, M3=%.2f\r\n"
+					       "Gains M%d: Kp=%.2f, Kd=%.2f, Kw=%.4f, Ki=%.4f, Zero=%.2f deg\r\n",
+					       s_str, cubli_bal.state, cubli_bal.mode + 1,
+					       cubli_bal.mode == BAL_MODE_CORNER ? "3D_CORNER" : "1D_EDGE",
+					       cubli_bal.attitude.pitch_deg, cubli_bal.attitude.pitch,
+					       cubli_bal.attitude.roll_deg, cubli_bal.attitude.roll,
+					       cubli_bal.attitude.gyro_rad[0], cubli_bal.attitude.gyro_rad[1], cubli_bal.attitude.gyro_rad[2],
+					       cubli_bal.attitude.gyro_bias[0], cubli_bal.attitude.gyro_bias[1], cubli_bal.attitude.gyro_bias[2],
+					       cubli_bal.attitude.is_calibrated,
+					       cubli_bal.control_u[0], cubli_bal.control_u[1], cubli_bal.control_u[2],
+					       cubli_bal.mode + 1,
+					       cubli_bal.gains[cubli_bal.mode].K_theta,
+					       cubli_bal.gains[cubli_bal.mode].K_dtheta,
+					       cubli_bal.gains[cubli_bal.mode].K_w,
+					       cubli_bal.gains[cubli_bal.mode].K_i,
+					       cubli_bal.gains[cubli_bal.mode].theta_0 * RAD_TO_DEG);
+				}
 			/* 10. 驱动使能控制: EN <e1> <e2> <e3> 或 EN1 <e>, EN2 <e>, EN3 <e> */
 			else if((strncmp(cmd, "EN", 2) == 0 || strncmp(cmd, "en", 2) == 0) &&
 			        (cmd[2] == ' ' || cmd[2] == '\t' || cmd[2] == '1' || cmd[2] == '2' || cmd[2] == '3'))
@@ -690,33 +842,42 @@ void commander_run(void)
 				target_m3 = (float)atof(cmd + 1);
 				printf("OK M3:%.2f\r\n", target_m3);
 			}
-			/* 16. 帮助信息与当前状态: H / ? / HELP */
-			else if(cmd[0] == 'H' || cmd[0] == 'h' || cmd[0] == '?' ||
-			        strncmp(cmd, "HELP", 4) == 0 || strncmp(cmd, "help", 4) == 0)
-			{
-				printf("--- Cubli 3-Motor Controller (Closed-loop Speed) ---\r\n"
-				       "M <v1> <v2> <v3>  Set 3 motor speeds (rad/s)\r\n"
-				       "M1/M2/M3 <val>   Set M1/M2/M3 speed\r\n"
-				       "STOP             Emergency stop (all 0)\r\n"
-				       "EN <e1> <e2> <e3> Enable/disable DRV8313 (1/0)\r\n"
-				       "MODE <0/1>       Switch Open-loop(0) / Closed-loop(1) [curr=%s]\r\n"
-				       "ALIGN / CALIB    Re-align electrical zero angle\r\n"
-				       "TEST / CHECK     Run 3-axis open-loop motor & encoder test\r\n"
-				       "PID <P> <I> [D]  Set velocity loop PID gains\r\n"
-				       "U<val>           Set voltage limit (0.1~6.0V) [curr=%.2f]\r\n"
-				       "L<val>           Set velocity limit [curr=%.2f]\r\n"
-				       "TELE <0/1>       Toggle telemetry stream [curr=%d]\r\n"
-				       "IMU              Query 6-axis gyroscope and accelerometer\r\n"
-				       "HALL / ENC       Query 3 motor Hall/encoder angles (MT6701)\r\n"
-				       "SENSOR <1/2>     Switch sensor (1:LSM6DSR, 2:MPU6050) [curr=%d]\r\n"
-				       "State: Mode=%s M1=%.2f(en=%d,act=%.2f) M2=%.2f(en=%d,act=%.2f) M3=%.2f(en=%d,act=%.2f)\r\n",
-				       controller == Type_velocity ? "CLOSED_LOOP" : "OPEN_LOOP",
-				       voltage_limit, velocity_limit, telemetry_enabled, imu_active_type,
-				       controller == Type_velocity ? "CLOSED_LOOP" : "OPEN_LOOP",
-				       target_m1, m1_enabled, shaft_velocity[0],
-				       target_m2, m2_enabled, shaft_velocity[1],
-				       target_m3, m3_enabled, shaft_velocity[2]);
-			}
+				/* 16. 帮助信息与当前状态: H / ? / HELP */
+				else if(cmd[0] == 'H' || cmd[0] == 'h' || cmd[0] == '?' ||
+				        strncmp(cmd, "HELP", 4) == 0 || strncmp(cmd, "help", 4) == 0)
+				{
+					printf("--- Cubli 3-Motor Controller & LQR Balance Engine ---\r\n"
+					       "M <v1> <v2> <v3>  Set 3 motor speeds (rad/s)\r\n"
+					       "M1/M2/M3 <val>   Set M1/M2/M3 speed\r\n"
+					       "STOP             Emergency stop (all 0 & balance off)\r\n"
+					       "EN <e1> <e2> <e3> Enable/disable DRV8313 (1/0)\r\n"
+					       "MODE <0/1>       Switch Open-loop(0) / Closed-loop(1) [curr=%s]\r\n"
+					       "ALIGN / CALIB    Re-align electrical zero angle\r\n"
+					       "TEST / CHECK     Run 3-axis open-loop motor & encoder test\r\n"
+					       "PID <P> <I> [D]  Set velocity loop PID gains\r\n"
+					       "--- LQR Balance Commands ---\r\n"
+					       "BAL <0/1>        Toggle LQR balance control [state=%d]\r\n"
+					       "BMODE <1~4>      Balance Mode (1:Edge M1, 2:Edge M2, 3:Edge M3, 4:Corner 3D) [curr=%d]\r\n"
+					       "LQR[1/2/3] <P> <D> <W> [I] Set LQR gains (P=theta, D=dtheta, W=wheel, I=int)\r\n"
+					       "CAL_IMU          Calibrate IMU gyro zero-bias (keep still for 1s)\r\n"
+					       "ZERO[1/2/3] <deg>Set balance equilibrium angle offset\r\n"
+					       "ATT / BAL_STAT   Query attitude angles & LQR controller status\r\n"
+					       "----------------------------\r\n"
+					       "U<val>           Set voltage limit (0.1~6.0V) [curr=%.2f]\r\n"
+					       "L<val>           Set velocity limit [curr=%.2f]\r\n"
+					       "TELE <0/1>       Toggle telemetry stream [curr=%d]\r\n"
+					       "IMU              Query 6-axis gyroscope and accelerometer\r\n"
+					       "HALL / ENC       Query 3 motor Hall/encoder angles (MT6701)\r\n"
+					       "SENSOR <1/2>     Switch sensor (1:LSM6DSR, 2:MPU6050) [curr=%d]\r\n"
+					       "State: Mode=%s M1=%.2f(en=%d,act=%.2f) M2=%.2f(en=%d,act=%.2f) M3=%.2f(en=%d,act=%.2f)\r\n",
+					       controller == Type_velocity ? "CLOSED_LOOP" : "OPEN_LOOP",
+					       cubli_bal.state, cubli_bal.mode + 1,
+					       voltage_limit, velocity_limit, telemetry_enabled, imu_active_type,
+					       controller == Type_velocity ? "CLOSED_LOOP" : "OPEN_LOOP",
+					       target_m1, m1_enabled, shaft_velocity[0],
+					       target_m2, m2_enabled, shaft_velocity[1],
+					       target_m3, m3_enabled, shaft_velocity[2]);
+				}
 			else
 			{
 				printf("ERR Unknown command: %s\r\n", cmd);
@@ -810,9 +971,9 @@ void Motor_Encoder_OpenLoop_SelfTest(void)
 		       m + 1, m + 1, (m == 0 ? 1 : (m == 1 ? 3 : 4)), m);
 
 		/* 1. 静态采样三路编码器初始角度 */
-		enc_ok[0] = (i2c_mt6701_1_get_angle(&r[0], &cur_d[0]) == 0);
-		enc_ok[1] = (i2c_mt6701_2_get_angle(&r[1], &cur_d[1]) == 0);
-		enc_ok[2] = (i2c_mt6701_3_get_angle(&r[2], &cur_d[2]) == 0);
+		enc_ok[0] = (ENC_GetAngle(0, &r[0], &cur_d[0]) == 0);
+		enc_ok[1] = (ENC_GetAngle(1, &r[1], &cur_d[1]) == 0);
+		enc_ok[2] = (ENC_GetAngle(2, &r[2], &cur_d[2]) == 0);
 
 		for(k = 0; k < 3; k++)
 		{
@@ -852,9 +1013,9 @@ void Motor_Encoder_OpenLoop_SelfTest(void)
 				last_sample_tick = HAL_GetTick();
 				samples_total++;
 
-				enc_ok[0] = (i2c_mt6701_1_get_angle(&r[0], &cur_d[0]) == 0);
-				enc_ok[1] = (i2c_mt6701_2_get_angle(&r[1], &cur_d[1]) == 0);
-				enc_ok[2] = (i2c_mt6701_3_get_angle(&r[2], &cur_d[2]) == 0);
+				enc_ok[0] = (ENC_GetAngle(0, &r[0], &cur_d[0]) == 0);
+				enc_ok[1] = (ENC_GetAngle(1, &r[1], &cur_d[1]) == 0);
+				enc_ok[2] = (ENC_GetAngle(2, &r[2], &cur_d[2]) == 0);
 
 				for(k = 0; k < 3; k++)
 				{
@@ -1098,9 +1259,7 @@ void Motor_Encoder_OpenLoop_SelfTest(void)
 		delay_ms(1500);
 
 		// 3. 读取初始机械角度
-		if(sens_idx == 0) i2c_mt6701_1_get_angle(&raw_init, &deg_init);
-		else if(sens_idx == 1) i2c_mt6701_2_get_angle(&raw_init, &deg_init);
-		else if(sens_idx == 2) i2c_mt6701_3_get_angle(&raw_init, &deg_init);
+		ENC_GetAngle(sens_idx, &raw_init, &deg_init);
 		printf("   Initial Mechanical Angle: %.2f deg (Raw: %d)\r\n", deg_init, raw_init);
 
 		// 4. 以极微小步进旋转整整 11 个电周期
@@ -1120,9 +1279,7 @@ void Motor_Encoder_OpenLoop_SelfTest(void)
 			{
 				int16_t r_now = 0;
 				float d_now = 0.0f;
-				if(sens_idx == 0) i2c_mt6701_1_get_angle(&r_now, &d_now);
-				else if(sens_idx == 1) i2c_mt6701_2_get_angle(&r_now, &d_now);
-				else if(sens_idx == 2) i2c_mt6701_3_get_angle(&r_now, &d_now);
+				ENC_GetAngle(sens_idx, &r_now, &d_now);
 
 				float diff = d_now - prev_deg;
 				if(diff > 180.0f) diff -= 360.0f;
@@ -1136,9 +1293,7 @@ void Motor_Encoder_OpenLoop_SelfTest(void)
 		{
 			int16_t raw_end = 0;
 			float deg_end = 0.0f;
-			if(sens_idx == 0) i2c_mt6701_1_get_angle(&raw_end, &deg_end);
-			else if(sens_idx == 1) i2c_mt6701_2_get_angle(&raw_end, &deg_end);
-			else if(sens_idx == 2) i2c_mt6701_3_get_angle(&raw_end, &deg_end);
+			ENC_GetAngle(sens_idx, &raw_end, &deg_end);
 
 			float diff = deg_end - prev_deg;
 			if(diff > 180.0f) diff -= 360.0f;

@@ -35,6 +35,8 @@
 "cubemx\spi.o"
 "cubemx\lsm6dsr.o"
 "cubemx\mpu6050.o"
+"cubemx\lqr_balance.o"
+"cubemx\enc_quad.o"
 --library_type=microlib --strict --scatter "CubeMX\CubeMX.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

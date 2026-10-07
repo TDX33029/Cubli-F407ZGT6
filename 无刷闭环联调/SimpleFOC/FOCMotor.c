@@ -97,15 +97,23 @@ void updateSensor(int motor)
 	if(motor < 0 || motor > 2) return;
 	uint8_t sens_idx = motor_sensor_map[motor];
 
-	// 1. 读取映射对应的 I2C 通道编码器
-	if(sens_idx == 0) res = i2c_mt6701_1_get_angle(&raw, &deg);
-	else if(sens_idx == 1) res = i2c_mt6701_2_get_angle(&raw, &deg);
-	else if(sens_idx == 2) res = i2c_mt6701_3_get_angle(&raw, &deg);
+	/* 1. 读取映射对应的编码器通道
+	 * 统一经由 ENC_GetAngle 抽象层: 编译期宏 ENC_USE_HW_QUAD 决定
+	 * 三路 I2C 绝对式读取 (原方法) 或 TIM2/TIM5/TIM8 硬件正交解码 (新方法)
+	 */
+	res = ENC_GetAngle(sens_idx, &raw, &deg);
 
 	if(res != 0) return; // 读取失败则沿用上次值
 
-	// 转换到单圈绝对弧度 [0, 2PI)
+	/* 转换到单圈绝对弧度 [0, 2PI)
+	 * I2C 模式: 14-bit 绝对值 (16384 counts/圈)
+	 * 正交解码模式: ABZ 每圈 ENC_QUAD_COUNTS_PER_REV 计数 (已在读取层取模)
+	 */
+#if ENC_USE_HW_QUAD
+	rad = (float)raw * _2PI / (float)ENC_QUAD_COUNTS_PER_REV;
+#else
 	rad = (float)raw * _2PI / 16384.0f;
+#endif
 
 	// 2. 初始帧采样
 	if(angle_prev_ts[motor] == 0)

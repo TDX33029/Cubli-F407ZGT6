@@ -743,6 +743,16 @@
               <FileType>1</FileType>
               <FilePath>../Hardware/mpu6050.c</FilePath>
             </File>
+            <File>
+              <FileName>lqr_balance.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Hardware/lqr_balance.c</FilePath>
+            </File>
+            <File>
+              <FileName>enc_quad.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Hardware/enc_quad.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

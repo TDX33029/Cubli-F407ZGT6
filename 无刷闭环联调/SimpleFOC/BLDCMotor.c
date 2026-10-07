@@ -39,9 +39,7 @@ uint8_t Motor_alignSensor(int motor)
 	int16_t test_raw = 0;
 	float test_deg = 0.0f;
 	uint8_t online = 0;
-	if(sens_idx == 0) online = (i2c_mt6701_1_get_angle(&test_raw, &test_deg) == 0);
-	else if(sens_idx == 1) online = (i2c_mt6701_2_get_angle(&test_raw, &test_deg) == 0);
-	else if(sens_idx == 2) online = (i2c_mt6701_3_get_angle(&test_raw, &test_deg) == 0);
+	online = (ENC_GetAngle(sens_idx, &test_raw, &test_deg) == 0);
 
 	if(!online)
 	{
@@ -231,7 +229,15 @@ void move(float new_target, int motor)
 			break;
 		}
 
-		case Type_velocity_openloop:
+			case Type_torque:
+				// 力矩控制模式 (平衡控制器相电压输出模式)
+				loopFOC(motor);
+				voltage[motor].q = _constrain(new_target, -voltage_limit, voltage_limit);
+				voltage[motor].d = 0.0f;
+				setPhaseVoltage(voltage[motor].q, voltage[motor].d, electrical_angle[motor], motor);
+				break;
+
+			case Type_velocity_openloop:
 			// 速度开环模式 (同时读取传感器，保证上位机与遥测实时监测真实机械角度)
 			updateSensor(motor);
 			shaft_velocity_sp[motor] = new_target;

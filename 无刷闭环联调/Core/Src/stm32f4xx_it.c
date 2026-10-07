@@ -58,6 +58,7 @@
 /* External variables --------------------------------------------------------*/
 extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
+extern UART_HandleTypeDef huart1;
 uint32_t time1_cntr;
 /* USER CODE END EV */
 
@@ -205,12 +206,27 @@ void SysTick_Handler(void)
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
-	USART2_IRQHandler_User();
+	USART_Link_IRQHandler();   /* 调试链路公共处理 (DEBUG_LINK_USART 决定实际作用串口) */
   /* USER CODE END USART2_IRQn 0 */
   HAL_UART_IRQHandler(&huart2);
   /* USER CODE BEGIN USART2_IRQn 1 */
 
   /* USER CODE END USART2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART1 global interrupt.
+  *        USART1 = 板载 ESP32-WROOM32E 无线上位机链路 (PA9/PA10)
+  */
+void USART1_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART1_IRQn 0 */
+	USART_Link_IRQHandler();
+  /* USER CODE END USART1_IRQn 0 */
+  HAL_UART_IRQHandler(&huart1);
+  /* USER CODE BEGIN USART1_IRQn 1 */
+
+  /* USER CODE END USART1_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

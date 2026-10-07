@@ -23,16 +23,19 @@ extern "C" {
 extern unsigned char USART_RX_BUF[USART_REC_LEN];
 extern unsigned short USART_RX_STA;
 void USART2_IRQHandler_User(void);
+void USART_Link_IRQHandler(void);
 void usart2_send_str(const char *str);
 /* USER CODE END Includes */
 
 extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
 
 void MX_USART2_UART_Init(void);
+void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 

@@ -12,6 +12,7 @@
 #include "spi.h"
 #include "lsm6dsr.h"
 #include "mpu6050.h"
+#include "enc_quad.h"
 
 /* 陀螺仪传感器选择宏 (1: LSM6DSRTR 硬件SPI2默认启用; 2: MPU-6050 备用软件I2C) */
 #define IMU_TYPE_LSM6DSR   1
@@ -22,6 +23,7 @@
 #include "FOCMotor.h"
 #include "BLDCmotor.h"
 #include "CurrentSense.h"
+#include "lqr_balance.h"
 
 /* 调试串口重定向与标准库 */
 #include <stdio.h>
