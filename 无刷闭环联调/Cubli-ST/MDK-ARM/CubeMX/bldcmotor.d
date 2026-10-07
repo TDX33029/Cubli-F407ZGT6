@@ -42,11 +42,14 @@ cubemx\bldcmotor.o: ../Hardware/timer.h
 cubemx\bldcmotor.o: ../Hardware/spi.h
 cubemx\bldcmotor.o: ../Hardware/lsm6dsr.h
 cubemx\bldcmotor.o: ../Hardware/mpu6050.h
+cubemx\bldcmotor.o: ../Hardware/enc_quad.h
 cubemx\bldcmotor.o: ../SimpleFOC/foc_utils.h
 cubemx\bldcmotor.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 cubemx\bldcmotor.o: ../SimpleFOC/FOCMotor.h
 cubemx\bldcmotor.o: ../SimpleFOC/BLDCmotor.h
 cubemx\bldcmotor.o: ../SimpleFOC/CurrentSense.h
+cubemx\bldcmotor.o: ../Hardware/lqr_balance.h
+cubemx\bldcmotor.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 cubemx\bldcmotor.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 cubemx\bldcmotor.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 cubemx\bldcmotor.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h

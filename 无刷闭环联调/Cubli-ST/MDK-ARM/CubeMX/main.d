@@ -45,9 +45,12 @@ cubemx\main.o: ../Hardware/timer.h
 cubemx\main.o: ../Hardware/spi.h
 cubemx\main.o: ../Hardware/lsm6dsr.h
 cubemx\main.o: ../Hardware/mpu6050.h
+cubemx\main.o: ../Hardware/enc_quad.h
 cubemx\main.o: ../SimpleFOC/foc_utils.h
 cubemx\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 cubemx\main.o: ../SimpleFOC/FOCMotor.h
 cubemx\main.o: ../SimpleFOC/BLDCmotor.h
 cubemx\main.o: ../SimpleFOC/CurrentSense.h
+cubemx\main.o: ../Hardware/lqr_balance.h
+cubemx\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 cubemx\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h

@@ -1,7 +1,7 @@
 Dependencies for Project 'CubeMX', Target 'CubeMX': (DO NOT MODIFY !)
 CompilerVersion: 5060960::V5.06 update 7 (build 960)::..\..\ARM\ARMCC
 F (startup_stm32f407xx.s)(0x6AB2AF33)(--cpu Cortex-M4.fp.sp -g --apcs=interwork --pd "__MICROLIB SETA 1"-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include--pd "__UVISION_VERSION SETA 542" --pd "STM32F407xx SETA 1" --pd "_RTE_ SETA 1"--list startup_stm32f407xx.lst --xref -o cubemx\startup_stm32f407xx.o --depend cubemx\startup_stm32f407xx.d)
-F (../Core/Src/main.c)(0x6AB969C6)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\main.o --omf_browse cubemx\main.crf --depend cubemx\main.d)
+F (../Core/Src/main.c)(0x6AC54900)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\main.o --omf_browse cubemx\main.crf --depend cubemx\main.d)
 I (../Core/Inc/main.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x6AB2AF33)
 I (../Core/Inc/stm32f4xx_hal_conf.h)(0x6AB2AF33)
@@ -37,21 +37,24 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
 I (../Core/Inc/i2c.h)(0x6AB69164)
 I (../Core/Inc/tim.h)(0x6AB2AF33)
-I (../Core/Inc/usart.h)(0x6AB2AF33)
+I (../Core/Inc/usart.h)(0x6AC54908)
 I (../Core/Inc/gpio.h)(0x6AB2AF33)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x60252374)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x60252374)
-I (../Core/Inc/MyProject.h)(0x6AB69164)
+I (../Core/Inc/MyProject.h)(0x6AC5490F)
 I (../Hardware/delay.h)(0x6AB69164)
 I (../Hardware/timer.h)(0x6AB69164)
 I (../Hardware/spi.h)(0x6AB2AF33)
 I (../Hardware/lsm6dsr.h)(0x6AB2AF33)
 I (../Hardware/mpu6050.h)(0x6AB2AF33)
+I (../Hardware/enc_quad.h)(0x6AC5482E)
 I (../SimpleFOC/foc_utils.h)(0x6AB2BE94)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x60252378)
 I (../SimpleFOC/FOCMotor.h)(0x6AB9695B)
 I (../SimpleFOC/BLDCmotor.h)(0x6AB69164)
 I (../SimpleFOC/CurrentSense.h)(0x6AB2AF33)
+I (../Hardware/lqr_balance.h)(0x6AC5481B)
+I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x6025237E)
 F (../Core/Src/gpio.c)(0x6AB2AF33)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\gpio.o --omf_browse cubemx\gpio.crf --depend cubemx\gpio.d)
 I (../Core/Inc/gpio.h)(0x6AB2AF33)
@@ -160,8 +163,8 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
 I (../Hardware/timer.h)(0x6AB69164)
-F (../Core/Src/usart.c)(0x6AB69164)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\usart.o --omf_browse cubemx\usart.crf --depend cubemx\usart.d)
-I (../Core/Inc/usart.h)(0x6AB2AF33)
+F (../Core/Src/usart.c)(0x6AC548F4)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\usart.o --omf_browse cubemx\usart.crf --depend cubemx\usart.d)
+I (../Core/Inc/usart.h)(0x6AC54908)
 I (../Core/Inc/main.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x6AB2AF33)
 I (../Core/Inc/stm32f4xx_hal_conf.h)(0x6AB2AF33)
@@ -196,7 +199,7 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x60252374)
-F (../Core/Src/stm32f4xx_it.c)(0x6AB2AF33)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\stm32f4xx_it.o --omf_browse cubemx\stm32f4xx_it.crf --depend cubemx\stm32f4xx_it.d)
+F (../Core/Src/stm32f4xx_it.c)(0x6AC54900)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\stm32f4xx_it.o --omf_browse cubemx\stm32f4xx_it.crf --depend cubemx\stm32f4xx_it.d)
 I (../Core/Inc/main.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x6AB2AF33)
 I (../Core/Inc/stm32f4xx_hal_conf.h)(0x6AB2AF33)
@@ -231,7 +234,7 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
 I (../Core/Inc/stm32f4xx_it.h)(0x6AB2AF33)
-I (../Core/Inc/usart.h)(0x6AB2AF33)
+I (../Core/Inc/usart.h)(0x6AC54908)
 F (../Core/Src/stm32f4xx_hal_msp.c)(0x6AB2AF33)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\stm32f4xx_hal_msp.o --omf_browse cubemx\stm32f4xx_hal_msp.crf --depend cubemx\stm32f4xx_hal_msp.d)
 I (../Core/Inc/main.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x6AB2AF33)
@@ -894,7 +897,7 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
 F (../SimpleFOC/foc_utils.c)(0x6AB69164)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\foc_utils.o --omf_browse cubemx\foc_utils.crf --depend cubemx\foc_utils.d)
-I (../Core/Inc/MyProject.h)(0x6AB69164)
+I (../Core/Inc/MyProject.h)(0x6AC5490F)
 I (../Core/Inc/main.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x6AB2AF33)
 I (../Core/Inc/stm32f4xx_hal_conf.h)(0x6AB2AF33)
@@ -929,23 +932,26 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
 I (../Core/Inc/gpio.h)(0x6AB2AF33)
-I (../Core/Inc/usart.h)(0x6AB2AF33)
+I (../Core/Inc/usart.h)(0x6AC54908)
 I (../Core/Inc/i2c.h)(0x6AB69164)
 I (../Hardware/delay.h)(0x6AB69164)
 I (../Hardware/timer.h)(0x6AB69164)
 I (../Hardware/spi.h)(0x6AB2AF33)
 I (../Hardware/lsm6dsr.h)(0x6AB2AF33)
 I (../Hardware/mpu6050.h)(0x6AB2AF33)
+I (../Hardware/enc_quad.h)(0x6AC5482E)
 I (../SimpleFOC/foc_utils.h)(0x6AB2BE94)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x60252378)
 I (../SimpleFOC/FOCMotor.h)(0x6AB9695B)
 I (../SimpleFOC/BLDCmotor.h)(0x6AB69164)
 I (../SimpleFOC/CurrentSense.h)(0x6AB2AF33)
+I (../Hardware/lqr_balance.h)(0x6AC5481B)
+I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x60252374)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x6025237E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x60252374)
-F (../SimpleFOC/FOCMotor.c)(0x6AB96975)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\focmotor.o --omf_browse cubemx\focmotor.crf --depend cubemx\focmotor.d)
-I (../Core/Inc/MyProject.h)(0x6AB69164)
+F (../SimpleFOC/FOCMotor.c)(0x6AC54862)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\focmotor.o --omf_browse cubemx\focmotor.crf --depend cubemx\focmotor.d)
+I (../Core/Inc/MyProject.h)(0x6AC5490F)
 I (../Core/Inc/main.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x6AB2AF33)
 I (../Core/Inc/stm32f4xx_hal_conf.h)(0x6AB2AF33)
@@ -980,23 +986,26 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
 I (../Core/Inc/gpio.h)(0x6AB2AF33)
-I (../Core/Inc/usart.h)(0x6AB2AF33)
+I (../Core/Inc/usart.h)(0x6AC54908)
 I (../Core/Inc/i2c.h)(0x6AB69164)
 I (../Hardware/delay.h)(0x6AB69164)
 I (../Hardware/timer.h)(0x6AB69164)
 I (../Hardware/spi.h)(0x6AB2AF33)
 I (../Hardware/lsm6dsr.h)(0x6AB2AF33)
 I (../Hardware/mpu6050.h)(0x6AB2AF33)
+I (../Hardware/enc_quad.h)(0x6AC5482E)
 I (../SimpleFOC/foc_utils.h)(0x6AB2BE94)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x60252378)
 I (../SimpleFOC/FOCMotor.h)(0x6AB9695B)
 I (../SimpleFOC/BLDCmotor.h)(0x6AB69164)
 I (../SimpleFOC/CurrentSense.h)(0x6AB2AF33)
+I (../Hardware/lqr_balance.h)(0x6AC5481B)
+I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x60252374)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x6025237E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x60252374)
-F (../SimpleFOC/BLDCMotor.c)(0x6AB969E8)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\bldcmotor.o --omf_browse cubemx\bldcmotor.crf --depend cubemx\bldcmotor.d)
-I (../Core/Inc/MyProject.h)(0x6AB69164)
+F (../SimpleFOC/BLDCMotor.c)(0x6AC54869)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\bldcmotor.o --omf_browse cubemx\bldcmotor.crf --depend cubemx\bldcmotor.d)
+I (../Core/Inc/MyProject.h)(0x6AC5490F)
 I (../Core/Inc/main.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x6AB2AF33)
 I (../Core/Inc/stm32f4xx_hal_conf.h)(0x6AB2AF33)
@@ -1031,23 +1040,26 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
 I (../Core/Inc/gpio.h)(0x6AB2AF33)
-I (../Core/Inc/usart.h)(0x6AB2AF33)
+I (../Core/Inc/usart.h)(0x6AC54908)
 I (../Core/Inc/i2c.h)(0x6AB69164)
 I (../Hardware/delay.h)(0x6AB69164)
 I (../Hardware/timer.h)(0x6AB69164)
 I (../Hardware/spi.h)(0x6AB2AF33)
 I (../Hardware/lsm6dsr.h)(0x6AB2AF33)
 I (../Hardware/mpu6050.h)(0x6AB2AF33)
+I (../Hardware/enc_quad.h)(0x6AC5482E)
 I (../SimpleFOC/foc_utils.h)(0x6AB2BE94)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x60252378)
 I (../SimpleFOC/FOCMotor.h)(0x6AB9695B)
 I (../SimpleFOC/BLDCmotor.h)(0x6AB69164)
 I (../SimpleFOC/CurrentSense.h)(0x6AB2AF33)
+I (../Hardware/lqr_balance.h)(0x6AC5481B)
+I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x60252374)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x6025237E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x60252374)
 F (../SimpleFOC/CurrentSense.c)(0x6AB2AF33)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\currentsense.o --omf_browse cubemx\currentsense.crf --depend cubemx\currentsense.d)
-I (../Core/Inc/MyProject.h)(0x6AB69164)
+I (../Core/Inc/MyProject.h)(0x6AC5490F)
 I (../Core/Inc/main.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x6AB2AF33)
 I (../Core/Inc/stm32f4xx_hal_conf.h)(0x6AB2AF33)
@@ -1082,22 +1094,25 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
 I (../Core/Inc/gpio.h)(0x6AB2AF33)
-I (../Core/Inc/usart.h)(0x6AB2AF33)
+I (../Core/Inc/usart.h)(0x6AC54908)
 I (../Core/Inc/i2c.h)(0x6AB69164)
 I (../Hardware/delay.h)(0x6AB69164)
 I (../Hardware/timer.h)(0x6AB69164)
 I (../Hardware/spi.h)(0x6AB2AF33)
 I (../Hardware/lsm6dsr.h)(0x6AB2AF33)
 I (../Hardware/mpu6050.h)(0x6AB2AF33)
+I (../Hardware/enc_quad.h)(0x6AC5482E)
 I (../SimpleFOC/foc_utils.h)(0x6AB2BE94)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x60252378)
 I (../SimpleFOC/FOCMotor.h)(0x6AB9695B)
 I (../SimpleFOC/BLDCmotor.h)(0x6AB69164)
 I (../SimpleFOC/CurrentSense.h)(0x6AB2AF33)
+I (../Hardware/lqr_balance.h)(0x6AC5481B)
+I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x60252374)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x6025237E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x60252374)
-F (../Hardware/timer.c)(0x6AB69164)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\timer.o --omf_browse cubemx\timer.crf --depend cubemx\timer.d)
+F (../Hardware/timer.c)(0x6AC54856)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\timer.o --omf_browse cubemx\timer.crf --depend cubemx\timer.d)
 I (../Hardware/timer.h)(0x6AB69164)
 I (../Core/Inc/main.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x6AB2AF33)
@@ -1275,3 +1290,82 @@ I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
 I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
 I (../Hardware/delay.h)(0x6AB69164)
 I (../Core/Inc/main.h)(0x6AB2AF33)
+F (../Hardware/lqr_balance.c)(0x6AC5480A)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\lqr_balance.o --omf_browse cubemx\lqr_balance.crf --depend cubemx\lqr_balance.d)
+I (../Hardware/lqr_balance.h)(0x6AC5481B)
+I (../Core/Inc/main.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x6AB2AF33)
+I (../Core/Inc/stm32f4xx_hal_conf.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f407xx.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Include/core_cm4.h)(0x6AB2AF33)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x6025237E)
+I (../Drivers/CMSIS/Include/cmsis_version.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Include/mpu_armv7.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x6AB2AF33)
+I (C:\Keil_v5\ARM\ARMCC\include\stddef.h)(0x6025237E)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ramfunc.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
+I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x6025237C)
+I (../SimpleFOC/FOCMotor.h)(0x6AB9695B)
+I (../SimpleFOC/foc_utils.h)(0x6AB2BE94)
+I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x60252378)
+I (../SimpleFOC/BLDCMotor.h)(0x6AB69164)
+I (../Hardware/timer.h)(0x6AB69164)
+I (../Hardware/delay.h)(0x6AB69164)
+I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x60252374)
+F (../Hardware/enc_quad.c)(0x6AC54844)(--c99 -c --cpu Cortex-M4.fp.sp -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc -I ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware -I ../SimpleFOC-I.\RTE\_CubeMX-IC:\Keil_v5\MDK\PACK\ARM\CMSIS\6.3.0\CMSIS\Core\Include-D__UVISION_VERSION="542" -DSTM32F407xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F407xx-o cubemx\enc_quad.o --omf_browse cubemx\enc_quad.crf --depend cubemx\enc_quad.d)
+I (../Hardware/enc_quad.h)(0x6AC5482E)
+I (../Core/Inc/main.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h)(0x6AB2AF33)
+I (../Core/Inc/stm32f4xx_hal_conf.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f407xx.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Include/core_cm4.h)(0x6AB2AF33)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x6025237E)
+I (../Drivers/CMSIS/Include/cmsis_version.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Include/mpu_armv7.h)(0x6AB2AF33)
+I (../Drivers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x6AB2AF33)
+I (C:\Keil_v5\ARM\ARMCC\include\stddef.h)(0x6025237E)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ramfunc.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h)(0x6AB2AF33)
+I (../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h)(0x6AB2AF33)
+I (../Core/Inc/i2c.h)(0x6AB69164)

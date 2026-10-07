@@ -42,11 +42,14 @@ cubemx\foc_utils.o: ../Hardware/timer.h
 cubemx\foc_utils.o: ../Hardware/spi.h
 cubemx\foc_utils.o: ../Hardware/lsm6dsr.h
 cubemx\foc_utils.o: ../Hardware/mpu6050.h
+cubemx\foc_utils.o: ../Hardware/enc_quad.h
 cubemx\foc_utils.o: ../SimpleFOC/foc_utils.h
 cubemx\foc_utils.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 cubemx\foc_utils.o: ../SimpleFOC/FOCMotor.h
 cubemx\foc_utils.o: ../SimpleFOC/BLDCmotor.h
 cubemx\foc_utils.o: ../SimpleFOC/CurrentSense.h
+cubemx\foc_utils.o: ../Hardware/lqr_balance.h
+cubemx\foc_utils.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 cubemx\foc_utils.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 cubemx\foc_utils.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 cubemx\foc_utils.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
