@@ -15,3 +15,5 @@ Cubli STM32F407ZGT6 Changelog
 [260607]Version 1.2-alpha power management BM3451UNDC has unfixable issues, switched to Sinowealth SH367103x management solution, iterated version to Version 1.3-alpha. Fixed encoder connector incompatibility issues
 
 [260923]Power protection scheme verified, pending validation of RC battery charging function, planning to add ESP32-WROOM for wireless debugging, iterated version to Version 1.4
+
+[261007]Version1.4,completed
