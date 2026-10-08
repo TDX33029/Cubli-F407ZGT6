@@ -141,7 +141,7 @@ int main(void)
 
 				/* SimpleFOC参数配置 */
 				voltage_power_supply = 12.0f;   // V (DRV8313 12V 硬件供电)
-				voltage_limit = 6.0f;           // V，相电压上限拉到最高 6.0V (最大安全限幅 6.8V)，极大充沛发挥电磁力矩
+				voltage_limit = 5.0f;           // V (动态相电压上限设为 5.0V，兼顾急速启停力矩与电气安全)
 				velocity_limit = 60.0f;         // rad/s (最高转速提升至 60.0 rad/s)
 				controller = Type_velocity_openloop; // 默认开环安全待机，避免未标定零位时闭环自激扰动
 			pole_pairs = 7;                 // 极对数
@@ -463,7 +463,11 @@ void commander_run(void)
 					target_m2 = 0.0f;
 					target_m3 = 0.0f;
 					LQR_Balance_Enable(false);
-					printf("OK STOP\r\n");
+					set_motor_enable(0, 0); // 紧急全停时硬件失能 DRV8313，确保电机完全脱开自由滑行
+					setPhaseVoltage(0.0f, 0.0f, 0.0f, 0);
+					setPhaseVoltage(0.0f, 0.0f, 0.0f, 1);
+					setPhaseVoltage(0.0f, 0.0f, 0.0f, 2);
+					printf("OK STOP (Hardware Disarmed)\r\n");
 				}
 			/* 5. 传感器切换: SENSOR <1/2> */
 			else if(strncmp(cmd, "SENSOR", 6) == 0 || strncmp(cmd, "sensor", 6) == 0)
@@ -545,25 +549,45 @@ void commander_run(void)
 				Motor_alignAll();
 				printf("OK ALIGN\r\n");
 			}
-			/* 9. PID 参数设定: PID <p> <i> <d> 或 PID1/2/3 <p> <i> <d> */
+			/* 9. PID 参数设定与查询: PID <p> <i> <d> / PID1/2/3 <p> <i> <d> / PID / PID? */
 			else if(strncmp(cmd, "PID", 3) == 0 || strncmp(cmd, "pid", 3) == 0)
 			{
 				float p_val = 0.0f, i_val = 0.0f, d_val = 0.0f;
 				int motor_idx = 0;
-				if(cmd[3] == '1' || cmd[3] == '2' || cmd[3] == '3')
+				if(cmd[3] == '\0' || cmd[3] == '?' || (cmd[3] == ' ' && (cmd[4] == '?' || cmd[4] == '\0')))
+				{
+					printf("--- Velocity Loop PID & Filter Status ---\r\n"
+					       "Mode: %s\r\n"
+					       "M1 (TIM1): P=%.3f, I=%.3f, D=%.4f, Tf=%.4fs, Vlim=%.2fV\r\n"
+					       "M2 (TIM3): P=%.3f, I=%.3f, D=%.4f, Tf=%.4fs, Vlim=%.2fV\r\n"
+					       "M3 (TIM4): P=%.3f, I=%.3f, D=%.4f, Tf=%.4fs, Vlim=%.2fV\r\n",
+					       controller == Type_velocity ? "CLOSED_LOOP (1)" : "OPEN_LOOP (0)",
+					       pid_velocity[0].P, pid_velocity[0].I, pid_velocity[0].D, lpf_velocity[0].Tf, voltage_limit,
+					       pid_velocity[1].P, pid_velocity[1].I, pid_velocity[1].D, lpf_velocity[1].Tf, voltage_limit,
+					       pid_velocity[2].P, pid_velocity[2].I, pid_velocity[2].D, lpf_velocity[2].Tf, voltage_limit);
+				}
+				else if(cmd[3] == '1' || cmd[3] == '2' || cmd[3] == '3')
 				{
 					motor_idx = cmd[3] - '1';
-					int n = sscanf(cmd + 4, "%f %f %f", &p_val, &i_val, &d_val);
-					if(n >= 2)
+					if(cmd[4] == '?' || (cmd[4] == ' ' && cmd[5] == '?'))
 					{
-						pid_velocity[motor_idx].P = p_val;
-						pid_velocity[motor_idx].I = i_val;
-						if(n == 3) pid_velocity[motor_idx].D = d_val;
-						printf("OK PID%d: P=%.3f, I=%.3f, D=%.4f\r\n", motor_idx+1, pid_velocity[motor_idx].P, pid_velocity[motor_idx].I, pid_velocity[motor_idx].D);
+						printf("OK PID%d: P=%.3f, I=%.3f, D=%.4f, Tf=%.4fs\r\n",
+						       motor_idx + 1, pid_velocity[motor_idx].P, pid_velocity[motor_idx].I, pid_velocity[motor_idx].D, lpf_velocity[motor_idx].Tf);
 					}
 					else
 					{
-						printf("ERR PID format (Usage: PID%d <P> <I> [D])\r\n", motor_idx+1);
+						int n = sscanf(cmd + 4, "%f %f %f", &p_val, &i_val, &d_val);
+						if(n >= 2)
+						{
+							pid_velocity[motor_idx].P = p_val;
+							pid_velocity[motor_idx].I = i_val;
+							if(n == 3) pid_velocity[motor_idx].D = d_val;
+							printf("OK PID%d: P=%.3f, I=%.3f, D=%.4f\r\n", motor_idx+1, pid_velocity[motor_idx].P, pid_velocity[motor_idx].I, pid_velocity[motor_idx].D);
+						}
+						else
+						{
+							printf("ERR PID format (Usage: PID%d <P> <I> [D])\r\n", motor_idx+1);
+						}
 					}
 				}
 				else
@@ -580,12 +604,39 @@ void commander_run(void)
 						}
 						printf("OK ALL PID: P=%.3f, I=%.3f, D=%.4f\r\n", p_val, i_val, d_val);
 					}
-						else
-						{
-							printf("ERR PID format (Usage: PID <P> <I> [D])\r\n");
-						}
+					else
+					{
+						printf("ERR PID format (Usage: PID <P> <I> [D] or PID?)\r\n");
 					}
 				}
+			}
+			/* 9.0 速度低通滤波时间常数设定: TF <val> 或 TF1/2/3 <val> */
+			else if(strncmp(cmd, "TF", 2) == 0 || strncmp(cmd, "tf", 2) == 0)
+			{
+				float tf_val = 0.0f;
+				if(cmd[2] == '1' || cmd[2] == '2' || cmd[2] == '3')
+				{
+					int m = cmd[2] - '1';
+					tf_val = (float)atof(cmd + 3);
+					if(tf_val >= 0.001f && tf_val <= 0.100f)
+					{
+						lpf_velocity[m].Tf = tf_val;
+						printf("OK TF%d: %.4fs\r\n", m + 1, lpf_velocity[m].Tf);
+					}
+					else printf("ERR TF range (0.001~0.100s)\r\n");
+				}
+				else
+				{
+					tf_val = (float)atof(cmd + 2);
+					if(tf_val >= 0.001f && tf_val <= 0.100f)
+					{
+						int k;
+						for(k = 0; k < 3; k++) lpf_velocity[k].Tf = tf_val;
+						printf("OK ALL TF: %.4fs\r\n", tf_val);
+					}
+					else printf("ERR TF range (0.001~0.100s)\r\n");
+				}
+			}
 				/* 9.1 平衡控制使能开关: BAL <0/1> */
 				else if(strncmp(cmd, "BAL ", 4) == 0 || strncmp(cmd, "bal ", 4) == 0)
 				{

@@ -18,7 +18,7 @@ float voltage_limit;
 int  pole_pairs;
 unsigned long open_loop_timestamp[3];
 float velocity_limit;
-float voltage_sensor_align = 2.8f; // 电机校准电角度时的激励电压(V) (提升至2.8V确保克服动量轮静摩擦充分对准)
+float voltage_sensor_align = 1.8f; // 校准相电压下调至 1.8V，充足对准同时防止线圈过热
 /******************************************************************************/
 float velocityOpenloop(float target_velocity, int motor);
 float angleOpenloop(float target_angle, int motor);
@@ -102,6 +102,7 @@ uint8_t Motor_alignSensor(int motor)
 	zero_electric_angle[motor] = electricalAngle(motor);
 
 	setPhaseVoltage(0, 0, 0, motor);
+	set_motor_enable(motor + 1, 0); // 对准完成立即关闭通道使能，杜绝等待期间静止发热
 	motor_aligned[motor] = 1;
 
 	printf("Align M%d OK (using I2C%d): Dir=%s, Zero_Elec=%.2f rad (%.1f deg)\r\n",
@@ -124,6 +125,12 @@ void Motor_alignAll(void)
 	Motor_alignSensor(2);
 
 	// 复位三轴速度环与闭环同步电角度状态，杜绝切入闭环瞬间产生扰动
+	// 校准完毕后，强制切断全部三轴电机驱动硬件使能与相电压输出，处于安全待机状态
+	set_motor_enable(0, 0);
+	setPhaseVoltage(0.0f, 0.0f, 0.0f, 0);
+	setPhaseVoltage(0.0f, 0.0f, 0.0f, 1);
+	setPhaseVoltage(0.0f, 0.0f, 0.0f, 2);
+
 	reset_closed_loop_state(-1);
 
 	printf("=== 3-Axis Sensor Align Finished ===\r\n\r\n");
@@ -152,25 +159,25 @@ void move(float new_target, int motor)
 	{
 		case Type_velocity:
 		{
-			// 速度闭环控制模式 (带虚拟同步磁场连续跟踪与全速域自适应混合闭环架构)
+			// 速度闭环控制模式 (FOC 矢量速度控制: 齿槽摩擦前馈 + 反电势解耦 + 抗饱和高动态 PID)
 			loopFOC(motor);
 			shaft_velocity_sp[motor] = new_target;
 
-			// 零速彻底待机：当目标速度为 0 时立即输出 0V 并对齐同步角，杜绝静止发热与微颤
-			if(fabsf(new_target) < 0.01f)
+			// 1. 零速彻底待机 (Zero-Target Idle Cutoff):
+			// 目标速度接近 0 时立即切断相电压输出 (0V)，彻底杜绝静止线圈通电发热与微震
+			if(fabsf(new_target) < 0.05f)
 			{
-				float cur_rotor_el = (float)sensor_direction[motor] * shaft_angle[motor] * (float)pole_pairs - zero_electric_angle[motor];
-				target_angle_el[motor] = cur_rotor_el;
 				move_timestamp_prev[motor] = micros();
 				pid_velocity[motor].integral_prev = 0.0f;
 				pid_velocity[motor].error_prev = 0.0f;
+				pid_velocity[motor].output_prev = 0.0f;
 				voltage[motor].q = 0.0f;
 				voltage[motor].d = 0.0f;
 				setPhaseVoltage(0.0f, 0.0f, electrical_angle[motor], motor);
 				break;
 			}
 
-			// 计算微秒控制周期 Ts
+			// 2. 计算控制周期 Ts
 			uint32_t now_us = micros();
 			float Ts;
 			if(move_timestamp_prev[motor] == 0) Ts = 1e-3f;
@@ -178,50 +185,35 @@ void move(float new_target, int motor)
 			if(Ts <= 0.0f || Ts > 0.5f) Ts = 1e-3f;
 			move_timestamp_prev[motor] = now_us;
 
-			// 1. 虚拟旋转磁场同步角平滑积分 (像开环一样提供恒定匀速前行的旋转基准矢量)
-			target_angle_el[motor] += new_target * (float)pole_pairs * Ts;
-
-			// 计算转子实时连续电角度与同步矢量的相角差 delta_el
-			float rotor_el = (float)sensor_direction[motor] * shaft_angle[motor] * (float)pole_pairs - zero_electric_angle[motor];
-			float delta_el = target_angle_el[motor] - rotor_el;
-
-			// 将 delta_el 解包限制在 [-PI, PI]，确保闭环永不脱调，即便受外力强行堵转也能在释放后立即平滑自锁
-			while(delta_el > _PI) { target_angle_el[motor] -= _2PI; delta_el -= _2PI; }
-			while(delta_el < -_PI) { target_angle_el[motor] += _2PI; delta_el += _2PI; }
-
-			// 2. 磁场同步瞬时恢复电压 (提供开环同等的充沛磁力矩与磁弹簧刚度，瞬间克服齿槽转矩阻力)
-			float uq_sync;
-			if(delta_el > _PI_2) uq_sync = voltage_limit;
-			else if(delta_el < -_PI_2) uq_sync = -voltage_limit;
-			else uq_sync = voltage_limit * sinf(delta_el);
-
-			// 3. 速度阻尼与高速 PID 运算
 			float speed_err = new_target - shaft_velocity[motor];
-			float uq_low = uq_sync + 0.30f * speed_err; // 低速同步力矩叠加速度阻尼项消除微小摆动
 
+			// 3. 极低速丝滑前馈 (Coulomb Friction & Detent Bias Feedforward):
+			// 克服齿槽转矩死区卡顿，确保正向转动时推进力矩平滑向前，不在零点来回刹车跳变
+			float uq_coulomb = (new_target > 0.0f) ? 0.45f : -0.45f;
+			float uq_bemf = 0.045f * new_target; // 宽速域反电势动态线性前馈
+			float uq_ff = uq_coulomb + uq_bemf;
+
+			// 4. 抗饱和高响应 PID 闭环控制 (针对 Cubli 频繁急加速/急反转优化)
 			pid_velocity[motor].limit = voltage_limit;
-			float uq_high = PID_operator(&pid_velocity[motor], speed_err) + 0.05f * new_target; // 高速标准 PID 叠加反电势前馈
+			float uq_pid = PID_operator(&pid_velocity[motor], speed_err);
 
-			// 4. 全速域自适应平滑加权融合: 低速(|v|<=3)完全由同步磁场主导实现如丝顺滑，高速(|v|>=8)无缝过渡为闭环精准PID
-			float abs_v = fabsf(new_target);
-			float w_sync, w_pid;
-			if(abs_v <= 3.0f)
+			// 5. 堵转超时保护 (Stall Protection):
+			// 若输出电压持续打满但转速严重跟不上超过 800ms，限制相电压至安全值保护线圈
+			static uint32_t stall_timer[3] = {0, 0, 0};
+			if(fabsf(speed_err) > 3.0f && fabsf(pid_velocity[motor].output_prev) >= (voltage_limit - 0.2f))
 			{
-				w_sync = 1.0f;
-				w_pid = 0.0f;
-			}
-			else if(abs_v >= 8.0f)
-			{
-				w_sync = 0.0f;
-				w_pid = 1.0f;
+				if(stall_timer[motor] == 0) stall_timer[motor] = now_us;
+				else if((now_us - stall_timer[motor]) > 800000) // 800ms
+				{
+					if(voltage_limit > 1.8f) pid_velocity[motor].limit = 1.8f;
+				}
 			}
 			else
 			{
-				w_sync = (8.0f - abs_v) / 5.0f;
-				w_pid = 1.0f - w_sync;
+				stall_timer[motor] = 0;
 			}
 
-			voltage[motor].q = _constrain(w_sync * uq_low + w_pid * uq_high, -voltage_limit, voltage_limit);
+			voltage[motor].q = _constrain(uq_ff + uq_pid, -voltage_limit, voltage_limit);
 			voltage[motor].d = 0.0f;
 
 			// 驱动相电压输出
@@ -229,7 +221,7 @@ void move(float new_target, int motor)
 			break;
 		}
 
-			case Type_torque:
+		case Type_torque:
 				// 力矩控制模式 (平衡控制器相电压输出模式)
 				loopFOC(motor);
 				voltage[motor].q = _constrain(new_target, -voltage_limit, voltage_limit);

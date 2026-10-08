@@ -1,22 +1,19 @@
 # -*- coding: utf-8 -*-
-"""
-Cubli-F407ZGT6 工程全自动命令行编译与固件打包工具
-调用 Keil ARMCC 编译器与连接器完整构建 CubeMX.axf 与 CubeMX.hex
-"""
 import os
 import sys
+import time
 import subprocess
 
 def build():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    proj_dir = script_dir
-    mdk_dir = os.path.join(proj_dir, "MDK-ARM")
-    obj_dir = os.path.join(mdk_dir, "CubeMX")
+    os.chdir(script_dir)
+    mdk_dir = "MDK-ARM"
+    obj_dir = "MDK-ARM/CubeMX"
 
-    armcc = r"C:\Keil_v5\ARM\ARMCC\bin\armcc.exe"
-    armasm = r"C:\Keil_v5\ARM\ARMCC\bin\armasm.exe"
-    armlink = r"C:\Keil_v5\ARM\ARMCC\bin\armlink.exe"
-    fromelf = r"C:\Keil_v5\ARM\ARMCC\bin\fromelf.exe"
+    armcc = "C:/Keil_v5/ARM/ARMCC/bin/armcc.exe"
+    armasm = "C:/Keil_v5/ARM/ARMCC/bin/armasm.exe"
+    armlink = "C:/Keil_v5/ARM/ARMCC/bin/armlink.exe"
+    fromelf = "C:/Keil_v5/ARM/ARMCC/bin/fromelf.exe"
 
     if not os.path.exists(armcc):
         print(f"Error: ARMCC not found at {armcc}")
@@ -25,13 +22,13 @@ def build():
     os.makedirs(obj_dir, exist_ok=True)
 
     inc_paths = [
-        os.path.join(proj_dir, "Core/Inc"),
-        os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Inc"),
-        os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Inc/Legacy"),
-        os.path.join(proj_dir, "Drivers/CMSIS/Device/ST/STM32F4xx/Include"),
-        os.path.join(proj_dir, "Drivers/CMSIS/Include"),
-        os.path.join(proj_dir, "Hardware"),
-        os.path.join(proj_dir, "SimpleFOC")
+        "Core/Inc",
+        "Drivers/STM32F4xx_HAL_Driver/Inc",
+        "Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
+        "Drivers/CMSIS/Device/ST/STM32F4xx/Include",
+        "Drivers/CMSIS/Include",
+        "Hardware",
+        "SimpleFOC"
     ]
 
     inc_args = []
@@ -42,55 +39,66 @@ def build():
     cflags = ["--cpu=Cortex-M4.fp.sp", "-g", "-O2", "--apcs=interwork", "--split_sections", "--c99"] + defines + inc_args
 
     srcs = [
-        ("c", os.path.join(proj_dir, "Core/Src/main.c"), os.path.join(obj_dir, "main.o")),
-        ("c", os.path.join(proj_dir, "Core/Src/gpio.c"), os.path.join(obj_dir, "gpio.o")),
-        ("c", os.path.join(proj_dir, "Core/Src/i2c.c"), os.path.join(obj_dir, "i2c.o")),
-        ("c", os.path.join(proj_dir, "Core/Src/tim.c"), os.path.join(obj_dir, "tim.o")),
-        ("c", os.path.join(proj_dir, "Core/Src/usart.c"), os.path.join(obj_dir, "usart.o")),
-        ("c", os.path.join(proj_dir, "Core/Src/stm32f4xx_it.c"), os.path.join(obj_dir, "stm32f4xx_it.o")),
-        ("c", os.path.join(proj_dir, "Core/Src/stm32f4xx_hal_msp.c"), os.path.join(obj_dir, "stm32f4xx_hal_msp.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c"), os.path.join(obj_dir, "stm32f4xx_hal_i2c.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c"), os.path.join(obj_dir, "stm32f4xx_hal_i2c_ex.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c"), os.path.join(obj_dir, "stm32f4xx_hal_rcc.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c"), os.path.join(obj_dir, "stm32f4xx_hal_rcc_ex.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c"), os.path.join(obj_dir, "stm32f4xx_hal_flash.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c"), os.path.join(obj_dir, "stm32f4xx_hal_flash_ex.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c"), os.path.join(obj_dir, "stm32f4xx_hal_flash_ramfunc.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c"), os.path.join(obj_dir, "stm32f4xx_hal_gpio.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c"), os.path.join(obj_dir, "stm32f4xx_hal_dma_ex.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c"), os.path.join(obj_dir, "stm32f4xx_hal_dma.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c"), os.path.join(obj_dir, "stm32f4xx_hal_pwr.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c"), os.path.join(obj_dir, "stm32f4xx_hal_pwr_ex.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c"), os.path.join(obj_dir, "stm32f4xx_hal_cortex.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c"), os.path.join(obj_dir, "stm32f4xx_hal.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c"), os.path.join(obj_dir, "stm32f4xx_hal_exti.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c"), os.path.join(obj_dir, "stm32f4xx_hal_tim.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c"), os.path.join(obj_dir, "stm32f4xx_hal_tim_ex.o")),
-        ("c", os.path.join(proj_dir, "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c"), os.path.join(obj_dir, "stm32f4xx_hal_uart.o")),
-        ("c", os.path.join(proj_dir, "Core/Src/system_stm32f4xx.c"), os.path.join(obj_dir, "system_stm32f4xx.o")),
-        ("c", os.path.join(proj_dir, "SimpleFOC/foc_utils.c"), os.path.join(obj_dir, "foc_utils.o")),
-        ("c", os.path.join(proj_dir, "SimpleFOC/FOCMotor.c"), os.path.join(obj_dir, "focmotor.o")),
-        ("c", os.path.join(proj_dir, "SimpleFOC/BLDCMotor.c"), os.path.join(obj_dir, "bldcmotor.o")),
-        ("c", os.path.join(proj_dir, "SimpleFOC/CurrentSense.c"), os.path.join(obj_dir, "currentsense.o")),
-        ("c", os.path.join(proj_dir, "Hardware/timer.c"), os.path.join(obj_dir, "timer.o")),
-        ("c", os.path.join(proj_dir, "Hardware/delay.c"), os.path.join(obj_dir, "delay.o")),
-        ("c", os.path.join(proj_dir, "Hardware/spi.c"), os.path.join(obj_dir, "spi.o")),
-        ("c", os.path.join(proj_dir, "Hardware/lsm6dsr.c"), os.path.join(obj_dir, "lsm6dsr.o")),
-        ("c", os.path.join(proj_dir, "Hardware/mpu6050.c"), os.path.join(obj_dir, "mpu6050.o")),
-        ("c", os.path.join(proj_dir, "Hardware/lqr_balance.c"), os.path.join(obj_dir, "lqr_balance.o")),
-        ("c", os.path.join(proj_dir, "Hardware/enc_quad.c"), os.path.join(obj_dir, "enc_quad.o")),
-        ("s", os.path.join(mdk_dir, "startup_stm32f407xx.s"), os.path.join(obj_dir, "startup_stm32f407xx.o")),
+        ("c", "Core/Src/main.c", "MDK-ARM/CubeMX/main.o"),
+        ("c", "Core/Src/gpio.c", "MDK-ARM/CubeMX/gpio.o"),
+        ("c", "Core/Src/i2c.c", "MDK-ARM/CubeMX/i2c.o"),
+        ("c", "Core/Src/tim.c", "MDK-ARM/CubeMX/tim.o"),
+        ("c", "Core/Src/usart.c", "MDK-ARM/CubeMX/usart.o"),
+        ("c", "Core/Src/stm32f4xx_it.c", "MDK-ARM/CubeMX/stm32f4xx_it.o"),
+        ("c", "Core/Src/stm32f4xx_hal_msp.c", "MDK-ARM/CubeMX/stm32f4xx_hal_msp.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c", "MDK-ARM/CubeMX/stm32f4xx_hal_i2c.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c", "MDK-ARM/CubeMX/stm32f4xx_hal_i2c_ex.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c", "MDK-ARM/CubeMX/stm32f4xx_hal_rcc.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c", "MDK-ARM/CubeMX/stm32f4xx_hal_rcc_ex.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c", "MDK-ARM/CubeMX/stm32f4xx_hal_flash.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c", "MDK-ARM/CubeMX/stm32f4xx_hal_flash_ex.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c", "MDK-ARM/CubeMX/stm32f4xx_hal_flash_ramfunc.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c", "MDK-ARM/CubeMX/stm32f4xx_hal_gpio.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c", "MDK-ARM/CubeMX/stm32f4xx_hal_dma_ex.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c", "MDK-ARM/CubeMX/stm32f4xx_hal_dma.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c", "MDK-ARM/CubeMX/stm32f4xx_hal_pwr.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c", "MDK-ARM/CubeMX/stm32f4xx_hal_pwr_ex.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c", "MDK-ARM/CubeMX/stm32f4xx_hal_cortex.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c", "MDK-ARM/CubeMX/stm32f4xx_hal.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c", "MDK-ARM/CubeMX/stm32f4xx_hal_exti.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c", "MDK-ARM/CubeMX/stm32f4xx_hal_tim.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c", "MDK-ARM/CubeMX/stm32f4xx_hal_tim_ex.o"),
+        ("c", "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c", "MDK-ARM/CubeMX/stm32f4xx_hal_uart.o"),
+        ("c", "Core/Src/system_stm32f4xx.c", "MDK-ARM/CubeMX/system_stm32f4xx.o"),
+        ("c", "SimpleFOC/foc_utils.c", "MDK-ARM/CubeMX/foc_utils.o"),
+        ("c", "SimpleFOC/FOCMotor.c", "MDK-ARM/CubeMX/focmotor.o"),
+        ("c", "SimpleFOC/BLDCMotor.c", "MDK-ARM/CubeMX/bldcmotor.o"),
+        ("c", "SimpleFOC/CurrentSense.c", "MDK-ARM/CubeMX/currentsense.o"),
+        ("c", "Hardware/timer.c", "MDK-ARM/CubeMX/timer.o"),
+        ("c", "Hardware/delay.c", "MDK-ARM/CubeMX/delay.o"),
+        ("c", "Hardware/spi.c", "MDK-ARM/CubeMX/spi.o"),
+        ("c", "Hardware/lsm6dsr.c", "MDK-ARM/CubeMX/lsm6dsr.o"),
+        ("c", "Hardware/mpu6050.c", "MDK-ARM/CubeMX/mpu6050.o"),
+        ("c", "Hardware/lqr_balance.c", "MDK-ARM/CubeMX/lqr_balance.o"),
+        ("c", "Hardware/enc_quad.c", "MDK-ARM/CubeMX/enc_quad.o"),
+        ("s", "MDK-ARM/startup_stm32f407xx.s", "MDK-ARM/CubeMX/startup_stm32f407xx.o"),
     ]
 
     print(f"Building Cubli-F407ZGT6 firmware ({len(srcs)} files)...")
     errors = 0
     for stype, src, obj in srcs:
+        src_path = os.path.normpath(src)
+        obj_path = os.path.normpath(obj)
+        if os.path.exists(obj_path):
+            try: os.remove(obj_path)
+            except Exception: pass
         if stype == "c":
-            cmd = [armcc, "-c"] + cflags + [src, "-o", obj]
+            cmd = [armcc, "-c"] + cflags + [src_path, "-o", obj_path]
         else:
-            cmd = [armasm, "--cpu=Cortex-M4.fp.sp", "-g", "--apcs=interwork", "--pd", "__MICROLIB SETA 1", src, "-o", obj]
+            cmd = [armasm, "--cpu=Cortex-M4.fp.sp", "-g", "--apcs=interwork", "--pd", "__MICROLIB SETA 1", src_path, "-o", obj_path]
         
         proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if proc.returncode != 0:
+            time.sleep(0.05)
+            if os.path.exists(obj_path):
+                try: os.remove(obj_path)
+                except Exception: pass
+            proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if proc.returncode != 0:
             print(f"FAILED: {os.path.basename(src)}")
             print(proc.stderr.decode("gbk", errors="ignore") or proc.stdout.decode("gbk", errors="ignore"))

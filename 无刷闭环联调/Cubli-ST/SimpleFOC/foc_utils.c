@@ -72,15 +72,20 @@ float PID_operator(PIDController_t* pid, float error)
 	proportional = pid->P * error;
 
 	// 积分项 (标准抗饱和限幅，与 voltage_limit 对齐)
-	integral = pid->integral_prev + pid->I * error * Ts;
-	integral = _constrain(integral, -pid->limit, pid->limit);
-	pid->integral_prev = integral;
+	// 条件积分抗饱和 (Conditional Anti-Windup): 当输出已达限幅且误差同向时冻结积分累加
+	float new_integral = pid->integral_prev + pid->I * error * Ts;
+	new_integral = _constrain(new_integral, -pid->limit, pid->limit);
+	if(!((pid->output_prev >= pid->limit && error > 0.0f) || (pid->output_prev <= -pid->limit && error < 0.0f)))
+	{
+		pid->integral_prev = new_integral;
+	}
+	integral = pid->integral_prev;
 
 	// 微分项 (带安全滤波与微分限幅，D=0时直接为0，绝不引入高频尖峰)
-	if(pid->D > 0.0f && Ts > 0.002f)
+	if(pid->D > 0.0f && Ts > 0.0001f)
 	{
 		derivative = pid->D * (error - pid->error_prev) / Ts;
-		derivative = _constrain(derivative, -0.5f, 0.5f); // 限制微分贡献不超过 0.5V
+		derivative = _constrain(derivative, -1.5f, 1.5f); // 限制微分贡献不超过 0.5V
 	}
 	else
 	{

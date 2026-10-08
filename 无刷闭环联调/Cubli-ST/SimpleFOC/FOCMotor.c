@@ -164,7 +164,7 @@ void updateSensor(int motor)
 			// 一阶低通滤波 (Tf = 12ms)
 			shaft_velocity[motor] = LPF_operator(&lpf_velocity[motor], raw_vel);
 		}
-		else if(d_us >= 50000) // 超过 50ms (速度低于 0.007 rad/s) 无位置变化判定停转
+		else if(d_us >= 25000) // 超过 50ms (速度低于 0.007 rad/s) 无位置变化判定停转
 		{
 			angle_vel_prev[motor] = rad;
 			vel_prev_ts[motor] = now_us;

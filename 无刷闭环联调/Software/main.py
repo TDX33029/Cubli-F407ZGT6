@@ -129,6 +129,8 @@ class SerialWorker(QThread):
     sig_disconnected = pyqtSignal()
     sig_error = pyqtSignal(str)
     sig_log_rx = pyqtSignal(str)
+    sig_mode_changed = pyqtSignal(int)
+    sig_pid_received = pyqtSignal(int, float, float, float)
     sig_log_tx = pyqtSignal(str)
     sig_telemetry = pyqtSignal(dict)
     sig_test_step = pyqtSignal(str)     # 自检单步进度: "M1", "M2", "M3"
@@ -172,9 +174,11 @@ class SerialWorker(QThread):
         r'H3:([+-]?\d+(?:\.\d+)?))?'
         r'(?:,S1:([+-]?\d+(?:\.\d+)?),'
         r'S2:([+-]?\d+(?:\.\d+)?),'
-        r'S3:([+-]?\d+(?:\.\d+)?))?#'
+        r'S3:([+-]?\d+(?:\.\d+)?))?'
+        r'(?:,Pit:([+-]?\d+(?:\.\d+)?),'
+        r'Rol:([+-]?\d+(?:\.\d+)?),'
+        r'Bal:(\d+))?#'
     )
-
     def __init__(self):
         super().__init__()
         self.ser = None
@@ -309,6 +313,9 @@ class SerialWorker(QThread):
                 s2 = float(match.group(21)) if match.group(21) is not None else 0.0
                 s3 = float(match.group(22)) if match.group(22) is not None else 0.0
                 has_speed = match.group(20) is not None
+                pit = float(match.group(23)) if match.group(23) is not None else None
+                rol = float(match.group(24)) if match.group(24) is not None else None
+                bal = int(match.group(25)) if match.group(25) is not None else None
 
                 tele_data = {
                     'm1_spd': m1_spd, 'm2_spd': m2_spd, 'm3_spd': m3_spd,
@@ -322,6 +329,7 @@ class SerialWorker(QThread):
                     'has_imu': has_imu,
                     'has_hall': has_hall,
                     'has_speed': has_speed,
+                    'pitch': pit, 'roll': rol, 'bal': bal,
                     'time': time.time()
                 }
                 self.sig_telemetry.emit(tele_data)
@@ -361,6 +369,24 @@ class SerialWorker(QThread):
                 'm2': {'status': 'FAIL', 'comm': 0, 'deg': 0.0},
                 'm3': {'status': 'FAIL', 'comm': 0, 'deg': 0.0}
             })
+
+
+        if 'OK MODE:1' in line:
+            self.sig_mode_changed.emit(1)
+        elif 'OK MODE:0' in line:
+            self.sig_mode_changed.emit(0)
+
+        m_pid = re.search(r'OK PID([123]): P=([0-9.-]+), I=([0-9.-]+), D=([0-9.-]+)', line)
+        if m_pid:
+            self.sig_pid_received.emit(int(m_pid.group(1)), float(m_pid.group(2)), float(m_pid.group(3)), float(m_pid.group(4)))
+        else:
+            m_all_pid = re.search(r'OK ALL PID: P=([0-9.-]+), I=([0-9.-]+), D=([0-9.-]+)', line)
+            if m_all_pid:
+                self.sig_pid_received.emit(0, float(m_all_pid.group(1)), float(m_all_pid.group(2)), float(m_all_pid.group(3)))
+            else:
+                m_stat_pid = re.search(r'M([123]) \([^)]+\): P=([0-9.-]+), I=([0-9.-]+), D=([0-9.-]+)', line)
+                if m_stat_pid:
+                    self.sig_pid_received.emit(int(m_stat_pid.group(1)), float(m_stat_pid.group(2)), float(m_stat_pid.group(3)), float(m_stat_pid.group(4)))
 
         self.sig_log_rx.emit(line)
 
@@ -1401,6 +1427,8 @@ class MainWindow(QMainWindow):
         self.worker.sig_log_rx.connect(self.on_log_rx)
         self.worker.sig_log_tx.connect(self.on_log_tx)
         self.worker.sig_telemetry.connect(self.on_telemetry_received)
+        self.worker.sig_mode_changed.connect(self.on_mode_changed)
+        self.worker.sig_pid_received.connect(self.on_pid_received)
         self.worker.sig_test_step.connect(self.on_self_test_step)
         self.worker.sig_test_report.connect(self.on_self_test_report)
 
@@ -1970,17 +1998,17 @@ class MainWindow(QMainWindow):
         mode_btn_row = QHBoxLayout()
         mode_btn_row.setSpacing(6)
 
-        self.btn_mode_toggle = QPushButton("闭环调速模式 [已开启]")
+        self.btn_mode_toggle = QPushButton("当前: 开环模式 [点击切闭环]")
         self.btn_mode_toggle.setFixedHeight(26)
         self.btn_mode_toggle.setStyleSheet("""
             QPushButton {
-                background-color: #dbeafe;
-                border: 1px solid #3b82f6;
+                background-color: #f1f5f9;
+                border: 1px solid #cbd5e1;
                 font-weight: bold;
-                color: #1d4ed8;
+                color: #475569;
             }
             QPushButton:hover {
-                background-color: #bfdbfe;
+                background-color: #e2e8f0;
             }
         """)
         self.btn_mode_toggle.clicked.connect(self.action_toggle_control_mode)
@@ -1994,8 +2022,14 @@ class MainWindow(QMainWindow):
         cl_layout.addLayout(mode_btn_row)
 
         # PID 参数在线微调行
+        # PID 参数在线微调行
         pid_row = QHBoxLayout()
         pid_row.setSpacing(4)
+
+        self.combo_pid_motor = QComboBox()
+        self.combo_pid_motor.addItems(["全部电机", "M1 (TIM1)", "M2 (TIM3)", "M3 (TIM4)"])
+        self.combo_pid_motor.setFixedHeight(24)
+        self.combo_pid_motor.setStyleSheet("font-size: 11px; font-weight: bold; padding: 1px 4px;")
 
         lbl_p = QLabel("P:")
         lbl_p.setStyleSheet("font-size: 11px; color: #94a3b8;")
@@ -2003,7 +2037,7 @@ class MainWindow(QMainWindow):
         self.spin_p.setRange(0.0, 10.0)
         self.spin_p.setSingleStep(0.05)
         self.spin_p.setDecimals(3)
-        self.spin_p.setValue(0.150)
+        self.spin_p.setValue(0.200)
         self.spin_p.setFixedHeight(24)
 
         lbl_i = QLabel("I:")
@@ -2012,7 +2046,7 @@ class MainWindow(QMainWindow):
         self.spin_i.setRange(0.0, 50.0)
         self.spin_i.setSingleStep(0.2)
         self.spin_i.setDecimals(2)
-        self.spin_i.setValue(1.20)
+        self.spin_i.setValue(1.50)
         self.spin_i.setFixedHeight(24)
 
         lbl_d = QLabel("D:")
@@ -2028,6 +2062,11 @@ class MainWindow(QMainWindow):
         btn_send_pid.setFixedHeight(24)
         btn_send_pid.clicked.connect(self.action_send_pid)
 
+        btn_read_pid = QPushButton("读取PID")
+        btn_read_pid.setFixedHeight(24)
+        btn_read_pid.clicked.connect(self.action_read_pid)
+
+        pid_row.addWidget(self.combo_pid_motor)
         pid_row.addWidget(lbl_p)
         pid_row.addWidget(self.spin_p)
         pid_row.addWidget(lbl_i)
@@ -2035,6 +2074,7 @@ class MainWindow(QMainWindow):
         pid_row.addWidget(lbl_d)
         pid_row.addWidget(self.spin_d)
         pid_row.addWidget(btn_send_pid)
+        pid_row.addWidget(btn_read_pid)
         cl_layout.addLayout(pid_row)
 
         layout.addWidget(self.cl_group)
@@ -2588,20 +2628,17 @@ class MainWindow(QMainWindow):
         self.worker.send_cmd(f"TELE {val}")
 
     def action_toggle_control_mode(self):
-        if "已开启" in self.btn_mode_toggle.text():
+        if "闭环" in self.btn_mode_toggle.text():
             self.worker.send_cmd("MODE 0")
-            self.btn_mode_toggle.setText("开环模式 [已切换]")
-            self.btn_mode_toggle.setStyleSheet("""
-                QPushButton {
-                    background-color: #f1f5f9;
-                    border: 1px solid #cbd5e1;
-                    font-weight: bold;
-                    color: #475569;
-                }
-            """)
+            self.on_mode_changed(0)
             self.status_bar.showMessage("已向固件发送切换开环速度模式指令 (MODE 0)")
         else:
             self.worker.send_cmd("MODE 1")
+            self.on_mode_changed(1)
+            self.status_bar.showMessage("已向固件发送切换闭环调速模式指令 (MODE 1)")
+
+    def on_mode_changed(self, mode):
+        if mode == 1:
             self.btn_mode_toggle.setText("闭环调速模式 [已开启]")
             self.btn_mode_toggle.setStyleSheet("""
                 QPushButton {
@@ -2614,18 +2651,59 @@ class MainWindow(QMainWindow):
                     background-color: #bfdbfe;
                 }
             """)
-            self.status_bar.showMessage("已向固件发送切换闭环速度模式指令 (MODE 1)")
+        else:
+            self.btn_mode_toggle.setText("开环模式 [点击切闭环]")
+            self.btn_mode_toggle.setStyleSheet("""
+                QPushButton {
+                    background-color: #f1f5f9;
+                    border: 1px solid #cbd5e1;
+                    font-weight: bold;
+                    color: #475569;
+                }
+                QPushButton:hover {
+                    background-color: #e2e8f0;
+                }
+            """)
 
     def action_align_sensors(self):
         self.worker.send_cmd("ALIGN")
-        self.status_bar.showMessage("已触发三轴电角度零位自动校准 (ALIGN)，请等待转子静止")
+        self.status_bar.showMessage("已触发电角度零位自动校准 (ALIGN)，等待转子静止")
 
     def action_send_pid(self):
         p = self.spin_p.value()
         i = self.spin_i.value()
         d = self.spin_d.value()
-        self.worker.send_cmd(f"PID {p:.3f} {i:.3f} {d:.4f}")
-        self.status_bar.showMessage(f"已更新速度环 PID: P={p:.3f}, I={i:.3f}, D={d:.4f}")
+        idx = self.combo_pid_motor.currentIndex()
+        if idx == 0:
+            self.worker.send_cmd(f"PID {p:.3f} {i:.3f} {d:.4f}")
+            self.status_bar.showMessage(f"已更新全部电机速度环 PID: P={p:.3f}, I={i:.3f}, D={d:.4f}")
+        else:
+            self.worker.send_cmd(f"PID{idx} {p:.3f} {i:.3f} {d:.4f}")
+            self.status_bar.showMessage(f"已更新电机 M{idx} 速度环 PID: P={p:.3f}, I={i:.3f}, D={d:.4f}")
+
+    def action_read_pid(self):
+        idx = self.combo_pid_motor.currentIndex()
+        if idx == 0:
+            self.worker.send_cmd("PID?")
+            self.status_bar.showMessage("已向固件查询速度环 PID 参数")
+        else:
+            self.worker.send_cmd(f"PID{idx}?")
+            self.status_bar.showMessage(f"已向固件查询电机 M{idx} 速度环 PID 参数")
+
+    def on_pid_received(self, motor_idx, p, i, d):
+        curr_idx = self.combo_pid_motor.currentIndex()
+        if curr_idx == motor_idx or motor_idx == 0 or (curr_idx == 0 and motor_idx == 1):
+            self.spin_p.blockSignals(True)
+            self.spin_i.blockSignals(True)
+            self.spin_d.blockSignals(True)
+            self.spin_p.setValue(p)
+            self.spin_i.setValue(i)
+            self.spin_d.setValue(d)
+            self.spin_p.blockSignals(False)
+            self.spin_i.blockSignals(False)
+            self.spin_d.blockSignals(False)
+            tag = "全部电机" if motor_idx == 0 else f"M{motor_idx}"
+            self.status_bar.showMessage(f"成功读取 {tag} 速度环 PID: P={p:.3f}, I={i:.3f}, D={d:.4f}")
 
     def action_reset_cube_attitude(self):
         """重置 3D 立方体姿态零位"""

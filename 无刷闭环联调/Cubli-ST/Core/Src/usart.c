@@ -23,7 +23,7 @@ unsigned short USART_RX_STA = 0;
  *       (ESP32 IO26<-F407 PA9(TX), ESP32 IO25->F407 PA10(RX), 115200-8-N-1)
  *   2 = USART2 (PD5=TX, PD6=RX)  -> 原有线串口直连 PC (调试后备通道)
  * ========================================================================== */
-#define DEBUG_LINK_USART   1
+#define DEBUG_LINK_USART   2
 
 #if DEBUG_LINK_USART == 1
   #define DBG_LINK_UART    USART1
