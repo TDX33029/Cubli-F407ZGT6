@@ -18,7 +18,9 @@
 #define _SQRT3_2 0.86602540378f
 #define _SQRT2 1.41421356237f
 #define _120_D2R 2.09439510239f
+#ifndef _PI
 #define _PI 3.14159265359f
+#endif
 #define _PI_2 1.57079632679f
 #define _PI_3 1.0471975512f
 #define _2PI 6.28318530718f
@@ -74,6 +76,7 @@ float _normalizeAngle(float angle);
 float _electricalAngle(float shaft_angle, int pole_pairs);
 float _sqrtApprox(float number);
 float PID_operator(PIDController_t* pid, float error);
+float PID_operator_offset(PIDController_t* pid, float error, float output_offset);
 float LPF_operator(LowPassFilter_t* lpf, float x);
 /******************************************************************************/
 

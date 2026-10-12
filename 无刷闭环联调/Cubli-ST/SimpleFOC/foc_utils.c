@@ -51,6 +51,11 @@ float _sqrtApprox(float number) {//low in fat
 /* PID 速度控制器运算 (基于 TIM5 32位全硬件微秒时钟) */
 float PID_operator(PIDController_t* pid, float error)
 {
+	return PID_operator_offset(pid, error, 0.0f);
+}
+
+float PID_operator_offset(PIDController_t* pid, float error, float output_offset)
+{
 	uint32_t now_us = micros();
 	float Ts;
 	float proportional, integral, derivative, output;
@@ -71,11 +76,13 @@ float PID_operator(PIDController_t* pid, float error)
 	// 比例项
 	proportional = pid->P * error;
 
-	// 积分项 (标准抗饱和限幅，与 voltage_limit 对齐)
-	// 条件积分抗饱和 (Conditional Anti-Windup): 当输出已达限幅且误差同向时冻结积分累加
+	output_offset = _constrain(output_offset, -pid->limit, pid->limit);
+
+	// 积分项 (条件抗饱和同时考虑反电势/摩擦前馈占用的输出裕量)
 	float new_integral = pid->integral_prev + pid->I * error * Ts;
 	new_integral = _constrain(new_integral, -pid->limit, pid->limit);
-	if(!((pid->output_prev >= pid->limit && error > 0.0f) || (pid->output_prev <= -pid->limit && error < 0.0f)))
+	if(!((proportional + new_integral + output_offset >= pid->limit && error > 0.0f) ||
+	     (proportional + new_integral + output_offset <= -pid->limit && error < 0.0f)))
 	{
 		pid->integral_prev = new_integral;
 	}
@@ -94,7 +101,7 @@ float PID_operator(PIDController_t* pid, float error)
 	pid->error_prev = error;
 
 	output = proportional + integral + derivative;
-	output = _constrain(output, -pid->limit, pid->limit);
+	output = _constrain(output, -pid->limit - output_offset, pid->limit - output_offset);
 
 	// 输出变化斜率限制 (Ramp)
 	if(pid->output_ramp > 0.0f && Ts > 0.0005f)

@@ -149,6 +149,31 @@ void loopFOC(int motor)
 
 /******************************************************************************/
 float open_loop_angle[3] = {0.0f, 0.0f, 0.0f};
+static uint32_t velocity_ramp_timestamp[3] = {0, 0, 0};
+
+static float ramp_velocity_target(float requested, int motor)
+{
+	uint32_t now_us = micros();
+	float Ts = 0.001f;
+	float max_delta;
+	float delta;
+
+	if(requested != requested) requested = 0.0f;
+	requested = _constrain(requested, -velocity_limit, velocity_limit);
+	if(velocity_ramp_timestamp[motor] != 0)
+	{
+		Ts = (float)(now_us - velocity_ramp_timestamp[motor]) * 1e-6f;
+		if(Ts <= 0.0f || Ts > 0.02f) Ts = 0.02f;
+	}
+	velocity_ramp_timestamp[motor] = now_us;
+
+	max_delta = 100.0f * Ts; /* 100 rad/s^2 command slew limit */
+	delta = requested - shaft_velocity_sp[motor];
+	if(delta > max_delta) delta = max_delta;
+	else if(delta < -max_delta) delta = -max_delta;
+	shaft_velocity_sp[motor] += delta;
+	return shaft_velocity_sp[motor];
+}
 
 /******************************************************************************/
 void move(float new_target, int motor)
@@ -161,11 +186,21 @@ void move(float new_target, int motor)
 		{
 			// 速度闭环控制模式 (FOC 矢量速度控制: 齿槽摩擦前馈 + 反电势解耦 + 抗饱和高动态 PID)
 			loopFOC(motor);
-			shaft_velocity_sp[motor] = new_target;
+			if(!motor_aligned[motor] || !sensor_valid[motor])
+			{
+				pid_velocity[motor].integral_prev = 0.0f;
+				pid_velocity[motor].error_prev = 0.0f;
+				pid_velocity[motor].output_prev = 0.0f;
+				pid_velocity[motor].timestamp_prev = 0;
+				voltage[motor].q = 0.0f;
+				voltage[motor].d = 0.0f;
+				setPhaseVoltage(0.0f, 0.0f, electrical_angle[motor], motor);
+				break;
+			}
+			float ramped_target = ramp_velocity_target(new_target, motor);
 
-			// 1. 零速彻底待机 (Zero-Target Idle Cutoff):
-			// 目标速度接近 0 时立即切断相电压输出 (0V)，彻底杜绝静止线圈通电发热与微震
-			if(fabsf(new_target) < 0.05f)
+			// 仅在目标与实测速度都接近零时断输出，停车阶段保留反向力矩制动。
+			if(fabsf(ramped_target) < 0.05f && fabsf(shaft_velocity[motor]) < 0.15f)
 			{
 				move_timestamp_prev[motor] = micros();
 				pid_velocity[motor].integral_prev = 0.0f;
@@ -185,27 +220,28 @@ void move(float new_target, int motor)
 			if(Ts <= 0.0f || Ts > 0.5f) Ts = 1e-3f;
 			move_timestamp_prev[motor] = now_us;
 
-			float speed_err = new_target - shaft_velocity[motor];
+			float speed_err = ramped_target - shaft_velocity[motor];
 
 			// 3. 极低速丝滑前馈 (Coulomb Friction & Detent Bias Feedforward):
 			// 克服齿槽转矩死区卡顿，确保正向转动时推进力矩平滑向前，不在零点来回刹车跳变
-			float uq_coulomb = (new_target > 0.0f) ? 0.45f : -0.45f;
-			float uq_bemf = 0.045f * new_target; // 宽速域反电势动态线性前馈
-			float uq_ff = uq_coulomb + uq_bemf;
+			float uq_coulomb = 0.45f * tanhf(ramped_target / 0.5f);
+			float uq_bemf = 0.045f * ramped_target;
+			float uq_ff = _constrain(uq_coulomb + uq_bemf, -voltage_limit, voltage_limit);
 
-			// 4. 抗饱和高响应 PID 闭环控制 (针对 Cubli 频繁急加速/急反转优化)
-			pid_velocity[motor].limit = voltage_limit;
-			float uq_pid = PID_operator(&pid_velocity[motor], speed_err);
-
-			// 5. 堵转超时保护 (Stall Protection):
-			// 若输出电压持续打满但转速严重跟不上超过 800ms，限制相电压至安全值保护线圈
+			// 持续饱和且误差较大时限幅，直到速度恢复或目标降至低速区。
 			static uint32_t stall_timer[3] = {0, 0, 0};
-			if(fabsf(speed_err) > 3.0f && fabsf(pid_velocity[motor].output_prev) >= (voltage_limit - 0.2f))
+			static uint8_t stall_latched[3] = {0, 0, 0};
+			if(fabsf(speed_err) < 3.0f || fabsf(ramped_target) < 1.0f)
+			{
+				stall_timer[motor] = 0;
+				stall_latched[motor] = 0;
+			}
+			else if(fabsf(voltage[motor].q) >= (voltage_limit - 0.2f))
 			{
 				if(stall_timer[motor] == 0) stall_timer[motor] = now_us;
 				else if((now_us - stall_timer[motor]) > 800000) // 800ms
 				{
-					if(voltage_limit > 1.8f) pid_velocity[motor].limit = 1.8f;
+					stall_latched[motor] = 1;
 				}
 			}
 			else
@@ -213,7 +249,10 @@ void move(float new_target, int motor)
 				stall_timer[motor] = 0;
 			}
 
-			voltage[motor].q = _constrain(uq_ff + uq_pid, -voltage_limit, voltage_limit);
+			float output_limit = (stall_latched[motor] && voltage_limit > 1.8f) ? 1.8f : voltage_limit;
+			pid_velocity[motor].limit = output_limit;
+			float uq_pid = PID_operator_offset(&pid_velocity[motor], speed_err, uq_ff);
+			voltage[motor].q = _constrain(uq_ff + uq_pid, -output_limit, output_limit);
 			voltage[motor].d = 0.0f;
 
 			// 驱动相电压输出
@@ -224,6 +263,13 @@ void move(float new_target, int motor)
 		case Type_torque:
 				// 力矩控制模式 (平衡控制器相电压输出模式)
 				loopFOC(motor);
+				if(!motor_aligned[motor] || !sensor_valid[motor])
+				{
+					voltage[motor].q = 0.0f;
+					voltage[motor].d = 0.0f;
+					setPhaseVoltage(0.0f, 0.0f, electrical_angle[motor], motor);
+					break;
+				}
 				voltage[motor].q = _constrain(new_target, -voltage_limit, voltage_limit);
 				voltage[motor].d = 0.0f;
 				setPhaseVoltage(voltage[motor].q, voltage[motor].d, electrical_angle[motor], motor);
@@ -232,8 +278,7 @@ void move(float new_target, int motor)
 			case Type_velocity_openloop:
 			// 速度开环模式 (同时读取传感器，保证上位机与遥测实时监测真实机械角度)
 			updateSensor(motor);
-			shaft_velocity_sp[motor] = new_target;
-			voltage[motor].q = velocityOpenloop(shaft_velocity_sp[motor], motor);
+			voltage[motor].q = velocityOpenloop(ramp_velocity_target(new_target, motor), motor);
 			voltage[motor].d = 0.0f;
 			break;
 
@@ -322,7 +367,12 @@ float velocityOpenloop(float target_velocity, int motor)
 	}
 	open_loop_timestamp[motor] = now_us;
 
-	if(Ts <= 0.0f || Ts > 0.5f) Ts = 1e-3f;
+	if(Ts <= 0.0f || Ts > 0.02f) Ts = 1e-3f;
+	if(fabsf(target_velocity) < 0.05f)
+	{
+		setPhaseVoltage(0.0f, 0.0f, _normalizeAngle(open_loop_angle[motor] * (float)pole_pairs), motor);
+		return 0.0f;
+	}
 
 	// 专用独立开环角度累加器 (不污染 shaft_angle 多圈传感器真值)
 	open_loop_angle[motor] = _normalizeAngle(open_loop_angle[motor] + target_velocity * Ts);

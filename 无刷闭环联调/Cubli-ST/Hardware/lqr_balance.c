@@ -13,6 +13,8 @@
 #include <math.h>
 #include <stdio.h>
 
+extern void set_motor_enable(uint8_t motor, uint8_t en);
+
 #ifndef _PI
 #define _PI        3.141592653589793f
 #endif
@@ -239,6 +241,29 @@ void LQR_Balance_Loop(void)
         return;
     }
 
+    /* Sample encoder state before computing the LQR feedback and reject stale angles. */
+    int first_motor = cubli_bal.mode == BAL_MODE_CORNER ? 0 : (int)cubli_bal.mode;
+    int last_motor = cubli_bal.mode == BAL_MODE_CORNER ? 2 : first_motor;
+    int sensor_motor;
+    for (sensor_motor = first_motor; sensor_motor <= last_motor; sensor_motor++)
+    {
+        updateSensor(sensor_motor);
+        if (!motor_aligned[sensor_motor] || !sensor_valid[sensor_motor])
+        {
+            int k;
+            for (k = 0; k < 3; k++)
+            {
+                cubli_bal.control_u[k] = 0.0f;
+                setPhaseVoltage(0.0f, 0.0f, electrical_angle[k], k);
+            }
+            cubli_bal.state = BAL_STATE_DISABLED;
+            set_motor_enable(0, 0);
+            printf("[LQR] Encoder M%d is uncalibrated or offline; balance disarmed.\r\n", sensor_motor + 1);
+            return;
+        }
+        electrical_angle[sensor_motor] = electricalAngle(sensor_motor);
+    }
+
     /* ---------------------------------------------------------------------- */
     /* 1. 单边沿平衡模式 (1D Edge Balance: M1, M2 或 M3)                       */
     /* ---------------------------------------------------------------------- */
@@ -329,8 +354,7 @@ void LQR_Balance_Loop(void)
 
         cubli_bal.control_u[m] = u;
 
-        // FOC 闭环相电压输出：直接施加到指定电机
-        loopFOC(m);
+        // FOC 相电压输出使用本周期开头采集的编码器角度。
         voltage[m].q = u;
         voltage[m].d = 0.0f;
         setPhaseVoltage(voltage[m].q, voltage[m].d, electrical_angle[m], m);
@@ -437,7 +461,6 @@ void LQR_Balance_Loop(void)
         // 驱动三个电机的 FOC 力矩
         for (k = 0; k < 3; k++)
         {
-            loopFOC(k);
             voltage[k].q = cubli_bal.control_u[k];
             voltage[k].d = 0.0f;
             setPhaseVoltage(voltage[k].q, voltage[k].d, electrical_angle[k], k);
@@ -452,6 +475,9 @@ void LQR_Balance_Enable(bool enable)
 {
     if (enable)
     {
+        setPhaseVoltage(0.0f, 0.0f, 0.0f, 0);
+        setPhaseVoltage(0.0f, 0.0f, 0.0f, 1);
+        setPhaseVoltage(0.0f, 0.0f, 0.0f, 2);
         // 若未校准零偏，首先进入校准
         if (!cubli_bal.attitude.is_calibrated)
         {

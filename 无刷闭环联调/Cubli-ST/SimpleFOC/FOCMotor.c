@@ -18,6 +18,7 @@ float sensor_offset[3] = {0.0f, 0.0f, 0.0f};
 float zero_electric_angle[3] = {0.0f, 0.0f, 0.0f};
 int   sensor_direction[3] = {1, 1, 1}; // 默认 CW
 uint8_t motor_aligned[3] = {0, 0, 0};
+uint8_t sensor_valid[3] = {0, 0, 0};
 uint8_t motor_sensor_map[3] = {0, 1, 2}; // 默认映射表：驱动0(TIM1)->I2C1(MT6701-1), 驱动1(TIM3)->I2C2(MT6701-2), 驱动2(TIM4)->I2C3(MT6701-3)
 
 /* 编码器跟踪状态内部结构 */
@@ -25,6 +26,7 @@ float angle_prev[3] = {0.0f, 0.0f, 0.0f};           // 当前单圈机械角度 
 static unsigned long angle_prev_ts[3] = {0, 0, 0};   // 上一次角度采样时间戳
 static float angle_vel_prev[3] = {0.0f, 0.0f, 0.0f}; // 上一次计算速度时的单圈角度 (严格时间对齐)
 static unsigned long vel_prev_ts[3] = {0, 0, 0};     // 上一次计算速度时的时间戳
+static float last_raw_velocity[3] = {0.0f, 0.0f, 0.0f};
 
 PIDController_t pid_velocity[3];
 LowPassFilter_t lpf_velocity[3];
@@ -52,6 +54,7 @@ void reset_closed_loop_state(int motor)
 		lpf_velocity[k].y_prev = 0.0f;
 		lpf_velocity[k].timestamp_prev = 0;
 		shaft_velocity[k] = 0.0f;
+		shaft_velocity_sp[k] = 0.0f;
 	}
 }
 
@@ -103,7 +106,12 @@ void updateSensor(int motor)
 	 */
 	res = ENC_GetAngle(sens_idx, &raw, &deg);
 
-	if(res != 0) return; // 读取失败则沿用上次值
+	if(res != 0)
+	{
+		sensor_valid[motor] = 0;
+		return;
+	}
+	sensor_valid[motor] = 1;
 
 	/* 转换到单圈绝对弧度 [0, 2PI)
 	 * I2C 模式: 14-bit 绝对值 (16384 counts/圈)
@@ -160,15 +168,35 @@ void updateSensor(int motor)
 			// 极值限幅保护
 			if(raw_vel > 100.0f) raw_vel = 100.0f;
 			else if(raw_vel < -100.0f) raw_vel = -100.0f;
+			last_raw_velocity[motor] = raw_vel;
 
 			// 一阶低通滤波 (Tf = 12ms)
 			shaft_velocity[motor] = LPF_operator(&lpf_velocity[motor], raw_vel);
 		}
-		else if(d_us >= 25000) // 超过 50ms (速度低于 0.007 rad/s) 无位置变化判定停转
+		else
 		{
-			angle_vel_prev[motor] = rad;
-			vel_prev_ts[motor] = now_us;
-			shaft_velocity[motor] = LPF_operator(&lpf_velocity[motor], 0.0f);
+			float counts_per_rev;
+			uint32_t stop_timeout_us = 25000U;
+#if ENC_USE_HW_QUAD
+			counts_per_rev = (float)ENC_QUAD_COUNTS_PER_REV;
+#else
+			counts_per_rev = 16384.0f;
+#endif
+			if(fabsf(last_raw_velocity[motor]) > 0.0f)
+			{
+				float pulse_period_us = _2PI * 1e6f /
+					(counts_per_rev * fabsf(last_raw_velocity[motor]));
+				float timeout = _constrain(3.0f * pulse_period_us, 25000.0f, 1000000.0f);
+				stop_timeout_us = (uint32_t)timeout;
+			}
+
+			if(d_us >= stop_timeout_us)
+			{
+				angle_vel_prev[motor] = rad;
+				vel_prev_ts[motor] = now_us;
+				last_raw_velocity[motor] = 0.0f;
+				shaft_velocity[motor] = LPF_operator(&lpf_velocity[motor], 0.0f);
+			}
 		}
 	}
 }

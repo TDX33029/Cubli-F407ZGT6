@@ -386,19 +386,19 @@ void set_motor_enable(uint8_t motor, uint8_t en)
 	{
 		m1_enabled = en ? 1 : 0;
 		if(m1_enabled) { reset_closed_loop_state(0); M1_Enable; }
-		else { M1_Disable; TIM1->CCR1 = 0; TIM1->CCR2 = 0; TIM1->CCR3 = 0; }
+		else { M1_Disable; shaft_velocity_sp[0] = 0.0f; TIM1->CCR1 = 0; TIM1->CCR2 = 0; TIM1->CCR3 = 0; }
 	}
 	if(motor == 0 || motor == 2)
 	{
 		m2_enabled = en ? 1 : 0;
 		if(m2_enabled) { reset_closed_loop_state(1); M2_Enable; }
-		else { M2_Disable; TIM3->CCR1 = 0; TIM3->CCR2 = 0; TIM3->CCR3 = 0; }
+		else { M2_Disable; shaft_velocity_sp[1] = 0.0f; TIM3->CCR1 = 0; TIM3->CCR2 = 0; TIM3->CCR3 = 0; }
 	}
 	if(motor == 0 || motor == 3)
 	{
 		m3_enabled = en ? 1 : 0;
 		if(m3_enabled) { reset_closed_loop_state(2); M3_Enable; }
-		else { M3_Disable; TIM4->CCR1 = 0; TIM4->CCR2 = 0; TIM4->CCR3 = 0; }
+		else { M3_Disable; shaft_velocity_sp[2] = 0.0f; TIM4->CCR1 = 0; TIM4->CCR2 = 0; TIM4->CCR3 = 0; }
 	}
 }
 

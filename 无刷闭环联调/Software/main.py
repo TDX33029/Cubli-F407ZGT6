@@ -405,7 +405,7 @@ class Cubli3DWidget(QWidget):
     """
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setMinimumSize(320, 260)
+        self.setMinimumSize(280, 220)
         self.setSizePolicy(self.sizePolicy().Expanding, self.sizePolicy().Expanding)
 
         # 欧拉角 (度, 对应机体姿态)
@@ -1307,7 +1307,7 @@ class SelfTestCard(QGroupBox):
 
         for i, (name, bus) in enumerate(motors_meta):
             lbl_name = QLabel(f"{name} ({bus}):")
-            lbl_name.setStyleSheet("font-size: 11px; font-weight: bold; color: #cbd5e1;")
+            lbl_name.setStyleSheet("font-size: 11px; font-weight: bold; color: #475569;")
             grid.addWidget(lbl_name, i, 0)
 
             lbl_status = QLabel("待检测")
@@ -1335,16 +1335,16 @@ class SelfTestCard(QGroupBox):
         self.btn_run_test.setText("正在执行检测...")
         msg = f"自检中 ({step_str})" if step_str else "自检中 (三轴低速开环测试)"
         self.lbl_badge.setText(msg)
-        self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #38bdf8;")
+        self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #0369a1;")
         self.lbl_hint.setText("正在低速驱动电机换向并采样霍尔角度，请勿触碰动量轮。")
-        self.lbl_hint.setStyleSheet("font-size: 10px; color: #94a3b8;")
+        self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
 
     def set_step(self, motor_str):
         try:
             idx = int(motor_str[1]) - 1
             if 0 <= idx < 3:
                 self.lbl_m_tags[idx].setText("检测中...")
-                self.lbl_m_tags[idx].setStyleSheet("font-size: 11px; font-weight: bold; color: #38bdf8;")
+                self.lbl_m_tags[idx].setStyleSheet("font-size: 11px; font-weight: bold; color: #0369a1;")
                 self.lbl_badge.setText(f"正在检测 {motor_str} (低速开环与I2C采样)...")
         except Exception:
             pass
@@ -1362,9 +1362,9 @@ class SelfTestCard(QGroupBox):
 
             if st == 'PASS':
                 self.lbl_m_tags[i].setText("正常")
-                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #34d399;")
+                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #15803d;")
                 self.lbl_m_details[i].setText(f"通信: {comm}% | 转角: {deg:.1f}°")
-                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #34d399;")
+                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #15803d;")
             elif st in ('SKIP', 'NONE', 'UNINSTALLED'):
                 self.lbl_m_tags[i].setText("未安装")
                 self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #64748b;")
@@ -1373,20 +1373,20 @@ class SelfTestCard(QGroupBox):
             else:
                 tag = "离线" if "I2C" in st else "堵转"
                 self.lbl_m_tags[i].setText(tag)
-                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #f87171;")
+                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b91c1c;")
                 self.lbl_m_details[i].setText(f"通信: {comm}% | 转角: {deg:.1f}°")
-                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #f87171;")
+                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b91c1c;")
 
         if all_pass:
             self.lbl_badge.setText("自检通过 (已解锁)")
-            self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #34d399;")
+            self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #15803d;")
             self.lbl_hint.setText("已安装的电机与霍尔编码器自检合格，通道已自动校准，控制功能已解锁。")
-            self.lbl_hint.setStyleSheet("font-size: 10px; color: #94a3b8;")
+            self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
         else:
             self.lbl_badge.setText("自检失败 (控制锁定)")
-            self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #f87171;")
+            self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #b91c1c;")
             self.lbl_hint.setText("存在异常轴，请检查对应I2C连接、3.3V供电、上拉电阻或电机相线后重测。")
-            self.lbl_hint.setStyleSheet("font-size: 10px; color: #94a3b8;")
+            self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
 
     def reset_state(self, connected=False):
         self.btn_run_test.setEnabled(connected)
@@ -1394,12 +1394,12 @@ class SelfTestCard(QGroupBox):
         if connected:
             self.lbl_badge.setText("待自检 (控制锁定)")
             self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #f59e0b;")
-            self.lbl_hint.setText("串口已连接。请点击上方“开始硬件自检”以激活电机控制权限。")
-            self.lbl_hint.setStyleSheet("font-size: 10px; color: #94a3b8;")
+            self.lbl_hint.setText("通信链路已连接。请先完成硬件自检，再操作电机。")
+            self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
         else:
-            self.lbl_badge.setText("串口未连接 (控制锁定)")
-            self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #94a3b8;")
-            self.lbl_hint.setText("提示: 请先打开串口，然后执行硬件自检以解锁电机控制。")
+            self.lbl_badge.setText("未连接 (控制锁定)")
+            self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #64748b;")
+            self.lbl_hint.setText("提示: 请先连接通信链路，再执行硬件自检。")
             self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
 
         for i in range(3):
@@ -1415,9 +1415,9 @@ class SelfTestCard(QGroupBox):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Cubli 三轴无刷电机联调与 3D 姿态上位机 (SimpleFOC & USART2)")
-        self.resize(1360, 880)
-        self.setMinimumSize(1100, 720)
+        self.setWindowTitle("Cubli 三轴驱动与状态监视")
+        self.resize(1440, 920)
+        self.setMinimumSize(1260, 760)
 
         # 串口后台工作线程
         self.worker = SerialWorker()
@@ -1633,13 +1633,15 @@ class MainWindow(QMainWindow):
         right_widget = self._create_right_panel()
         splitter_main.addWidget(right_widget)
 
-        splitter_main.setSizes([450, 910])
+        splitter_main.setSizes([510, 930])
+        splitter_main.setStretchFactor(0, 0)
+        splitter_main.setStretchFactor(1, 1)
         main_layout.addWidget(splitter_main)
 
         # 3. 状态栏
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("就绪 - 请选择串口并打开连接")
+        self.status_bar.showMessage("就绪 - 请选择通信链路并连接")
 
         # 初始安全互锁：锁定所有电机致动控制，等待串口连接并执行自检
         self.set_motor_controls_locked(True)
@@ -1675,7 +1677,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.edit_wifi_ip)
 
         # 串口选择
-        layout.addWidget(QLabel("串口:"))
+        self.lbl_port = QLabel("串口:")
+        layout.addWidget(self.lbl_port)
         self.combo_ports = QComboBox()
         self.combo_ports.setMinimumWidth(130)
         layout.addWidget(self.combo_ports)
@@ -1687,7 +1690,8 @@ class MainWindow(QMainWindow):
         self.btn_refresh = btn_refresh   # 保存引用供链路模式切换可见性使用
 
         # 波特率选择
-        layout.addWidget(QLabel("波特率:"))
+        self.lbl_baud = QLabel("波特率:")
+        layout.addWidget(self.lbl_baud)
         self.combo_baud = QComboBox()
         for baud in [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600]:
             self.combo_baud.addItem(str(baud), baud)
@@ -1715,17 +1719,11 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.btn_connect)
 
         # 状态指示标签 (纯文本素雅显示)
-        self.lbl_status_led = QLabel("[离线]")
-        self.lbl_status_led.setStyleSheet("color: #94a3b8; font-weight: bold; margin-left: 4px;")
+        self.lbl_status_led = QLabel("未连接")
+        self.lbl_status_led.setStyleSheet("color: #64748b; font-weight: bold; margin-left: 4px;")
         layout.addWidget(self.lbl_status_led)
 
         layout.addStretch()
-
-        # 3D 姿态归零按钮 (标准工控按钮)
-        btn_zero_att = QPushButton("姿态归零")
-        btn_zero_att.setFixedHeight(26)
-        btn_zero_att.clicked.connect(self.action_reset_cube_attitude)
-        layout.addWidget(btn_zero_att)
 
         # 全部归零 (平稳停止)
         self.btn_stop_all = QPushButton("全部归零")
@@ -1735,9 +1733,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.btn_stop_all)
 
         # 紧急停止按钮 (素雅工控暗红警示，避免刺眼彩色外框)
-        btn_estop = QPushButton("紧急停止 [ESTOP]")
-        btn_estop.setFixedHeight(26)
-        btn_estop.setStyleSheet("""
+        self.btn_estop = QPushButton("紧急停止")
+        self.btn_estop.setFixedHeight(26)
+        self.btn_estop.setToolTip("立即切断三路驱动器使能")
+        self.btn_estop.setStyleSheet("""
             QPushButton {
                 background-color: #991b1b;
                 border: 1px solid #b91c1c;
@@ -1755,8 +1754,8 @@ class MainWindow(QMainWindow):
                 background-color: #7f1d1d;
             }
         """)
-        btn_estop.clicked.connect(self.action_emergency_stop)
-        layout.addWidget(btn_estop)
+        self.btn_estop.clicked.connect(self.action_emergency_stop)
+        layout.addWidget(self.btn_estop)
 
         return bar
 
@@ -1773,9 +1772,12 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.card_self_test)
 
         # 2. 三轴独立控制卡片 (素雅工控风，标题清晰注明定时器和引脚)
-        self.card_m1 = MotorControlCard(1, "电机 1 (M1) - [TIM1: PE9/11/13 | EN: PD0]")
-        self.card_m2 = MotorControlCard(2, "电机 2 (M2) - [TIM3: PA6/7 PB0 | EN: PD1]")
-        self.card_m3 = MotorControlCard(3, "电机 3 (M3) - [TIM4: PD12/13/14 | EN: PD2]")
+        self.card_m1 = MotorControlCard(1, "M1 | TIM1 | EN PD0")
+        self.card_m2 = MotorControlCard(2, "M2 | TIM3 | EN PD1")
+        self.card_m3 = MotorControlCard(3, "M3 | TIM4 | EN PD2")
+        self.card_m1.setToolTip("PWM: PE9 / PE11 / PE13 | 编码器: I2C1")
+        self.card_m2.setToolTip("PWM: PA6 / PA7 / PB0 | 编码器: I2C2")
+        self.card_m3.setToolTip("PWM: PD12 / PD13 / PD14 | 编码器: I2C3")
 
         self.card_m1.sig_speed_changed.connect(self.on_motor_speed_change)
         self.card_m2.sig_speed_changed.connect(self.on_motor_speed_change)
@@ -1816,7 +1818,7 @@ class MainWindow(QMainWindow):
         row_sync = QHBoxLayout()
         row_sync.setSpacing(8)
         lbl_s_target = QLabel("同步目标:")
-        lbl_s_target.setStyleSheet("font-size: 12px; color: #cbd5e1;")
+        lbl_s_target.setStyleSheet("font-size: 12px; color: #475569;")
         row_sync.addWidget(lbl_s_target)
 
         self.spin_sync = QDoubleSpinBox()
@@ -2023,8 +2025,9 @@ class MainWindow(QMainWindow):
 
         # PID 参数在线微调行
         # PID 参数在线微调行
-        pid_row = QHBoxLayout()
-        pid_row.setSpacing(4)
+        pid_row = QGridLayout()
+        pid_row.setHorizontalSpacing(5)
+        pid_row.setVerticalSpacing(6)
 
         self.combo_pid_motor = QComboBox()
         self.combo_pid_motor.addItems(["全部电机", "M1 (TIM1)", "M2 (TIM3)", "M3 (TIM4)"])
@@ -2032,7 +2035,7 @@ class MainWindow(QMainWindow):
         self.combo_pid_motor.setStyleSheet("font-size: 11px; font-weight: bold; padding: 1px 4px;")
 
         lbl_p = QLabel("P:")
-        lbl_p.setStyleSheet("font-size: 11px; color: #94a3b8;")
+        lbl_p.setStyleSheet("font-size: 11px; color: #64748b;")
         self.spin_p = QDoubleSpinBox()
         self.spin_p.setRange(0.0, 10.0)
         self.spin_p.setSingleStep(0.05)
@@ -2041,7 +2044,7 @@ class MainWindow(QMainWindow):
         self.spin_p.setFixedHeight(24)
 
         lbl_i = QLabel("I:")
-        lbl_i.setStyleSheet("font-size: 11px; color: #94a3b8;")
+        lbl_i.setStyleSheet("font-size: 11px; color: #64748b;")
         self.spin_i = QDoubleSpinBox()
         self.spin_i.setRange(0.0, 50.0)
         self.spin_i.setSingleStep(0.2)
@@ -2050,7 +2053,7 @@ class MainWindow(QMainWindow):
         self.spin_i.setFixedHeight(24)
 
         lbl_d = QLabel("D:")
-        lbl_d.setStyleSheet("font-size: 11px; color: #94a3b8;")
+        lbl_d.setStyleSheet("font-size: 11px; color: #64748b;")
         self.spin_d = QDoubleSpinBox()
         self.spin_d.setRange(0.0, 1.0)
         self.spin_d.setSingleStep(0.001)
@@ -2066,15 +2069,17 @@ class MainWindow(QMainWindow):
         btn_read_pid.setFixedHeight(24)
         btn_read_pid.clicked.connect(self.action_read_pid)
 
-        pid_row.addWidget(self.combo_pid_motor)
-        pid_row.addWidget(lbl_p)
-        pid_row.addWidget(self.spin_p)
-        pid_row.addWidget(lbl_i)
-        pid_row.addWidget(self.spin_i)
-        pid_row.addWidget(lbl_d)
-        pid_row.addWidget(self.spin_d)
-        pid_row.addWidget(btn_send_pid)
-        pid_row.addWidget(btn_read_pid)
+        pid_row.addWidget(self.combo_pid_motor, 0, 0, 1, 2)
+        pid_row.addWidget(lbl_p, 0, 2)
+        pid_row.addWidget(self.spin_p, 0, 3)
+        pid_row.addWidget(lbl_i, 0, 4)
+        pid_row.addWidget(self.spin_i, 0, 5)
+        pid_row.addWidget(lbl_d, 1, 0)
+        pid_row.addWidget(self.spin_d, 1, 1)
+        pid_row.addWidget(btn_send_pid, 1, 2, 1, 2)
+        pid_row.addWidget(btn_read_pid, 1, 4, 1, 2)
+        pid_row.setColumnStretch(3, 1)
+        pid_row.setColumnStretch(5, 1)
         cl_layout.addLayout(pid_row)
 
         layout.addWidget(self.cl_group)
@@ -2095,17 +2100,17 @@ class MainWindow(QMainWindow):
                 background-color: #f8fafc;
             }
             QScrollBar:vertical {
-                background: #121417;
+                background: #f1f5f9;
                 width: 8px;
                 margin: 0px;
             }
             QScrollBar::handle:vertical {
-                background: #2e3542;
+                background: #cbd5e1;
                 min-height: 24px;
                 border-radius: 4px;
             }
             QScrollBar::handle:vertical:hover {
-                background: #434d5f;
+                background: #94a3b8;
             }
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
                 height: 0px;
@@ -2143,50 +2148,58 @@ class MainWindow(QMainWindow):
 
         # 2. 中部左右/上下布局 (左上 3D 立方体，右上/下方曲线)
         # 上半区: 3D 姿态立方体 (与陀螺仪同步，默认水平朝上)
-        cube_group = QGroupBox("Cubli 空间三维姿态 (陀螺仪/加速度计同步 | 默认水平朝上)")
+        cube_group = QGroupBox("姿态与飞轮")
         cube_group.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
-                border: 1px solid #363d4a;
+                border: 1px solid #dbe3ec;
                 border-radius: 6px;
                 margin-top: 6px;
                 padding-top: 8px;
-                background-color: #16181d;
-                color: #e2e8f0;
+                background-color: #ffffff;
+                color: #0f172a;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 left: 12px;
                 padding: 0 4px;
-                color: #cbd5e1;
+                color: #475569;
             }
         """)
         cube_layout = QVBoxLayout(cube_group)
-        cube_layout.setContentsMargins(4, 4, 4, 4)
+        cube_layout.setContentsMargins(8, 8, 8, 8)
+
+        cube_toolbar = QHBoxLayout()
+        cube_toolbar.addWidget(QLabel("Roll / Pitch / Yaw"))
+        cube_toolbar.addStretch()
+        btn_zero_att = QPushButton("姿态归零")
+        btn_zero_att.setFixedHeight(25)
+        btn_zero_att.clicked.connect(self.action_reset_cube_attitude)
+        cube_toolbar.addWidget(btn_zero_att)
+        cube_layout.addLayout(cube_toolbar)
 
         self.cube_widget = Cubli3DWidget()
         cube_layout.addWidget(self.cube_widget)
-        layout.addWidget(cube_group, stretch=3)
 
         # 下半区: 实时动态波形监控选项卡 (默认展示 MT6701 实时角度曲线)
-        curve_group = QGroupBox("实时动态波形监控 (示波器式平滑滚动)")
+        curve_group = QGroupBox("实时数据")
         curve_group.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
-                border: 1px solid #363d4a;
+                border: 1px solid #dbe3ec;
                 border-radius: 6px;
                 margin-top: 4px;
                 padding-top: 6px;
-                background-color: #16181d;
-                color: #e2e8f0;
+                background-color: #ffffff;
+                color: #0f172a;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 left: 12px;
                 padding: 0 4px;
-                color: #cbd5e1;
+                color: #475569;
             }
         """)
         curve_layout = QVBoxLayout(curve_group)
@@ -2195,25 +2208,24 @@ class MainWindow(QMainWindow):
         self.tab_curves = QTabWidget()
         self.tab_curves.setStyleSheet("""
             QTabWidget::pane {
-                border: 1px solid #363d4a;
+                border: 1px solid #dbe3ec;
                 border-radius: 4px;
-                background-color: #16181d;
+                background-color: #ffffff;
+                color: #334155;
             }
             QTabBar::tab {
-                background-color: #1a1e24;
-                border: 1px solid #363d4a;
-                padding: 4px 12px;
+                background-color: #f1f5f9;
+                border: 1px solid #dbe3ec;
+                padding: 5px 10px;
                 margin-right: 2px;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-                color: #94a3b8;
+                color: #475569;
                 font-weight: bold;
                 font-size: 11px;
             }
             QTabBar::tab:selected {
-                background-color: #242932;
-                color: #f1f5f9;
-                border-bottom-color: #242932;
+                background-color: #ffffff;
+                color: #0f172a;
+                border-bottom-color: #ffffff;
             }
         """)
 
@@ -2279,7 +2291,16 @@ class MainWindow(QMainWindow):
         self.tab_curves.addTab(self.plot_accel, "三轴加速度 (g)")
 
         curve_layout.addWidget(self.tab_curves)
-        layout.addWidget(curve_group, stretch=3)
+        monitor_splitter = QSplitter(Qt.Horizontal)
+        monitor_splitter.setHandleWidth(5)
+        cube_group.setMinimumWidth(300)
+        curve_group.setMinimumWidth(390)
+        monitor_splitter.addWidget(cube_group)
+        monitor_splitter.addWidget(curve_group)
+        monitor_splitter.setSizes([420, 570])
+        monitor_splitter.setStretchFactor(0, 0)
+        monitor_splitter.setStretchFactor(1, 1)
+        layout.addWidget(monitor_splitter, stretch=5)
 
         # 3. 底部终端原始报文日志
         log_group = QGroupBox("串口通信监控与终端指令")
@@ -2306,7 +2327,7 @@ class MainWindow(QMainWindow):
 
         self.txt_log = QTextEdit()
         self.txt_log.setReadOnly(True)
-        self.txt_log.setMaximumHeight(100)
+        self.txt_log.setMinimumHeight(90)
         log_layout.addWidget(self.txt_log)
 
         log_ctrl_row = QHBoxLayout()
@@ -2326,7 +2347,7 @@ class MainWindow(QMainWindow):
 
         log_ctrl_row.addSpacing(10)
         lbl_cmd = QLabel("指令:")
-        lbl_cmd.setStyleSheet("font-size: 12px; color: #cbd5e1;")
+        lbl_cmd.setStyleSheet("font-size: 12px; color: #475569;")
         log_ctrl_row.addWidget(lbl_cmd)
         self.edt_custom_cmd = QLineEdit()
         self.edt_custom_cmd.setFixedHeight(26)
@@ -2345,7 +2366,7 @@ class MainWindow(QMainWindow):
         return panel
 
     def _create_metric_box(self, title, initial_val, color=None):
-        """创建素雅朴素的指标卡片，彻底去除刺眼彩色边框"""
+        """创建紧凑的遥测指标卡片。"""
         box = QFrame()
         box.setStyleSheet("""
             QFrame {
@@ -2360,10 +2381,10 @@ class MainWindow(QMainWindow):
         l.setSpacing(2)
 
         lbl_t = QLabel(title)
-        lbl_t.setStyleSheet("font-size: 11px; color: #94a3b8;")
+        lbl_t.setStyleSheet("font-size: 11px; color: #64748b;")
 
         lbl_v = QLabel(initial_val)
-        lbl_v.setStyleSheet("font-size: 13px; font-weight: bold; color: #f1f5f9;")
+        lbl_v.setStyleSheet("font-size: 13px; font-weight: bold; color: #0f172a;")
 
         l.addWidget(lbl_t)
         l.addWidget(lbl_v)
@@ -2394,8 +2415,10 @@ class MainWindow(QMainWindow):
         """链路模式切换: 串口 <-> WiFi(TCP), 切换对应输入控件的可见性"""
         is_wifi = (self.combo_link.currentData() == "wifi")
         self.edit_wifi_ip.setVisible(is_wifi)
+        self.lbl_port.setVisible(not is_wifi)
         self.combo_ports.setVisible(not is_wifi)
         self.btn_refresh.setVisible(not is_wifi)
+        self.lbl_baud.setVisible(not is_wifi)
         self.combo_baud.setVisible(not is_wifi)
         # 未连接时同步更新连接按钮文案
         if not (self.worker.ser and self.worker.ser.is_open):
@@ -2423,23 +2446,25 @@ class MainWindow(QMainWindow):
                 self.worker.connect_port(port, baud)
 
     def on_serial_connected(self, port, baud):
-        self.btn_connect.setText("关闭串口")
+        self.btn_connect.setText("断开连接")
         self.btn_connect.setStyleSheet("""
             QPushButton {
-                background-color: #242932;
-                border: 1px solid #4f596b;
+                background-color: #fff7ed;
+                border: 1px solid #fdba74;
                 font-weight: bold;
                 padding: 3px 10px;
-                color: #f87171;
+                color: #c2410c;
             }
             QPushButton:hover {
-                background-color: #323946;
-                border-color: #ef4444;
+                background-color: #ffedd5;
+                border-color: #fb923c;
             }
         """)
-        self.lbl_status_led.setText(f"[在线 {port}@{baud}]")
-        self.lbl_status_led.setStyleSheet("color: #34d399; font-weight: bold; margin-left: 4px;")
-        self.status_bar.showMessage(f"已连接串口: {port}，系统处于安全锁定状态，请先执行硬件自检！")
+        self.lbl_status_led.setText("已连接")
+        connection_detail = port if "(WiFi)" in port else f"{port} · {baud} bps"
+        self.lbl_status_led.setToolTip(connection_detail)
+        self.lbl_status_led.setStyleSheet("color: #15803d; font-weight: bold; margin-left: 4px;")
+        self.status_bar.showMessage(f"链路已连接: {connection_detail}。控制保持锁定，请先执行硬件自检。")
 
         # 连接成功后，重置自检状态并锁定电机操作
         self.self_test_passed = False
@@ -2466,23 +2491,25 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(300, lambda: self.worker.send_cmd("?"))
 
     def on_serial_disconnected(self):
-        self.btn_connect.setText("打开串口")
+        is_wifi = self.combo_link.currentData() == "wifi"
+        self.btn_connect.setText("连接 WiFi" if is_wifi else "打开串口")
         self.btn_connect.setStyleSheet("""
             QPushButton {
-                background-color: #242932;
-                border: 1px solid #363d4a;
+                background-color: #ffffff;
+                border: 1px solid #cbd5e1;
                 font-weight: bold;
                 padding: 3px 10px;
-                color: #e2e8f0;
+                color: #334155;
             }
             QPushButton:hover {
-                background-color: #323946;
-                border-color: #4f596b;
+                background-color: #f1f5f9;
+                border-color: #94a3b8;
             }
         """)
-        self.lbl_status_led.setText("[离线]")
-        self.lbl_status_led.setStyleSheet("color: #94a3b8; font-weight: bold; margin-left: 4px;")
-        self.status_bar.showMessage("串口已断开")
+        self.lbl_status_led.setText("未连接")
+        self.lbl_status_led.setToolTip("")
+        self.lbl_status_led.setStyleSheet("color: #64748b; font-weight: bold; margin-left: 4px;")
+        self.status_bar.showMessage("链路已断开")
 
         # 断开连接时，恢复互锁锁定状态
         self.self_test_passed = False
@@ -2520,7 +2547,7 @@ class MainWindow(QMainWindow):
     def action_start_self_test(self):
         """用户点击开始自检按钮"""
         if not (self.worker.ser and self.worker.ser.is_open):
-            QMessageBox.warning(self, "未连接串口", "请先在上方选择并打开串口，然后再执行硬件自检！")
+            QMessageBox.warning(self, "未连接设备", "请先连接上位机通信链路，再执行硬件自检。")
             return
 
         self.self_test_passed = False

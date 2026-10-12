@@ -49,7 +49,7 @@ void ENC_Quad_Init(void)
 				| (1U << TIM_CCMR1_CC2S_Pos)        /* IC2 -> TI2 */
 				| (3U << TIM_CCMR1_IC1F_Pos)        /* N=8 采样滤波, 抑制毛刺 */
 				| (3U << TIM_CCMR1_IC2F_Pos);
-	TIM2->CCER = 0;                                  /* TI1FP1/TI2FP2 均不反相 */
+	TIM2->CCER = TIM_CCER_CC1E | TIM_CCER_CC2E;       /* 使能两路输入，保持非反相 */
 	TIM2->ARR = 0xFFFF;
 	TIM2->CNT = 0;
 	TIM2->EGR = TIM_EGR_UG;
@@ -68,7 +68,7 @@ void ENC_Quad_Init(void)
 				| (1U << TIM_CCMR1_CC2S_Pos)
 				| (3U << TIM_CCMR1_IC1F_Pos)
 				| (3U << TIM_CCMR1_IC2F_Pos);
-	TIM5->CCER = 0;
+	TIM5->CCER = TIM_CCER_CC1E | TIM_CCER_CC2E;
 	TIM5->ARR = 0xFFFF;
 	TIM5->CNT = 0;
 	TIM5->EGR = TIM_EGR_UG;
@@ -88,7 +88,7 @@ void ENC_Quad_Init(void)
 				| (1U << TIM_CCMR1_CC2S_Pos)
 				| (3U << TIM_CCMR1_IC1F_Pos)
 				| (3U << TIM_CCMR1_IC2F_Pos);
-	TIM8->CCER = 0;
+	TIM8->CCER = TIM_CCER_CC1E | TIM_CCER_CC2E;
 	TIM8->ARR = 0xFFFF;
 	TIM8->CNT = 0;
 	TIM8->EGR = TIM_EGR_UG;
