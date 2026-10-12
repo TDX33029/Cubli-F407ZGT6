@@ -55,6 +55,6 @@
 uint8_t LSM6DSR_Init(void);
 uint8_t LSM6DSR_Read_ID(void);
 uint8_t LSM6DSR_Read_Raw(int16_t accel[3], int16_t gyro[3]);
-void LSM6DSR_Get_Data(float accel_g[3], float gyro_dps[3]);
+uint8_t LSM6DSR_Get_Data(float accel_g[3], float gyro_dps[3]);
 
 #endif /* __LSM6DSR_H__ */

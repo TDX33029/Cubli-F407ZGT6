@@ -1,139 +1,51 @@
-/**
-  ******************************************************************************
-  * @file           : lqr_balance.h
-  * @brief          : Cubli 反作用飞轮动量轮平衡控制算法 (基于 ETH Zurich LQR 模型)
-  *                   支持:
-  *                   1. 6轴 IMU 卡尔曼滤波与互补滤波姿态估计 (倾角与角速度解算)
-  *                   2. 1D 边沿平衡 (Edge Balance) 4态 LQR 控制器
-  *                   3. 3D 顶点平衡 (Corner Balance) 解耦坐标映射 LQR 控制器
-  *                   4. 跌倒安全保护 (Fall Detection & Auto Safe Lock)
-  *                   5. 在线参数调节与自动零位/偏置标定
-  ******************************************************************************
-  */
-
 #ifndef __LQR_BALANCE_H__
 #define __LQR_BALANCE_H__
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "main.h"
 #include <stdint.h>
 #include <stdbool.h>
-
-#ifndef _PI
-#define _PI        3.141592653589793f
-#endif
-
-#ifndef DEG_TO_RAD
-#define DEG_TO_RAD (_PI / 180.0f)
-#endif
-
-#ifndef RAD_TO_DEG
-#define RAD_TO_DEG (180.0f / _PI)
-#endif
-
-/* ========================================================================== */
-/* 平衡状态机枚举                                                             */
-/* ========================================================================== */
-typedef enum {
-    BAL_STATE_DISABLED     = 0,  // 平衡失能待机
-    BAL_STATE_CALIBRATING  = 1,  // 传感器静态零偏校准中
-    BAL_STATE_STANDBY      = 2,  // 就绪，等待进入平衡捕捉窗口
-    BAL_STATE_BALANCING    = 3,  // LQR 闭环平衡控制中
-    BAL_STATE_FALL_PROTECT = 4   // 倾角超限跌倒保护 (电机安全切断)
-} BalanceState_e;
-
-/* 平衡模式选择 */
-typedef enum {
-    BAL_MODE_EDGE_M1 = 0,  // 单边沿平衡: M1 (DRV8313 #1, 绕 X/Pitch 轴)
-    BAL_MODE_EDGE_M2 = 1,  // 单边沿平衡: M2 (DRV8313 #2, 绕 Y/Roll 轴)
-    BAL_MODE_EDGE_M3 = 2,  // 单边沿平衡: M3 (DRV8313 #3, 绕 Z 轴)
-    BAL_MODE_CORNER  = 3   // 顶点平衡: M1/M2/M3 三轴解耦联合平衡
-} BalanceMode_e;
-
-/* ========================================================================== */
-/* LQR 控制器增益参数结构体 (电压域相电压控制)                                 */
-/* 倾角通道 (随 sensor_direction 翻转): u_ang = K_theta*(theta-theta_0) + K_dtheta*dtheta */
-/* 动量轮退饱和通道 (传感坐标系, 固定负反馈): u = u_ang - K_w*w_wheel - K_i*∫w_wheel*dt    */
-/* ========================================================================== */
+#define DEG_TO_RAD (3.141592653589793f / 180.0f)
+#define RAD_TO_DEG (180.0f / 3.141592653589793f)
+typedef enum { BAL_STATE_DISABLED, BAL_STATE_CALIBRATING, BAL_STATE_STANDBY,
+               BAL_STATE_BALANCING, BAL_STATE_FALL_PROTECT } BalanceState_e;
+typedef enum { BAL_MODE_EDGE_M1, BAL_MODE_EDGE_M2, BAL_MODE_EDGE_M3,
+               BAL_MODE_CORNER } BalanceMode_e;
+/* Voltage-domain state feedback; gains require identification on the real plant. */
 typedef struct {
-    float K_theta;     // 倾角比例刚度增益 (V/rad)
-    float K_dtheta;    // 倾角角速度微分阻尼增益 (V/(rad/s))
-    float K_w;         // 动量轮退饱和速度反馈增益 (V/(rad/s)), 作用于 -w_wheel
-    float K_i;         // 动量轮稳态转速积分衰减增益 (V/(rad)), 作用于 -∫w_wheel*dt
-    float theta_0;     // 机械平衡点倾角零位偏置 (rad)
-    float max_u;       // 最大允许相电压输出限幅 (V)
+    float K_theta, K_dtheta, K_w, K_i, theta_0, max_u;
 } LQR_Gains_t;
-
-/* ========================================================================== */
-/* 姿态估计与滤波状态结构体                                                   */
-/* ========================================================================== */
 typedef struct {
-    float pitch;       // 绕 X 轴倾角 (rad)
-    float roll;        // 绕 Y 轴倾角 (rad)
-    float yaw;         // 绕 Z 轴角 (rad, 积分相对量)
-    float pitch_deg;   // 绕 X 轴倾角 (度)
-    float roll_deg;    // 绕 Y 轴倾角 (度)
-    
-    float gyro_rad[3]; // 机体滤波后三轴角速度 (rad/s) [0]=X, [1]=Y, [2]=Z
-    float accel_filt[3];// 机体滤波后三轴加速度 (g)
-    
-    float gyro_bias[3];// 陀螺仪零偏补偿 (rad/s)
-    bool  is_calibrated;
+    float pitch, roll, yaw, pitch_deg, roll_deg;
+    float gyro_rad[3], accel_filt[3], gyro_bias[3], gravity[3];
+    bool is_calibrated, valid;
+    uint32_t last_sample_ms;
 } Attitude_t;
-
-/* ========================================================================== */
-/* Cubli 平衡系统主控制结构体                                                 */
-/* ========================================================================== */
 typedef struct {
     BalanceState_e state;
-    BalanceMode_e  mode;
-    
-    LQR_Gains_t gains[3];       // 分别对应 M1, M2, M3 的 LQR 增益
-    LQR_Gains_t corner_gains[2];// 顶点平衡: [0]=虚拟X轴, [1]=虚拟Y轴
-    float K_yaw_damping;        // 顶点平衡偏航阻尼增益
-    
-    Attitude_t attitude;        // 当前姿态
-    
-    float wheel_int[3];         // 动量轮转速积分项 (rad)
-    float control_u[3];         // 当前三电机力矩/相电压控制输出 (V)
-    
-    float max_angle_trip;       // 跌倒保护触发倾角阈值 (rad, 默认 ~15°)
-    float capture_angle;        // 平衡捕获允许接入阈值 (rad, 默认 ~5°)
-    
-    uint32_t last_update_us;    // 控制周期微秒时间戳
-    uint32_t calib_samples;     // 校准采样计数
-    float gyro_calib_sum[3];    // 校准积分累加和
+    BalanceMode_e mode;
+    LQR_Gains_t gains[3], corner_gains[3];
+    float K_yaw_damping;
+    Attitude_t attitude;
+    float wheel_int[3], control_u[3];
+    /* M1/M2/M3 axes must be IMU body X/Y/Z; signs describe mechanical installation,
+       independently of encoder sensor_direction. */
+    int body_direction[3];
+    float reference[4][3], tilt_deg;
+    float max_angle_trip, capture_angle;
+    uint32_t last_update_us, calib_samples;
+    float gyro_calib_sum[3];
 } Cubli_Balance_t;
-
-/* ========================================================================== */
-/* 导出全局变量与接口函数                                                     */
-/* ========================================================================== */
 extern Cubli_Balance_t cubli_bal;
-
-/* 系统初始化 */
 void LQR_Balance_Init(void);
-
-/* IMU 姿态解算核心更新 (建议 200Hz ~ 1000Hz 周期调用) */
 void LQR_Attitude_Update(float accel_g[3], float gyro_dps[3], float dt);
-
-/* 平衡控制核心循环 (计算 LQR 状态反馈并直接驱动 FOC 相电压) */
-void LQR_Balance_Loop(void);
-
-/* 控制状态切换接口 */
+void LQR_Balance_Loop(void);       /* 200Hz state feedback only */
+void LQR_Motor_Loop(void);         /* fast encoder commutation in main loop */
 void LQR_Balance_Enable(bool enable);
 void LQR_Balance_SetMode(BalanceMode_e mode);
-void LQR_Balance_StartCalib(void);
-
-/* 参数在线调节接口 */
-void LQR_SetGains(uint8_t motor_idx, float kp, float kd, float kw, float ki);
-void LQR_SetZeroAngle(uint8_t motor_idx, float angle_deg);
+void LQR_Balance_StartCalib(void); /* calibration NEVER arms motors */
+bool LQR_CaptureReference(void);
+void LQR_Trip(void);              /* latched; explicit BAL 1 required */
+LQR_Gains_t *LQR_GetGains(uint8_t idx);
+void LQR_SetGains(uint8_t idx, float kp, float kd, float kw, float ki);
+void LQR_SetZeroAngle(uint8_t idx, float angle_deg);
 void LQR_SetMaxVoltage(float max_v);
-
-#ifdef __cplusplus
-}
 #endif
-
-#endif /* __LQR_BALANCE_H__ */

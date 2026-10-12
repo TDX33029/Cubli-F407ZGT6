@@ -45,7 +45,7 @@
 #define FOC_UART_BAUD       115200
 
 #define STATUS_LED_PIN      2               /* 板载 LED: 运行/连接状态指示 */
-#define MAX_TCP_CLIENTS     2               /* 最多同时接入的上位机数量 */
+#define MAX_TCP_CLIENTS     1               /* 最多同时接入的上位机数量 */
 // =====================================================================
 
 WiFiServer tcp_server(CUBLI_TCP_PORT);
@@ -57,6 +57,10 @@ static uint32_t stat_tcp_to_uart = 0;
 static uint32_t stat_last_print_ms = 0;
 static uint32_t led_last_toggle_ms = 0;
 static bool led_state = false;
+static bool had_client = false;
+static char command_line[256];
+static size_t command_length=0;
+static bool command_overflow=false;
 
 /* ------------------------------------------------------------------ */
 /* 释放已断开的 TCP 客户端槽位                                         */
@@ -85,6 +89,9 @@ static void accept_clients(void)
         }
         if (slot >= 0) {
             tcp_clients[slot] = incoming;
+            tcp_clients[slot].setNoDelay(true);
+            command_length=0; command_overflow=false;
+            Serial2.print("\nSTOP\n");
             Serial.printf("[TCP] Client #%d connected: %s\r\n",
                           slot, tcp_clients[slot].remoteIP().toString().c_str());
             /* 向新客户端发送一行握手横幅 (上位机日志窗口可读, 不影响 $TELE 解析) */
@@ -108,6 +115,7 @@ void setup()
     digitalWrite(STATUS_LED_PIN, LOW);
 
     /* 1. 与 F407 的 UART 桥接通道 */
+    Serial2.setRxBufferSize(2048);
     Serial2.begin(FOC_UART_BAUD, SERIAL_8N1, FOC_UART_RX_PIN, FOC_UART_TX_PIN);
     Serial.printf("[UART] Bridge to F407 ready: RX=IO%d, TX=IO%d, %d-8-N-1\r\n",
                   FOC_UART_RX_PIN, FOC_UART_TX_PIN, FOC_UART_BAUD);
@@ -160,6 +168,12 @@ void loop()
         if (tcp_clients[i] && tcp_clients[i].connected()) { any_client = true; break; }
     }
 
+    if(had_client && !any_client) {
+        Serial2.print("\nSTOP\n");
+        command_length=0; command_overflow=false;
+    }
+    had_client=any_client;
+
     /* 2. 上行透传: F407 UART -> 所有 TCP 客户端 */
     while (Serial2.available()) {
         uint8_t buf[256];
@@ -169,7 +183,10 @@ void loop()
         if (any_client) {
             for (int i = 0; i < MAX_TCP_CLIENTS; i++) {
                 if (tcp_clients[i] && tcp_clients[i].connected()) {
-                    tcp_clients[i].write(buf, n);
+                    if(tcp_clients[i].write(buf, n)!=n) {
+                        tcp_clients[i].stop();
+                        Serial2.print("\nSTOP\n");
+                    }
                 }
             }
         }
@@ -183,7 +200,19 @@ void loop()
             size_t n = tcp_clients[i].read(buf, sizeof(buf));
             if (n > 0) {
                 stat_tcp_to_uart += n;
-                Serial2.write(buf, n);
+                for(size_t k=0;k<n;k++) {
+                    char c=(char)buf[k];
+                    if(c=='\n') {
+                        if(!command_overflow && command_length) {
+                            Serial2.write((const uint8_t*)command_line, command_length);
+                            Serial2.write('\n');
+                        } else if(command_overflow) Serial2.print("\nSTOP\n");
+                        command_length=0; command_overflow=false;
+                    } else if(c!='\r') {
+                        if(c<32 || c>126 || command_length>=sizeof(command_line)-1) command_overflow=true;
+                        else command_line[command_length++]=c;
+                    }
+                }
             }
         }
     }

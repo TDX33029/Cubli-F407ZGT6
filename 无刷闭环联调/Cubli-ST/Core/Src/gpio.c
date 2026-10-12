@@ -80,6 +80,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
+  /* DRV8313 nFAULT, active low, netlist PG9/PG10/PG11. */
+  GPIO_InitStruct.Pin=GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11;
+  GPIO_InitStruct.Mode=GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull=GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOG,&GPIO_InitStruct);
+
   /*Configure GPIO pin : PD7 */
   GPIO_InitStruct.Pin = GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;

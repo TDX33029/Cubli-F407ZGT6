@@ -59,7 +59,7 @@
 extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
 extern UART_HandleTypeDef huart1;
-uint32_t time1_cntr;
+volatile uint32_t time1_cntr;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -70,6 +70,7 @@ uint32_t time1_cntr;
   */
 void NMI_Handler(void)
 {
+    GPIOD->BSRR=(GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2)<<16;
   /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
 
   /* USER CODE END NonMaskableInt_IRQn 0 */
@@ -85,6 +86,7 @@ void NMI_Handler(void)
   */
 void HardFault_Handler(void)
 {
+    GPIOD->BSRR=(GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2)<<16;
   /* USER CODE BEGIN HardFault_IRQn 0 */
 
   /* USER CODE END HardFault_IRQn 0 */
@@ -100,6 +102,7 @@ void HardFault_Handler(void)
   */
 void MemManage_Handler(void)
 {
+    GPIOD->BSRR=(GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2)<<16;
   /* USER CODE BEGIN MemoryManagement_IRQn 0 */
 
   /* USER CODE END MemoryManagement_IRQn 0 */
@@ -115,6 +118,7 @@ void MemManage_Handler(void)
   */
 void BusFault_Handler(void)
 {
+    GPIOD->BSRR=(GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2)<<16;
   /* USER CODE BEGIN BusFault_IRQn 0 */
 
   /* USER CODE END BusFault_IRQn 0 */
@@ -130,6 +134,7 @@ void BusFault_Handler(void)
   */
 void UsageFault_Handler(void)
 {
+    GPIOD->BSRR=(GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2)<<16;
   /* USER CODE BEGIN UsageFault_IRQn 0 */
 
   /* USER CODE END UsageFault_IRQn 0 */
@@ -231,13 +236,14 @@ void USART1_IRQHandler(void)
 
 /* USER CODE BEGIN 1 */
 /* TIM6 1ms 定时中断 (提供系统毫秒时基，驱动HAL库与LED分频) */
+extern void Control_SafetyTick(void);
 void TIM6_DAC_IRQHandler(void)
 {
 	if(TIM6->SR & TIM_SR_UIF)
 	{
 		TIM6->SR = ~TIM_SR_UIF;  // 清除标志
 		time1_cntr++;
-		HAL_IncTick();           // 维持 HAL 库所有驱动 (如 I2C/SPI) 的超时判断与毫秒时基
+		Control_SafetyTick();
 	}
 }
 /* USER CODE END 1 */

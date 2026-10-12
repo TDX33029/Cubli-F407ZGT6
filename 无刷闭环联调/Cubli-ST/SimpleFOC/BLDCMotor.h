@@ -14,6 +14,7 @@ typedef enum
 
 /******************************************************************************/
 extern float voltage_power_supply;
+extern float alignment_travel_deg[3];
 extern float voltage_limit;
 extern float voltage_sensor_align;
 extern int  pole_pairs;

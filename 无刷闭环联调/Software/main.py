@@ -4,7 +4,7 @@ Cubli 三轴无刷电机联调上位机 (PyQt5 + pyqtgraph + pyserial)
 -------------------------------------------------------------------------
 适用硬件: STM32F407ZGT6 + 3x DRV8313 (M1/M2/M3) + LSM6DSRTR / MPU-6050
          + 板载 ESP32-WROOM32E 无线链路
-通信协议: 
+通信协议:
   - 有线模式: USART2 (PD5-TX, PD6-RX), 115200 8N1
   - 无线模式: F407 USART1 (PA9/PA10) -> ESP32 (IO25/IO26) -> WiFi TCP :3333
     两种链路字节流协议完全一致, 可在下拉框中随时切换
@@ -90,9 +90,12 @@ class TcpLink:
             readable, _, _ = select.select([self._sock], [], [], 0)
             if not readable:
                 return 0
-            return len(self._sock.recv(65536, socket.MSG_PEEK))
-        except Exception:
-            return 0
+            data = self._sock.recv(65536, socket.MSG_PEEK)
+            if not data:
+                raise ConnectionError('TCP 对端已断开')
+            return len(data)
+        except (OSError, ValueError) as exc:
+            raise ConnectionError(str(exc)) from exc
 
     def read(self, n=1):
         if self._sock is None:
@@ -101,8 +104,8 @@ class TcpLink:
             return self._sock.recv(min(int(n), 65536))
         except socket.timeout:
             return b""
-        except Exception:
-            return b""
+        except OSError as exc:
+            raise ConnectionError(str(exc)) from exc
 
 
 # =========================================================================
@@ -133,6 +136,8 @@ class SerialWorker(QThread):
     sig_pid_received = pyqtSignal(int, float, float, float)
     sig_log_tx = pyqtSignal(str)
     sig_telemetry = pyqtSignal(dict)
+    sig_state = pyqtSignal(dict)
+    sig_lqr = pyqtSignal(int, float, float, float, float)
     sig_test_step = pyqtSignal(str)     # 自检单步进度: "M1", "M2", "M3"
     sig_test_report = pyqtSignal(dict)  # 自检总结结果字典
 
@@ -189,15 +194,15 @@ class SerialWorker(QThread):
     def connect_port(self, port_name, baud_rate=115200):
         """请求连接串口"""
         try:
-            if self.ser and self.ser.is_open:
-                self.ser.close()
+            self.disconnect_port()
+            self.clear_pending()
             self.ser = serial.Serial(
                 port=port_name,
                 baudrate=baud_rate,
                 bytesize=serial.EIGHTBITS,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
-                timeout=0.1
+                timeout=0.1, write_timeout=0.3
             )
             self.is_running = True
             if not self.isRunning():
@@ -209,8 +214,8 @@ class SerialWorker(QThread):
     def connect_wifi(self, host, port=3333, baud_rate=115200):
         """请求连接 ESP32 WiFi(TCP) 无线链路 (字节流协议与串口一致)"""
         try:
-            if self.ser and self.ser.is_open:
-                self.ser.close()
+            self.disconnect_port()
+            self.clear_pending()
             self.ser = TcpLink(host, port)
             self.is_running = True
             if not self.isRunning():
@@ -220,68 +225,124 @@ class SerialWorker(QThread):
             self.sig_error.emit(f"无法连接 WiFi 设备 {host}:{port}: {str(e)}")
 
     def disconnect_port(self):
-        """请求断开串口"""
         self.is_running = False
-        with QMutexLocker(self.mutex):
-            self.tx_queue.clear()
-        if self.ser and self.ser.is_open:
-            try:
-                self.ser.close()
-            except Exception:
-                pass
-        self.sig_disconnected.emit()
+        if QThread.currentThread() != self:
+            self.wait(1500)
 
     def send_cmd(self, cmd_str):
-        """添加待发送命令到队列 (自动补充换行符)"""
         cmd_str = cmd_str.strip()
-        if not cmd_str:
+        if not cmd_str or not self.is_running:
             return
-        payload = (cmd_str + "\r\n").encode('utf-8', errors='ignore')
+        payload = (cmd_str + "\r\n").encode('ascii')
         with QMutexLocker(self.mutex):
-            self.tx_queue.append((cmd_str, payload))
+            if cmd_str.upper() in ("STOP", "S"):
+                self.tx_queue.clear()
+                self.tx_queue.appendleft((cmd_str, payload))
+            else:
+                self.tx_queue.append((cmd_str, payload))
+
+    def clear_pending(self):
+        with QMutexLocker(self.mutex):
+            self.tx_queue.clear()
 
     def run(self):
         rx_buffer = bytearray()
-        while self.is_running:
-            if not (self.ser and self.ser.is_open):
-                time.sleep(0.05)
-                continue
-
-            # 1. 处理发送队列
-            cmd_to_log = None
-            with QMutexLocker(self.mutex):
-                if self.tx_queue:
-                    cmd_to_log, payload = self.tx_queue.popleft()
-            if cmd_to_log:
-                try:
-                    self.ser.write(payload)
-                    self.sig_log_tx.emit(cmd_to_log)
-                except Exception as e:
-                    self.sig_error.emit(f"发送失败: {str(e)}")
-
-            # 2. 读取接收数据
-            try:
+        next_ping = next_query = 0.0
+        last_rx = time.monotonic()
+        try:
+            while self.is_running and self.ser and self.ser.is_open:
+                now = time.monotonic()
+                # Heartbeats originate at the PC; ESP never manufactures them.
+                if now >= next_ping:
+                    self.ser.write(b"PING\r\n")
+                    next_ping = now + 0.25
+                if now >= next_query:
+                    self.ser.write(b"STATE?\r\n")
+                    next_query = now + 1.0
+                item = None
+                with QMutexLocker(self.mutex):
+                    if self.tx_queue:
+                        item = self.tx_queue.popleft()
+                if item:
+                    self.ser.write(item[1])
+                    self.sig_log_tx.emit(item[0])
                 waiting = self.ser.in_waiting
-                if waiting > 0:
+                if waiting:
                     chunk = self.ser.read(waiting)
                     if chunk:
+                        last_rx = now
                         rx_buffer.extend(chunk)
+                        if len(rx_buffer) > 65536:
+                            raise ConnectionError("接收缓冲溢出")
                         while b'\n' in rx_buffer:
-                            line_end = rx_buffer.index(b'\n')
-                            raw_line = rx_buffer[:line_end]
-                            rx_buffer = rx_buffer[line_end + 1:]
-                            decoded = raw_line.decode('utf-8', errors='ignore').strip()
+                            raw_line, _, rx_buffer = rx_buffer.partition(b'\n')
+                            decoded = raw_line.decode('utf-8', errors='replace').strip()
                             if decoded:
                                 self._process_received_line(decoded)
+                elif now - last_rx > 6.0:
+                    raise ConnectionError("设备超过 6 秒未响应，链路已关闭")
                 else:
-                    time.sleep(0.005)
-            except Exception as e:
-                self.sig_error.emit(f"串口读取异常: {str(e)}")
-                self.disconnect_port()
-                break
+                    self.msleep(5)
+        except Exception as exc:
+            if self.is_running:
+                self.sig_error.emit(f"通信中断: {exc}")
+        finally:
+            self.is_running = False
+            self.clear_pending()
+            if self.ser:
+                try:
+                    if self.ser.is_open:
+                        self.ser.write(b"\nSTOP\r\n")
+                except Exception:
+                    pass
+                self.ser.close()
+            self.sig_disconnected.emit()
 
     def _process_received_line(self, line):
         """解析接收到的单行报文"""
+        state_match = re.fullmatch(r'\$STATE,(.+)#', line)
+        if state_match:
+            try:
+                fields = dict(item.split(':', 1) for item in state_match.group(1).split(','))
+                for key in ('App', 'Dbg', 'Mode', 'BMode', 'Bal', 'Cal', 'IMU', 'Fault', 'Trip'):
+                    fields[key] = int(fields[key])
+                for key in ('Tilt', 'U1', 'U2', 'U3'):
+                    fields[key] = float(fields[key])
+                    if not math.isfinite(fields[key]):
+                        raise ValueError('non-finite state')
+                if fields['App'] not in (0, 1) or fields['Dbg'] not in (1, 2, 3) or fields['BMode'] not in (1, 2, 3, 4) or fields['Bal'] not in range(5):
+                    raise ValueError('invalid state range')
+                if any(fields[key] not in (0, 1) for key in ('Mode', 'Cal', 'IMU')):
+                    raise ValueError('invalid flags')
+                if 'Enc' in fields and not re.fullmatch('[01]{3}', fields['Enc']):
+                    raise ValueError('invalid encoder mask')
+                for key in ('VLimit', 'SLimit'):
+                    if key in fields:
+                        fields[key] = float(fields[key])
+                        if not math.isfinite(fields[key]):
+                            raise ValueError('invalid limits')
+                if 'EncType' in fields:
+                    fields['EncType'] = int(fields['EncType'])
+                    if fields['EncType'] not in (0, 1):
+                        raise ValueError('invalid encoder type')
+                for key in ('C1', 'C2', 'C3'):
+                    if key in fields:
+                        fields[key] = int(fields[key])
+                        if not 1 <= fields[key] <= 16384:
+                            raise ValueError('invalid CPR')
+                for key in ('D1', 'D2', 'D3'):
+                    if key in fields:
+                        fields[key] = int(fields[key])
+                        if fields[key] not in (-1, 1):
+                            raise ValueError('invalid installation direction')
+                if re.fullmatch('[01]{3}', fields['EN']) and re.fullmatch('[01]{3}', fields['Aligned']):
+                    self.sig_state.emit(fields)
+            except (ValueError, KeyError):
+                pass
+            return
+        lqr = re.fullmatch(r'OK LQR([123]): P=([0-9.-]+), D=([0-9.-]+), W=([0-9.-]+), I=([0-9.-]+)', line)
+        if lqr:
+            self.sig_lqr.emit(int(lqr[1]), *[float(lqr[i]) for i in range(2, 6)])
         match = self.TELE_PATTERN.search(line)
         if match:
             try:
@@ -1325,7 +1386,7 @@ class SelfTestCard(QGroupBox):
         layout.addLayout(grid)
 
         # 4. 底部说明提示标签
-        self.lbl_hint = QLabel("提示: 控制电机前必须先执行检测，确认三轴电机与霍尔编码器正常。")
+        self.lbl_hint = QLabel("选择调试轴后执行自检/对齐；每次仅驱动选中电机，完成后保持失能。")
         self.lbl_hint.setWordWrap(True)
         self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
         layout.addWidget(self.lbl_hint)
@@ -1333,10 +1394,10 @@ class SelfTestCard(QGroupBox):
     def set_testing_state(self, step_str=""):
         self.btn_run_test.setEnabled(False)
         self.btn_run_test.setText("正在执行检测...")
-        msg = f"自检中 ({step_str})" if step_str else "自检中 (三轴低速开环测试)"
+        msg = f"自检中 ({step_str})" if step_str else "自检中 (选中轴电角度对齐)"
         self.lbl_badge.setText(msg)
         self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #0369a1;")
-        self.lbl_hint.setText("正在低速驱动电机换向并采样霍尔角度，请勿触碰动量轮。")
+        self.lbl_hint.setText("正在对选中电机扫电角度并验证编码器位移，完成后自动失能。")
         self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
 
     def set_step(self, motor_str):
@@ -1366,9 +1427,9 @@ class SelfTestCard(QGroupBox):
                 self.lbl_m_details[i].setText(f"通信: {comm}% | 转角: {deg:.1f}°")
                 self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #15803d;")
             elif st in ('SKIP', 'NONE', 'UNINSTALLED'):
-                self.lbl_m_tags[i].setText("未安装")
+                self.lbl_m_tags[i].setText("未检测")
                 self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #64748b;")
-                self.lbl_m_details[i].setText("未安装 (已跳过)")
+                self.lbl_m_details[i].setText("本轮未检测")
                 self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #64748b;")
             else:
                 tag = "离线" if "I2C" in st else "堵转"
@@ -1429,12 +1490,19 @@ class MainWindow(QMainWindow):
         self.worker.sig_telemetry.connect(self.on_telemetry_received)
         self.worker.sig_mode_changed.connect(self.on_mode_changed)
         self.worker.sig_pid_received.connect(self.on_pid_received)
+        self.worker.sig_state.connect(self.on_state_received)
+        self.worker.sig_lqr.connect(self.on_lqr_received)
         self.worker.sig_test_step.connect(self.on_self_test_step)
         self.worker.sig_test_report.connect(self.on_self_test_report)
 
         # 硬件自检与安全互锁状态 (True: 自检通过，允许操作; False: 锁定拦截)
         self.self_test_passed = False
         self.self_test_running = False
+        self.device_state = None
+        self.expected_state = {}
+        self.sync_directions = False
+        self.speed_mode = 0
+        self.active_motors = (False, False, False)
 
         # 波形历史数据队列 (示波器式平滑滚动缓冲)
         self.MAX_POINTS = 800
@@ -1726,7 +1794,7 @@ class MainWindow(QMainWindow):
         layout.addStretch()
 
         # 全部归零 (平稳停止)
-        self.btn_stop_all = QPushButton("全部归零")
+        self.btn_stop_all = QPushButton("停止并失能")
         self.btn_stop_all.setFixedHeight(26)
         self.btn_stop_all.setStyleSheet("background-color: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; font-weight: bold;")
         self.btn_stop_all.clicked.connect(self.action_stop_all)
@@ -1770,6 +1838,7 @@ class MainWindow(QMainWindow):
         self.card_self_test = SelfTestCard()
         self.card_self_test.sig_start_test.connect(self.action_start_self_test)
         layout.addWidget(self.card_self_test)
+        layout.addWidget(self._create_mode_panel())
 
         # 2. 三轴独立控制卡片 (素雅工控风，标题清晰注明定时器和引脚)
         self.card_m1 = MotorControlCard(1, "M1 | TIM1 | EN PD0")
@@ -1878,6 +1947,7 @@ class MainWindow(QMainWindow):
         sync_layout.addWidget(self.slider_sync)
 
         layout.addWidget(self.sync_group)
+        self.sync_group.hide()
 
         # 4. 电源与相电压安全参数 (去除彩色边框与刺眼青绿背景，规范排版与尺寸)
         self.param_group = QGroupBox("参数配置与驱动限制")
@@ -1909,7 +1979,7 @@ class MainWindow(QMainWindow):
         self.spin_vq = QDoubleSpinBox()
         self.spin_vq.setRange(0.5, 6.8)
         self.spin_vq.setSingleStep(0.1)
-        self.spin_vq.setValue(6.0)
+        self.spin_vq.setValue(5.0)
         self.spin_vq.setSuffix(" V")
         self.spin_vq.setFixedHeight(26)
         self.btn_set_vq = QPushButton("设定Vq")
@@ -2351,7 +2421,7 @@ class MainWindow(QMainWindow):
         log_ctrl_row.addWidget(lbl_cmd)
         self.edt_custom_cmd = QLineEdit()
         self.edt_custom_cmd.setFixedHeight(26)
-        self.edt_custom_cmd.setPlaceholderText("例如: M 5.0 -3.0 0.0 或 STOP 或 IMU")
+        self.edt_custom_cmd.setPlaceholderText("例如: STATE? / STOP / PID1?")
         self.edt_custom_cmd.returnPressed.connect(self.action_send_custom_cmd)
         log_ctrl_row.addWidget(self.edt_custom_cmd)
 
@@ -2481,6 +2551,9 @@ class MainWindow(QMainWindow):
         self.history_s1.clear()
         self.history_s2.clear()
         self.history_s3.clear()
+        self.history_h1.clear()
+        self.history_h2.clear()
+        self.history_h3.clear()
         self.history_gx.clear()
         self.history_gy.clear()
         self.history_gz.clear()
@@ -2488,7 +2561,9 @@ class MainWindow(QMainWindow):
         self.history_ay.clear()
         self.history_az.clear()
 
-        QTimer.singleShot(300, lambda: self.worker.send_cmd("?"))
+        self._cancel_motion()
+        self.worker.send_cmd("APP 0")
+        self.worker.send_cmd("STATE?")
 
     def on_serial_disconnected(self):
         is_wifi = self.combo_link.currentData() == "wifi"
@@ -2511,6 +2586,11 @@ class MainWindow(QMainWindow):
         self.lbl_status_led.setStyleSheet("color: #64748b; font-weight: bold; margin-left: 4px;")
         self.status_bar.showMessage("链路已断开")
 
+        self._cancel_motion()
+        self.device_state = None
+        self.active_motors = (False, False, False)
+        self.expected_state = {}
+        self.lbl_balance.setText("链路已断开，等待设备心跳超时失能")
         # 断开连接时，恢复互锁锁定状态
         self.self_test_passed = False
         self.self_test_running = False
@@ -2524,25 +2604,160 @@ class MainWindow(QMainWindow):
     # =====================================================================
     # 硬件自检与安全互锁机制
     # =====================================================================
-    def set_motor_controls_locked(self, locked: bool, active_motors=(True, True, True)):
-        """设置电机主动控制互锁状态 (True: 锁定禁止操作; False: 解锁允许操作，仅激活已安装电机)"""
-        if hasattr(self, 'card_m1'):
-            self.card_m1.set_operable(not locked and active_motors[0])
-        if hasattr(self, 'card_m2'):
-            self.card_m2.set_operable(not locked and active_motors[1])
-        if hasattr(self, 'card_m3'):
-            self.card_m3.set_operable(not locked and active_motors[2])
-        if hasattr(self, 'sync_group'):
-            self.sync_group.setEnabled(not locked)
-        if hasattr(self, 'cl_group'):
-            self.cl_group.setEnabled(not locked)
-        if hasattr(self, 'btn_set_vq'):
-            self.btn_set_vq.setEnabled(not locked)
-        if hasattr(self, 'btn_set_vlim'):
-            self.btn_set_vlim.setEnabled(not locked)
-        if hasattr(self, 'btn_stop_all'):
-            self.btn_stop_all.setEnabled(not locked)
-        # 注意: 紧急停止按键 btn_estop 始终保持启用，绝不互锁锁定！
+    def _cancel_motion(self):
+        self.debounce_timer.stop()
+        self.pending_flag = False
+        self.pending_speed = [0.0, 0.0, 0.0]
+        self.worker.clear_pending()
+        for card in (self.card_m1, self.card_m2, self.card_m3):
+            card.set_speed(0.0, emit=False)
+            card.set_enable_state(False)
+
+    def _request_state_change(self, command, expected=None):
+        self._cancel_motion()
+        self.expected_state = expected or {}
+        self.set_motor_controls_locked(True)
+        self.worker.send_cmd(command)
+
+    def set_motor_controls_locked(self, locked: bool, active_motors=None):
+        state = self.device_state or {}
+        locked = locked or not self.device_state
+        if active_motors is not None:
+            self.active_motors = active_motors
+        debug = state.get('App', 0) == 0 and state.get('Bal', 0) == 0
+        selected = state.get('Dbg', 1)
+        for i, card in enumerate((self.card_m1, self.card_m2, self.card_m3), 1):
+            card.set_operable(not locked and debug and selected == i and self.active_motors[i-1])
+            card.setVisible(state.get("App", 0) == 0 and selected == i)
+        self.sync_group.setEnabled(False)
+        self.cl_group.setEnabled(not locked and debug)
+        self.cl_group.setVisible(state.get("App", 0) == 0)
+        self.card_self_test.setVisible(state.get("App", 0) == 0)
+        self.balance_config.setVisible(state.get("App", 0) == 1)
+        self.btn_set_vq.setEnabled(not locked)
+        self.btn_set_vlim.setEnabled(not locked)
+        self.btn_stop_all.setEnabled(True)
+        connected = bool(self.worker.is_running and self.device_state)
+        self.mode_group.setEnabled(connected and not self.self_test_running)
+        self.combo_app.setEnabled(connected and not self.self_test_running)
+        self.combo_debug.setEnabled(connected and not self.self_test_running and state.get('App', 0) == 0)
+        needed = self.active_motors if state.get('BMode') == 4 else (self.active_motors[state.get('BMode', 1)-1],)
+        self.btn_balance_start.setEnabled(connected and not self.self_test_running and not self.expected_state and
+            state.get('App') == 1 and bool(state.get('Cal')) and bool(state.get('IMU')) and all(needed))
+        self.card_self_test.btn_run_test.setEnabled(connected and not self.self_test_running and state.get('App', 0) == 0)
+
+    def _create_mode_panel(self):
+        self.mode_group = QGroupBox("运行模式与平衡控制")
+        outer = QVBoxLayout(self.mode_group)
+        layout = QGridLayout()
+        outer.addLayout(layout)
+        self.combo_app = QComboBox()
+        self.combo_app.addItems(["调试模式（单电机）", "工作模式（平衡）"])
+        self.combo_app.activated.connect(lambda i: self._request_state_change(f"APP {i}", {'App': i}))
+        layout.addWidget(self.combo_app, 0, 0, 1, 2)
+        self.combo_debug = QComboBox()
+        self.combo_debug.addItems(["调试 M1", "调试 M2", "调试 M3"])
+        self.combo_debug.activated.connect(lambda i: self._request_state_change(f"DBG {i+1}", {'Dbg': i+1}))
+        layout.addWidget(self.combo_debug, 1, 0, 1, 2)
+        btn_reset = QPushButton("复位停机锁存（保持失能）")
+        btn_reset.clicked.connect(lambda: self._request_state_change(f"APP {(self.device_state or {}).get('App', 0)}"))
+        layout.addWidget(btn_reset, 2, 0, 1, 2)
+        self.balance_config = QWidget()
+        outer.addWidget(self.balance_config)
+        layout = QGridLayout(self.balance_config)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.combo_balance = QComboBox()
+        self.combo_balance.addItems(["边沿 M1（X轴）", "边沿 M2（Y轴）", "边沿 M3（Z轴）", "顶点（三轴）"])
+        self.combo_balance.activated.connect(lambda i: self._request_state_change(f"BMODE {i+1}", {'BMode': i+1}))
+        layout.addWidget(self.combo_balance, 2, 0, 1, 2)
+        btn_cal = QPushButton("静止校准 IMU")
+        btn_cal.clicked.connect(lambda: self._request_state_change("CAL_IMU"))
+        layout.addWidget(btn_cal, 3, 0)
+        btn_ref = QPushButton("采集当前平衡姿态")
+        btn_ref.setToolTip("扶住 Cubli 放在实际平衡点，静止后采集；操作会先失能电机")
+        btn_ref.clicked.connect(lambda: self._request_state_change("BZERO"))
+        layout.addWidget(btn_ref, 3, 1)
+        self.btn_balance_start = QPushButton("启动平衡")
+        self.btn_balance_start.clicked.connect(lambda: self._request_state_change("BAL 1"))
+        layout.addWidget(self.btn_balance_start, 4, 0)
+        btn_off = QPushButton("停止平衡")
+        btn_off.clicked.connect(lambda: self._request_state_change("BAL 0"))
+        layout.addWidget(btn_off, 4, 1)
+        self.lbl_balance = QLabel("未连接，电机失能")
+        self.lbl_balance.setWordWrap(True)
+        layout.addWidget(self.lbl_balance, 5, 0, 1, 2)
+        self.combo_gain_axis = QComboBox()
+        self.combo_gain_axis.addItems(["平衡参数 M1", "平衡参数 M2", "平衡参数 M3"])
+        layout.addWidget(self.combo_gain_axis, 6, 0, 1, 2)
+        self.balance_spins = []
+        for row, (label, value, upper) in enumerate((("Kθ", 32.0, 200), ("Kω机体", 2.4, 50), ("Kω飞轮", .08, 5), ("Ki飞轮", .008, 5)), 7):
+            spin = NoWheelDoubleSpinBox()
+            spin.setRange(-5 if row >= 9 else 0, upper)
+            spin.setDecimals(4)
+            spin.setValue(value)
+            self.balance_spins.append(spin)
+            layout.addWidget(QLabel(label), row, 0)
+            layout.addWidget(spin, row, 1)
+        btn_gain = QPushButton("下发平衡参数（先失能）")
+        btn_gain.clicked.connect(self.action_send_lqr)
+        layout.addWidget(btn_gain, 11, 0)
+        btn_read = QPushButton("读取平衡参数")
+        btn_read.clicked.connect(lambda: self.worker.send_cmd(f"LQR{self.combo_gain_axis.currentIndex()+1}?"))
+        layout.addWidget(btn_read, 11, 1)
+        self.direction_combos = []
+        for axis in range(3):
+            combo = QComboBox()
+            combo.addItems([f"M{axis+1} 机架方向 +1", f"M{axis+1} 机架方向 -1"])
+            self.direction_combos.append(combo)
+            layout.addWidget(combo, 12+axis, 0, 1, 2)
+        btn_dir = QPushButton("设置机架方向（先失能）")
+        btn_dir.clicked.connect(self.action_send_direction)
+        layout.addWidget(btn_dir, 15, 0, 1, 2)
+        self.mode_group.setEnabled(False)
+        return self.mode_group
+
+    def action_send_lqr(self):
+        self._request_state_change("BAL 0")
+        values = ' '.join(f'{spin.value():.4f}' for spin in self.balance_spins)
+        self.worker.send_cmd(f"LQR{self.combo_gain_axis.currentIndex()+1} {values}")
+
+    def action_send_direction(self):
+        signs = ' '.join('1' if c.currentIndex() == 0 else '-1' for c in self.direction_combos)
+        self._request_state_change(f"BDIR {signs}")
+
+    def on_lqr_received(self, axis, kp, kd, kw, ki):
+        if axis == self.combo_gain_axis.currentIndex()+1:
+            for spin, value in zip(self.balance_spins, (kp, kd, kw, ki)):
+                spin.setValue(value)
+
+    def on_state_received(self, state):
+        first_state = self.device_state is None
+        self.device_state = state
+        if first_state and "VLimit" in state:
+            self.spin_vq.setValue(float(state["VLimit"]))
+            self.spin_vlim.setValue(float(state["SLimit"]))
+        if first_state or self.sync_directions:
+            for axis, combo in enumerate(self.direction_combos, 1):
+                if f"D{axis}" in state:
+                    combo.setCurrentIndex(0 if state[f"D{axis}"] == 1 else 1)
+            self.sync_directions = False
+        self.active_motors = tuple(c == '1' for c in state['Aligned'])
+        self.self_test_passed = any(self.active_motors)
+        if all(state.get(k) == v for k, v in self.expected_state.items()):
+            self.expected_state = {}
+        for combo, value in ((self.combo_app, state['App']), (self.combo_debug, state['Dbg']-1), (self.combo_balance, state['BMode']-1)):
+            combo.blockSignals(True)
+            combo.setCurrentIndex(value)
+            combo.blockSignals(False)
+        self.on_mode_changed(state['Mode'])
+        for card, en in zip((self.card_m1, self.card_m2, self.card_m3), state['EN']):
+            card.set_enable_state(en == '1')
+        names = {0: '已失能', 1: 'IMU静止校准中', 2: '等待5°捕获窗口', 3: '平衡运行', 4: '跌倒/传感器保护，需手动重启'}
+        self.lbl_balance.setText(f"{names.get(state['Bal'], '未知状态')} | 倾斜 {state['Tilt']:.2f}°\n"
+            f"Uq {state['U1']:+.2f} / {state['U2']:+.2f} / {state['U3']:+.2f} V | 故障 {state['Fault']} | 停机码 {state['Trip']}")
+        if state.get('EncType') == 1:
+            self.lbl_balance.setText(self.lbl_balance.text() + f"\nF4正交 CPR={state.get('C1', '?')}/{state.get('C2', '?')}/{state.get('C3', '?')}，计数器状态不能判断模块在线")
+        self.set_motor_controls_locked(bool(self.expected_state) or self.self_test_running or bool(state['Trip']))
 
     def action_start_self_test(self):
         """用户点击开始自检按钮"""
@@ -2554,9 +2769,10 @@ class MainWindow(QMainWindow):
         self.self_test_running = True
         self.set_motor_controls_locked(True)
         self.card_self_test.set_testing_state()
-        self.worker.send_cmd("TEST")
-        self.status_bar.showMessage("已向单片机发送自检指令 (TEST)，正在执行低速开环与编码器测试...")
-        self.append_log("<span style='color: #38bdf8;'>[自检] 开始三轴电机与霍尔磁编码器硬件自检...</span>")
+        self._cancel_motion()
+        self.worker.send_cmd(f"TEST {self.combo_debug.currentIndex()+1}")
+        self.status_bar.showMessage("正在对选中轴执行自检与电角度对齐...")
+        self.append_log("<span style='color: #38bdf8;'>[自检] 开始选中轴电机与编码器检测...</span>")
 
     def on_self_test_step(self, step_str):
         """自检步骤更新: M1 / M2 / M3"""
@@ -2595,8 +2811,12 @@ class MainWindow(QMainWindow):
 
     def _flush_speed_command(self):
         if self.pending_flag:
-            v1, v2, v3 = self.pending_speed
-            cmd = f"M {v1:.2f} {v2:.2f} {v3:.2f}"
+            state = self.device_state or {}
+            if state.get("App") != 0 or state.get("Trip") or state.get("Bal") != 0 or self.expected_state:
+                self.pending_flag = False
+                return
+            axis = (self.device_state or {}).get("Dbg", 1)
+            cmd = f"M{axis} {self.pending_speed[axis-1]:.2f}"
             self.worker.send_cmd(cmd)
             self.pending_flag = False
 
@@ -2622,6 +2842,7 @@ class MainWindow(QMainWindow):
         self.spin_sync.setValue(0.0)
         self.pending_speed = [0.0, 0.0, 0.0]
         self.cube_widget.motor_speeds = [0.0, 0.0, 0.0]
+        self._cancel_motion()
         self.worker.send_cmd("STOP")
 
     def action_emergency_stop(self):
@@ -2634,8 +2855,9 @@ class MainWindow(QMainWindow):
         self.spin_sync.setValue(0.0)
         self.pending_speed = [0.0, 0.0, 0.0]
         self.cube_widget.motor_speeds = [0.0, 0.0, 0.0]
+        self._cancel_motion()
         self.worker.send_cmd("STOP")
-        self.worker.send_cmd("EN 0 0 0")
+
         self.status_bar.showMessage("紧急停止已触发: 电机转速归零并切断驱动使能！")
 
     def action_set_voltage_limit(self):
@@ -2655,16 +2877,10 @@ class MainWindow(QMainWindow):
         self.worker.send_cmd(f"TELE {val}")
 
     def action_toggle_control_mode(self):
-        if "闭环" in self.btn_mode_toggle.text():
-            self.worker.send_cmd("MODE 0")
-            self.on_mode_changed(0)
-            self.status_bar.showMessage("已向固件发送切换开环速度模式指令 (MODE 0)")
-        else:
-            self.worker.send_cmd("MODE 1")
-            self.on_mode_changed(1)
-            self.status_bar.showMessage("已向固件发送切换闭环调速模式指令 (MODE 1)")
+        self._request_state_change(f"MODE {1-self.speed_mode}")
 
     def on_mode_changed(self, mode):
+        self.speed_mode = mode
         if mode == 1:
             self.btn_mode_toggle.setText("闭环调速模式 [已开启]")
             self.btn_mode_toggle.setStyleSheet("""
@@ -2693,7 +2909,8 @@ class MainWindow(QMainWindow):
             """)
 
     def action_align_sensors(self):
-        self.worker.send_cmd("ALIGN")
+        self.self_test_running = True
+        self._request_state_change(f"ALIGN {self.combo_debug.currentIndex()+1}")
         self.status_bar.showMessage("已触发电角度零位自动校准 (ALIGN)，等待转子静止")
 
     def action_send_pid(self):
@@ -2786,10 +3003,21 @@ class MainWindow(QMainWindow):
             )
 
         # 同步更新三轴霍尔/磁编码角度到对应控制卡片、3D立方体与顶部仪表栏
+        if not data.get('has_hall', False):
+            for hist in (self.history_h1, self.history_h2, self.history_h3):
+                hist.append(float('nan'))
+        if not data.get('has_speed', False):
+            for hist in (self.history_s1, self.history_s2, self.history_s3):
+                hist.append(float('nan'))
         if data.get('has_hall', False):
-            self.card_m1.set_hall_angle(data['h1'], online=True)
-            self.card_m2.set_hall_angle(data['h2'], online=True)
-            self.card_m3.set_hall_angle(data['h3'], online=True)
+            self.card_m1.set_hall_angle(data['h1'], online=(self.device_state or {}).get('Enc', '111')[0] == '1')
+            self.card_m2.set_hall_angle(data['h2'], online=(self.device_state or {}).get('Enc', '111')[1] == '1')
+            self.card_m3.set_hall_angle(data['h3'], online=(self.device_state or {}).get('Enc', '111')[2] == '1')
+            if (self.device_state or {}).get('EncType') == 1:
+                for axis, card in enumerate((self.card_m1, self.card_m2, self.card_m3)):
+                    ready = self.device_state.get('Enc', '000')[axis] == '1'
+                    card.lbl_hall_status.setText('[计数]' if ready else '[异常]')
+                    card.lbl_hall_status.setToolTip('F4正交计数器状态；静止与断线无法仅由A/B区分。角度相对初始化位置。')
             self.history_h1.append(data['h1'])
             self.history_h2.append(data['h2'])
             self.history_h3.append(data['h3'])
@@ -2899,6 +3127,14 @@ class MainWindow(QMainWindow):
     # 日志输出管理
     # =====================================================================
     def on_log_rx(self, line):
+        if line == "OK BDIR":
+            self.sync_directions = True
+        if line.startswith(("OK ALIGN", "ERR ALIGN", "ERR SAFETY_TRIP")):
+            self.self_test_running = False
+            self.worker.send_cmd("STATE?")
+        if line.startswith("ERR"):
+            self.expected_state = {}
+            self.status_bar.showMessage(line)
         if self.chk_filter_tele.isChecked() and line.startswith("$TELE"):
             return
         self.append_log(f"<span style='color: #27ae60;'>[RX]</span> {line}")

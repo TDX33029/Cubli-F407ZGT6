@@ -1,0 +1,130 @@
+import os
+os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+import importlib.util
+from pathlib import Path
+import socket
+import threading
+import time
+import unittest
+spec = importlib.util.spec_from_file_location('cubli_ui', Path(__file__).resolve().parents[1]/'Software/main.py')
+ui = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ui)
+app = ui.QApplication.instance() or ui.QApplication([])
+STATE = '$STATE,App:0,Dbg:2,Mode:0,BMode:1,Bal:0,Cal:1,IMU:1,Aligned:111,EN:010,Fault:0,Trip:0,Tilt:0.12,U1:0.00,U2:0.25,U3:0.00#'
+class UpperTests(unittest.TestCase):
+    def setUp(self):
+        self.win = ui.MainWindow()
+        self.win.worker.is_running = True
+        self.win.worker._process_received_line(STATE)
+    def tearDown(self):
+        self.win.worker.is_running = False
+        self.win.close()
+    def queued(self):
+        return [item[0] for item in self.win.worker.tx_queue]
+    def test_single_motor_controls(self):
+        self.assertFalse(self.win.card_m1.spin_speed.isEnabled())
+        self.assertTrue(self.win.card_m2.spin_speed.isEnabled())
+        self.assertFalse(self.win.card_m3.spin_speed.isEnabled())
+        self.assertTrue(self.win.card_m2.chk_enable.isChecked())
+        self.assertFalse(self.win.sync_group.isEnabled())
+    def test_mode_change_cancels_pending_speed(self):
+        self.win.on_motor_speed_change(2, 10)
+        self.win._request_state_change('APP 1', {'App': 1})
+        self.win._flush_speed_command()
+        self.assertEqual(self.queued(), ['APP 1'])
+        self.assertFalse(self.win.debounce_timer.isActive())
+        self.win.worker._process_received_line(STATE.replace('App:0','App:1').replace('EN:010','EN:000'))
+        self.assertFalse(self.win.card_m2.spin_speed.isEnabled())
+        self.assertTrue(self.win.btn_balance_start.isEnabled())
+    def test_stop_discards_queued_speed(self):
+        self.win.worker.send_cmd('M2 20')
+        self.win.on_motor_speed_change(2, 12)
+        self.win.action_emergency_stop()
+        self.win._flush_speed_command()
+        self.assertEqual(self.queued(), ['STOP'])
+        self.assertFalse(self.win.pending_flag)
+    def test_speed_only_selected_axis(self):
+        self.win.on_motor_speed_change(2, -3)
+        self.win._flush_speed_command()
+        self.assertEqual(self.queued(), ['M2 -3.00'])
+    def test_speed_mode_button_uses_ack_state(self):
+        self.win.action_toggle_control_mode()
+        self.assertEqual(self.queued(), ['MODE 1'])
+        self.assertEqual(self.win.speed_mode, 0)
+        self.win.worker._process_received_line('OK MODE:1')
+        self.win.worker.clear_pending()
+        self.win.action_toggle_control_mode()
+        self.assertEqual(self.queued(), ['MODE 0'])
+    def test_corner_requires_all_axes(self):
+        state = STATE.replace('App:0','App:1').replace('BMode:1','BMode:4').replace('Aligned:111','Aligned:110')
+        self.win.worker._process_received_line(state)
+        self.assertFalse(self.win.btn_balance_start.isEnabled())
+        self.win.worker._process_received_line(state.replace('Aligned:110','Aligned:111'))
+        self.assertTrue(self.win.btn_balance_start.isEnabled())
+    def test_balance_gain_readback(self):
+        self.win.combo_gain_axis.setCurrentIndex(2)
+        self.win.worker._process_received_line('OK LQR3: P=29.000, D=2.300, W=-0.0200, I=0.0010')
+        self.assertAlmostEqual(self.win.balance_spins[2].value(), -.02)
+    def test_old_and_extended_telemetry(self):
+        received=[]
+        self.win.worker.sig_telemetry.connect(received.append)
+        base='$TELE,M1:0.00,M2:1.00,M3:0.00,Vq:5.00,EN:010,A1:0.00,A2:0.12,A3:0.00'
+        self.win.worker._process_received_line(base+'#')
+        full=base+',Gx:0.0,Gy:0.0,Gz:0.0,Ax:0.00,Ay:0.00,Az:1.00,H1:0.0,H2:1.2,H3:0.0,S1:0.00,S2:1.00,S3:0.00,Pit:0.00,Rol:0.00,Bal:0#'
+        self.win.worker._process_received_line(full)
+        self.assertEqual(len(received),2)
+        self.assertTrue(received[1]['has_speed'])
+        self.assertEqual(received[1]['bal'],0)
+        self.assertEqual(len(self.win.history_s1),len(self.win.history_time))
+    def test_quad_mode_state_and_count_labels(self):
+        state = STATE.replace('#', ',EncType:1,C1:4096,C2:4000,C3:2048,Enc:111#')
+        self.win.worker._process_received_line(state)
+        self.assertEqual(self.win.device_state['EncType'], 1)
+        self.assertEqual(self.win.device_state['C2'], 4000)
+        self.assertIn('4096/4000/2048', self.win.lbl_balance.text())
+        tele='$TELE,M1:0,M2:0,M3:0,Vq:5,EN:000,A1:0,A2:0,A3:0,H1:1,H2:2,H3:3#'
+        self.win.worker._process_received_line(tele)
+        self.assertEqual(self.win.card_m1.lbl_hall_status.text(), '[计数]')
+    def test_invalid_state_is_ignored(self):
+        before = self.win.device_state.copy()
+        for bad in (STATE.replace('Dbg:2', 'Dbg:9'), STATE.replace('Tilt:0.12', 'Tilt:nan'), STATE.replace('Cal:1', 'Cal:3')):
+            self.win.worker._process_received_line(bad)
+        self.assertEqual(self.win.device_state, before)
+    def test_installation_direction_does_not_override_user_edit(self):
+        self.win.direction_combos[0].setCurrentIndex(1)
+        self.win.worker._process_received_line(STATE.replace('#', ',D1:1,D2:1,D3:1#'))
+        self.assertEqual(self.win.direction_combos[0].currentIndex(), 1)
+        self.win.on_log_rx('OK BDIR')
+        self.win.worker._process_received_line(STATE.replace('#', ',D1:-1,D2:1,D3:1#'))
+        self.assertEqual(self.win.direction_combos[0].currentIndex(), 1)
+    def test_tcp_eof_is_error(self):
+        server=socket.socket();server.bind(('127.0.0.1',0));server.listen()
+        link=ui.TcpLink('127.0.0.1',server.getsockname()[1])
+        peer,_=server.accept();peer.close()
+        deadline=time.monotonic()+1
+        with self.assertRaises(ConnectionError):
+            while time.monotonic()<deadline:
+                link.in_waiting
+                time.sleep(.01)
+        link.close();server.close()
+    def test_worker_heartbeat_and_disconnect(self):
+        server=socket.socket();server.bind(('127.0.0.1',0));server.listen()
+        received=[]
+        def device():
+            peer,_=server.accept();peer.settimeout(2);peer.sendall((STATE+'\r\n').encode())
+            data=b''
+            try:
+                while b'STOP' not in data:
+                    chunk=peer.recv(4096)
+                    if not chunk: break
+                    data+=chunk
+            finally:
+                received.append(data);peer.close()
+        thread=threading.Thread(target=device);thread.start()
+        worker=ui.SerialWorker();worker.connect_wifi('127.0.0.1',server.getsockname()[1])
+        time.sleep(.55);worker.disconnect_port();thread.join(2);server.close()
+        self.assertFalse(worker.isRunning())
+        self.assertGreaterEqual(received[0].count(b'PING'),2)
+        self.assertIn(b'STOP',received[0])
+        self.assertFalse(worker.tx_queue)
+if __name__=='__main__': unittest.main()

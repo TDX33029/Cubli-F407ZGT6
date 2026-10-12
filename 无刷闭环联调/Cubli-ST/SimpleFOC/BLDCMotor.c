@@ -2,6 +2,8 @@
 #include "MyProject.h"
 
 extern void set_motor_enable(uint8_t motor, uint8_t en);
+extern uint8_t Control_Aborted(void);
+extern void Control_RequestStop(uint8_t reason);
 
 /************************************************
 main中调用的接口函数都在当前文件中
@@ -13,6 +15,7 @@ main中调用的接口函数都在当前文件中
   F4移植: 适配168MHz, TIM1 PWM (PE9/PE11/PE13)
 ************************************************/
 /******************************************************************************/
+float alignment_travel_deg[3]={0,0,0};
 float voltage_power_supply;
 float voltage_limit;
 int  pole_pairs;
@@ -33,6 +36,8 @@ uint8_t Motor_alignSensor(int motor)
 	float target_align_voltage = voltage_sensor_align;
 
 	if(motor < 0 || motor > 2) return 1;
+    motor_aligned[motor]=0;
+    alignment_travel_deg[motor]=0;
 
 	// 检查该电机绑定的编码器是否在线，未安装则静默跳过
 	uint8_t sens_idx = motor_sensor_map[motor];
@@ -45,7 +50,7 @@ uint8_t Motor_alignSensor(int motor)
 	{
 		printf("Align M%d: Encoder on I2C%d is not installed (skip).\r\n", motor + 1, sens_idx + 1);
 		motor_aligned[motor] = 0;
-		return 0;
+		return 1;
 	}
 
 	set_motor_enable(motor + 1, 1);
@@ -58,12 +63,14 @@ uint8_t Motor_alignSensor(int motor)
 	// 2. 像官方 SimpleFOC 一样缓慢正向扫过 1 个完整电周期 (360度电角)
 	updateSensor(motor);
 	start_ang = shaftAngle(motor);
+    if(!sensor_valid[motor] || Control_Aborted()) goto align_failed;
 
 	for(i = 0; i <= 200; i++)
 	{
 		float a = _3PI_2 + _2PI * ((float)i / 200.0f);
 		setPhaseVoltage(target_align_voltage, 0, a, motor);
 		updateSensor(motor);
+        if(!sensor_valid[motor] || Control_Aborted()) goto align_failed;
 		delay_us(2000);
 	}
 	updateSensor(motor);
@@ -75,6 +82,7 @@ uint8_t Motor_alignSensor(int motor)
 		float a = _3PI_2 + _2PI * ((float)i / 200.0f);
 		setPhaseVoltage(target_align_voltage, 0, a, motor);
 		updateSensor(motor);
+        if(!sensor_valid[motor] || Control_Aborted()) goto align_failed;
 		delay_us(2000);
 	}
 	updateSensor(motor);
@@ -84,6 +92,9 @@ uint8_t Motor_alignSensor(int motor)
 	d_rot = mid_ang - start_ang;
 	if(d_rot > _PI) d_rot -= _2PI;
 	else if(d_rot < -_PI) d_rot += _2PI;
+
+	if(!sensor_valid[motor] || Control_Aborted() || fabsf(d_rot)<0.02f ||
+       fabsf(fabsf(d_rot)*(float)pole_pairs-_2PI)>_PI) goto align_failed;
 
 	if(d_rot > 0.0f)
 	{
@@ -98,12 +109,14 @@ uint8_t Motor_alignSensor(int motor)
 	setPhaseVoltage(target_align_voltage, 0, _3PI_2, motor);
 	delay_ms(700);
 	updateSensor(motor);
+	if(!sensor_valid[motor] || Control_Aborted()) goto align_failed;
 	zero_electric_angle[motor] = 0.0f;
 	zero_electric_angle[motor] = electricalAngle(motor);
 
 	setPhaseVoltage(0, 0, 0, motor);
 	set_motor_enable(motor + 1, 0); // 对准完成立即关闭通道使能，杜绝等待期间静止发热
 	motor_aligned[motor] = 1;
+    alignment_travel_deg[motor]=fabsf(d_rot)*180.0f/_PI;
 
 	printf("Align M%d OK (using I2C%d): Dir=%s, Zero_Elec=%.2f rad (%.1f deg)\r\n",
 		motor + 1,
@@ -113,6 +126,11 @@ uint8_t Motor_alignSensor(int motor)
 		zero_electric_angle[motor] * 180.0f / _PI);
 
 	return 0;
+align_failed:
+    set_motor_enable(motor+1,0);
+    motor_aligned[motor]=0;
+    printf("ERR ALIGN M%d (encoder/movement/abort)\r\n",motor+1);
+    return 1;
 }
 
 /******************************************************************************/
@@ -150,6 +168,7 @@ void loopFOC(int motor)
 /******************************************************************************/
 float open_loop_angle[3] = {0.0f, 0.0f, 0.0f};
 static uint32_t velocity_ramp_timestamp[3] = {0, 0, 0};
+static uint32_t locked_rotor_since[3] = {0, 0, 0};
 
 static float ramp_velocity_target(float requested, int motor)
 {
@@ -179,6 +198,13 @@ static float ramp_velocity_target(float requested, int motor)
 void move(float new_target, int motor)
 {
 	if(motor < 0 || motor > 2) return;
+    if((controller==Type_velocity || controller==Type_velocity_openloop) &&
+       fabsf(new_target)>0.1f && fabsf(voltage[motor].q)>1.8f &&
+       fabsf(shaft_velocity[motor])<0.1f) {
+        uint32_t now=micros();
+        if(!locked_rotor_since[motor]) locked_rotor_since[motor]=now;
+        else if(now-locked_rotor_since[motor]>800000U) {Control_RequestStop(7);return;}
+    } else locked_rotor_since[motor]=0;
 
 	switch(controller)
 	{
@@ -188,6 +214,7 @@ void move(float new_target, int motor)
 			loopFOC(motor);
 			if(!motor_aligned[motor] || !sensor_valid[motor])
 			{
+                Control_RequestStop(6);
 				pid_velocity[motor].integral_prev = 0.0f;
 				pid_velocity[motor].error_prev = 0.0f;
 				pid_velocity[motor].output_prev = 0.0f;
@@ -299,6 +326,10 @@ void move(float new_target, int motor)
  */
 void setPhaseVoltage(float Uq, float Ud, float angle_el, int motor)
 {
+    if(Control_Aborted() || !isfinite(Uq) || !isfinite(Ud) || !isfinite(angle_el) || voltage_power_supply<=0) {
+        if(!Control_Aborted()) Control_RequestStop(6);
+        return;
+    }
 	float _ca = cosf(angle_el);
 	float _sa = sinf(angle_el);
 

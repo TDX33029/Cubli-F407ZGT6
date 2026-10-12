@@ -13,9 +13,18 @@
 /* USER CODE BEGIN 0 */
 #include "stm32f4xx.h"
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 
 unsigned char USART_RX_BUF[USART_REC_LEN];
-unsigned short USART_RX_STA = 0;
+volatile unsigned short USART_RX_STA = 0;
+#define RX_QUEUE_SIZE 16
+static char rx_queue[RX_QUEUE_SIZE][USART_REC_LEN];
+static volatile uint8_t rx_head=0,rx_tail=0;
+static uint16_t rx_len=0;
+static uint8_t rx_overflow=0;
+extern void Control_Heartbeat(void);
+extern void Control_RequestStop(uint8_t reason);
 
 /* ==========================================================================
  * 调试链路串口选择 (printf 遥测与命令解析共用的物理通道)
@@ -40,10 +49,7 @@ static volatile uint16_t uart_tx_tail = 0;
 int fputc(int ch, FILE *f)
 {
 	uint16_t next_head = (uart_tx_head + 1) % UART_TX_BUF_SIZE;
-	while(next_head == uart_tx_tail)
-	{
-		DBG_LINK_UART->CR1 |= USART_CR1_TXEIE; // 满缓冲区时触发发送
-	}
+	if(next_head == uart_tx_tail) return ch; /* never block motor commutation */
 	uart_tx_buf[uart_tx_head] = (uint8_t)ch;
 	uart_tx_head = next_head;
 	DBG_LINK_UART->CR1 |= USART_CR1_TXEIE; // 使能发送中断，异步后台发送
@@ -221,39 +227,47 @@ void USART_Link_IRQHandler(void)
 		}
 	}
 
-	// 2. 接收中断
-	if(DBG_LINK_UART->SR & USART_SR_RXNE)
-	{
-		Res = (unsigned char)(DBG_LINK_UART->DR & 0xFF);
-		if((USART_RX_STA & 0x8000) == 0) // 接收未完成
-		{
-			if(Res == 0x0D) // '\r'
-			{
-				USART_RX_STA |= 0x4000;
-			}
-			else if(Res == 0x0A) // '\n'
-			{
-				// 收到换行，无论前一个字符是否为 \r，均视为指令结束
-				uint16_t len = USART_RX_STA & 0x3FFF;
-				USART_RX_BUF[len] = '\0';
-				USART_RX_STA |= 0x8000;
-			}
-			else
-			{
-				uint16_t len = USART_RX_STA & 0x3FFF;
-				if(len < (USART_REC_LEN - 1))
-				{
-					USART_RX_BUF[len] = Res;
-					USART_RX_STA = (USART_RX_STA & 0x4000) | (len + 1);
-				}
-				else
-				{
-					// 溢出丢弃重置
-					USART_RX_STA = 0;
-				}
-			}
-		}
-	}
+    /* Read SR then DR also clears ORE/FE/NE. Discard the entire damaged line. */
+    {
+        uint32_t sr=DBG_LINK_UART->SR;
+        if(sr & (USART_SR_RXNE|USART_SR_ORE|USART_SR_FE|USART_SR_NE)) {
+            Res=(unsigned char)DBG_LINK_UART->DR;
+            if(sr & (USART_SR_ORE|USART_SR_FE|USART_SR_NE)) rx_overflow=1;
+            if(Res=='\n') {
+                USART_RX_BUF[rx_len]=0;
+                if(!rx_overflow && rx_len) {
+                    char *p=(char *)USART_RX_BUF;
+                    uint8_t next=(rx_head+1)%RX_QUEUE_SIZE;
+                    uint16_t j=rx_len;
+                    while(j && (USART_RX_BUF[j-1]==' ' || USART_RX_BUF[j-1]=='\t')) USART_RX_BUF[--j]=0;
+                    for(j=0;USART_RX_BUF[j];j++) USART_RX_BUF[j]=(unsigned char)toupper(USART_RX_BUF[j]);
+                    while(*p==' ' || *p=='\t') p++;
+                    if(!strcmp(p,"PING") || !strcmp(p,"ping")) Control_Heartbeat();
+                    else if(!strcmp(p,"STOP") || !strcmp(p,"stop") || !strcmp(p,"S") || !strcmp(p,"s")) {
+                        rx_tail=rx_head; Control_RequestStop(1);
+                    } else if(next==rx_tail) {Control_RequestStop(4);rx_tail=rx_head;}
+                    else {strcpy(rx_queue[rx_head],p);rx_head=next;}
+                }
+                rx_len=0;rx_overflow=0;
+            } else if(Res!='\r') {
+                if(rx_len<USART_REC_LEN-1) USART_RX_BUF[rx_len++]=Res;
+                else rx_overflow=1;
+            }
+        }
+    }
+}
+uint16_t USART_TxFree(void) {
+    return (uart_tx_tail+UART_TX_BUF_SIZE-uart_tx_head-1)%UART_TX_BUF_SIZE;
+}
+uint8_t USART_ReadLine(char *out) {
+    uint32_t irq=__get_PRIMASK();
+    __disable_irq();
+    if(rx_head==rx_tail) {__set_PRIMASK(irq);return 0;}
+    strcpy(out,rx_queue[rx_tail]);rx_tail=(rx_tail+1)%RX_QUEUE_SIZE;
+    __set_PRIMASK(irq);return 1;
+}
+void USART_ClearCommands(void) {
+    uint32_t irq=__get_PRIMASK(); __disable_irq();rx_tail=rx_head;__set_PRIMASK(irq);
 }
 
 /* 兼容旧中断文件命名 (stm32f4xx_it.c 的 USART2_IRQHandler 调用) */

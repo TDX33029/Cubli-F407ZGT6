@@ -96,6 +96,7 @@ void updateSensor(int motor)
 	uint32_t d_us = 0;
 	float Ts = 0.0f;
 	float raw_vel = 0.0f;
+    float counts_per_rev;
 
 	if(motor < 0 || motor > 2) return;
 	uint8_t sens_idx = motor_sensor_map[motor];
@@ -106,7 +107,8 @@ void updateSensor(int motor)
 	 */
 	res = ENC_GetAngle(sens_idx, &raw, &deg);
 
-	if(res != 0)
+    counts_per_rev=(float)ENC_CountsPerRev(sens_idx);
+	if(res != 0 || counts_per_rev<=0 || raw<0 || (float)raw>=counts_per_rev)
 	{
 		sensor_valid[motor] = 0;
 		return;
@@ -115,13 +117,10 @@ void updateSensor(int motor)
 
 	/* 转换到单圈绝对弧度 [0, 2PI)
 	 * I2C 模式: 14-bit 绝对值 (16384 counts/圈)
-	 * 正交解码模式: ABZ 每圈 ENC_QUAD_COUNTS_PER_REV 计数 (已在读取层取模)
+	 * 正交解码模式: 按该传感器的独立CPR缩放，计数器在一机械圈回绕
 	 */
-#if ENC_USE_HW_QUAD
-	rad = (float)raw * _2PI / (float)ENC_QUAD_COUNTS_PER_REV;
-#else
-	rad = (float)raw * _2PI / 16384.0f;
-#endif
+	rad=(float)raw*_2PI/counts_per_rev;
+    now_us=micros();
 
 	// 2. 初始帧采样
 	if(angle_prev_ts[motor] == 0)
@@ -156,8 +155,8 @@ void updateSensor(int motor)
 		if (d_vel > _PI) d_vel -= _2PI;
 		else if (d_vel < -_PI) d_vel += _2PI;
 
-		// 当机械角位移达到或超过 14-bit 编码器有效步进 (1 LSB ≈ 0.0003835 rad) 时更新速度
-		if(fabsf(d_vel) >= 0.00030f)
+		// 随当前轴分辨率设置半LSB门槛，兼容I2C与不同PPR的正交输入
+		if(fabsf(d_vel) >= 0.5f*_2PI/counts_per_rev)
 		{
 			Ts = (float)d_us * 1e-6f;
 			raw_vel = (float)sensor_direction[motor] * (d_vel / Ts);
@@ -175,13 +174,8 @@ void updateSensor(int motor)
 		}
 		else
 		{
-			float counts_per_rev;
 			uint32_t stop_timeout_us = 25000U;
-#if ENC_USE_HW_QUAD
-			counts_per_rev = (float)ENC_QUAD_COUNTS_PER_REV;
-#else
-			counts_per_rev = 16384.0f;
-#endif
+
 			if(fabsf(last_raw_velocity[motor]) > 0.0f)
 			{
 				float pulse_period_us = _2PI * 1e6f /

@@ -136,8 +136,8 @@ uint8_t MPU6050_Init(void)
 		return 1;
 	}
 
-	mpu_write_reg(MPU_REG_SMPLRT_DIV, 0x07);   // 125Hz 采样率
-	mpu_write_reg(MPU_REG_CONFIG, 0x06);       // 低通滤波 5Hz
+	mpu_write_reg(MPU_REG_SMPLRT_DIV, 0x04);   // 200Hz 采样率
+	mpu_write_reg(MPU_REG_CONFIG, 0x02);       // 加速度94Hz/陀螺仪98Hz低通，避免平衡控制大相位延迟
 	mpu_write_reg(MPU_REG_GYRO_CONFIG, 0x18);  // ±2000 dps
 	mpu_write_reg(MPU_REG_ACCEL_CONFIG, 0x00); // ±2g
 	return 0;
@@ -168,11 +168,11 @@ uint8_t MPU6050_Read_Raw(int16_t accel[3], int16_t gyro[3])
 	return 0;
 }
 
-void MPU6050_Get_Data(float accel_g[3], float gyro_dps[3])
+uint8_t MPU6050_Get_Data(float accel_g[3], float gyro_dps[3])
 {
 	int16_t raw_a[3] = {0};
 	int16_t raw_g[3] = {0};
-	MPU6050_Read_Raw(raw_a, raw_g);
+	if(MPU6050_Read_Raw(raw_a, raw_g)!=0) return 1;
 	/* ±2g -> 16384 LSB/g */
 	accel_g[0] = (float)raw_a[0] / 16384.0f;
 	accel_g[1] = (float)raw_a[1] / 16384.0f;
@@ -182,4 +182,5 @@ void MPU6050_Get_Data(float accel_g[3], float gyro_dps[3])
 	gyro_dps[0] = (float)raw_g[0] / 16.4f;
 	gyro_dps[1] = (float)raw_g[1] / 16.4f;
 	gyro_dps[2] = (float)raw_g[2] / 16.4f;
+    return 0;
 }

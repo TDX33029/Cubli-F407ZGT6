@@ -40,7 +40,7 @@
 #define M3_Disable   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_RESET)
 
 /* 外部变量声明 */
-extern uint32_t time1_cntr;
+extern volatile uint32_t time1_cntr;
 
 /* 自检与状态指示功能接口 */
 void Boot_PG4_Blink_5s(void);

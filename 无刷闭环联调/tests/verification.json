@@ -1,0 +1,352 @@
+{
+  "validation_date": "2026-10-12",
+  "stm32_build": {
+    "inputs": 38,
+    "errors": 0,
+    "warnings": 0,
+    "rom_bytes": 38332,
+    "ram_bytes": 11040,
+    "encoder": "i2c"
+  },
+  "esp32_build": {
+    "status": "success",
+    "ram_bytes": 45024,
+    "flash_bytes": 751749
+  },
+  "tests": {
+    "firmware_control": "passed (hardware mocked)",
+    "uart_isr": "passed (hardware mocked)",
+    "upper_computer_cases": 13,
+    "upper_computer": "passed",
+    "hardware_tested": false,
+    "quad_encoder": "passed: default and per-axis 4096/4000/2048 CPR, FOC, TIM7, I2C compatibility, invalid PPR"
+  },
+  "artifacts": [
+    {
+      "path": "Cubli-ESP/.pio/build/mhetesp32devkit/firmware.bin",
+      "bytes": 758320,
+      "sha256": "eea99b50d6a7d3c7ccd93606c8f3597091613eddaec781350d54b8f80b3295fd"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX-quad/CubeMX.axf",
+      "bytes": 986780,
+      "sha256": "fde4adea48b36261679eae33ee42ec1190b5c8ebbaaece7b8dea9347a4ee833d"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX-quad/CubeMX.hex",
+      "bytes": 103797,
+      "sha256": "1d62bc221c32faa37b934dc1fa4f69f03459885525422925b18a008e9bacb434"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX-quad/CubeMX.map",
+      "bytes": 312202,
+      "sha256": "23e96f532cab54a3270f666180f3afab51e171a2291f71851261ff2567988ca8"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX-quad/build_config.json",
+      "bytes": 310,
+      "sha256": "7b495494b5cf84e90e8378e229dbea5efda8a51ccfa4c384f2aa43df514ee37d"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX/CubeMX.axf",
+      "bytes": 995048,
+      "sha256": "ca6c3faa66ae1ebeb4e04a4bffad4b3ab09ee9c17528049dfc00fcd6d54b7ef0"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX/CubeMX.hex",
+      "bytes": 107863,
+      "sha256": "3e535e5b455804555146c629c0955cf2f4057198aae83c4c9914367109009b65"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX/CubeMX.map",
+      "bytes": 312580,
+      "sha256": "da9396810699ec615e7e1dabb08209c87f590965286e07f626b7a5f4b72773af"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX/build_config.json",
+      "bytes": 309,
+      "sha256": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b"
+    }
+  ],
+  "sources": [
+    {
+      "path": "Cubli-ESP/platformio.ini",
+      "bytes": 557,
+      "sha256": "954448fa4451e3b47389ca3e4b1ac10805f4647df8784093004988e824d22cbb"
+    },
+    {
+      "path": "Cubli-ESP/src/main.cpp",
+      "bytes": 10001,
+      "sha256": "fbba1a12f9adec5369c6e73a04b1e251cad65c01ac1a7e92a971cdf256f87285"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/MyProject.h",
+      "bytes": 1544,
+      "sha256": "1495dc25f03a4cde6c30569981c051e14fc696618630599bc4f4e98f1408daf4"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/gpio.h",
+      "bytes": 1348,
+      "sha256": "6325a074fd384790edd4a9489609e6fa8e699f149b68eb9d88f1afa3edb7dbf7"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/i2c.h",
+      "bytes": 1935,
+      "sha256": "17fc866eab9f89767d6b3052ef29f6ced39ea3113d7b882cefafa035d97a2b79"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/main.h",
+      "bytes": 2003,
+      "sha256": "e07a43ebc634ce451e2f80884378d112e048e06235fb49fdc2d9a2b5057d28c5"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/stm32f4xx_hal_conf.h",
+      "bytes": 20032,
+      "sha256": "88a723f3c52a0f32ff68f36451a3f7d27f7e8a8cab835757f0b6e498094fbac1"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/stm32f4xx_it.h",
+      "bytes": 1957,
+      "sha256": "4d5788a9dae8bfd864488f947097392b82baf67107339b07b7817f1d65386a82"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/tim.h",
+      "bytes": 1521,
+      "sha256": "5607ab0f9fee9868c463e57f7d211c05879b043229dc76ba2d636502ac145639"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/usart.h",
+      "bytes": 1373,
+      "sha256": "6756f89974cc3a5087c3ca234252b59ff292b67c159f7c337874e5f3155a8eb8"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/gpio.c",
+      "bytes": 3902,
+      "sha256": "845a34d5c67f4de0da29909d99f545425c262eeb4915b893223ce9d2bdf7a714"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/i2c.c",
+      "bytes": 13392,
+      "sha256": "43f4ea5fa7bf2d40e74b40e20a2db2717614ec18e1356929541ba7551f9473ea"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/main.c",
+      "bytes": 30248,
+      "sha256": "a17c4debcfec1232f969b7fa57974aa01dfe43acf60cecd528573e759b5b9aa4"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/stm32f4xx_hal_msp.c",
+      "bytes": 2229,
+      "sha256": "3217d99dc7006dc46ac384717641fe84386f05fc71db0a3340fa0eae810bc1b7"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/stm32f4xx_it.c",
+      "bytes": 6888,
+      "sha256": "dc1439153f07c1a2f2c14d9c43c5b78d731fa071f78bb84281c13b0481a643e1"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/system_stm32f4xx.c",
+      "bytes": 27442,
+      "sha256": "077c7d9b06d04e9fe3d60ea68f9e228edf98b2f801f80e5349a3ba1465197b00"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/tim.c",
+      "bytes": 10816,
+      "sha256": "5b9213a8079cbb797c7519c57af1f1a3970ebe0c5351deb60548886af558bd75"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/usart.c",
+      "bytes": 9325,
+      "sha256": "616a4e53dc7a07f2947cdb307b23fd4742184f7f84a4d9dcf886ceb182f1a010"
+    },
+    {
+      "path": "Cubli-ST/Hardware/delay.c",
+      "bytes": 816,
+      "sha256": "88e4be93f9677a7eafb8319b740bd39893d0ef6c6e2c923109722c6839a2cc19"
+    },
+    {
+      "path": "Cubli-ST/Hardware/delay.h",
+      "bytes": 371,
+      "sha256": "5355d8b9030c9f3bc6b6a0f9a5a5aaf93b15f8e1e7a6a0fbcf26261032dc9f6a"
+    },
+    {
+      "path": "Cubli-ST/Hardware/enc_quad.c",
+      "bytes": 3539,
+      "sha256": "6408c0b330be26b28788c70c9f248140ed09606affb384b968c57ed28119de4e"
+    },
+    {
+      "path": "Cubli-ST/Hardware/enc_quad.h",
+      "bytes": 2470,
+      "sha256": "af6cbd3dfa6815e66bd145c8d97166d17c6edaa0bfcf5d2eda4ba17ecfb85b05"
+    },
+    {
+      "path": "Cubli-ST/Hardware/lqr_balance.c",
+      "bytes": 8773,
+      "sha256": "88922a119d4b3fe4584b5b50d3936120c35d9bdeb7b57c5daca41678a9dbbe63"
+    },
+    {
+      "path": "Cubli-ST/Hardware/lqr_balance.h",
+      "bytes": 2142,
+      "sha256": "8fad397d4c0e5df90627a4bac5d89459637f84d211f347c19009b9f37ebc2f38"
+    },
+    {
+      "path": "Cubli-ST/Hardware/lsm6dsr.c",
+      "bytes": 3662,
+      "sha256": "12bd43fa4f860f5be925e993fc6aa25ee42d049602e5f2786055b004af7e1ba1"
+    },
+    {
+      "path": "Cubli-ST/Hardware/lsm6dsr.h",
+      "bytes": 2655,
+      "sha256": "790f30b07474ba402045c976911ddc527bb88a7cfc056c3f0bd554d7dd561f0b"
+    },
+    {
+      "path": "Cubli-ST/Hardware/mpu6050.c",
+      "bytes": 4668,
+      "sha256": "e2face17685497b00d18160601a9c9e0a2f770d7a76ab52e6d52a4bc7938fbf7"
+    },
+    {
+      "path": "Cubli-ST/Hardware/mpu6050.h",
+      "bytes": 987,
+      "sha256": "f25cc207c0c026b2ed42b82096fee201a2b40ef75547e64cd184f4bab0ad4796"
+    },
+    {
+      "path": "Cubli-ST/Hardware/spi.c",
+      "bytes": 3448,
+      "sha256": "5129432cf5ee310cbd336bb68760fe784e5e2f8491fbd75ba5d2b130555c46ba"
+    },
+    {
+      "path": "Cubli-ST/Hardware/spi.h",
+      "bytes": 590,
+      "sha256": "50103d70eee5197a959ad0625547777323c3a01cff4db56d74f722d4e05c4f7f"
+    },
+    {
+      "path": "Cubli-ST/Hardware/timer.c",
+      "bytes": 3381,
+      "sha256": "36b68bd17f9c3216edaaebd984da6dfb5be63b63aa55bdc861ec78538699677e"
+    },
+    {
+      "path": "Cubli-ST/Hardware/timer.h",
+      "bytes": 777,
+      "sha256": "0243f51223d0640b2040fefb9b4a4b73cffcfa8a90b9e989a5e24aeec03d389c"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/startup_stm32f407xx.s",
+      "bytes": 28817,
+      "sha256": "7d2291ffe83a03e366450cdea410d4016a7a1854532705593a80f68d430e88a3"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/BLDCMotor.c",
+      "bytes": 15605,
+      "sha256": "3eb6c9533eaf78d6d8968658695df4202b61a75eb450a5f9d12688e5883aeea7"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/BLDCMotor.h",
+      "bytes": 1210,
+      "sha256": "9ced94929a3d0b85ec6c28f1df0098b5096a5dc022be57ccd90cc3e1972cbb70"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/CurrentSense.c",
+      "bytes": 2305,
+      "sha256": "155ea4947021f4b4cb06e7f5bd389dce4c47216e0b2a06966dd135b94cfccb07"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/CurrentSense.h",
+      "bytes": 468,
+      "sha256": "b3b12a46c759478783ba9e52addaa9fdb71a43babde2a3c6f4a3c42dc78d0a37"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/FOCMotor.c",
+      "bytes": 8042,
+      "sha256": "03d9862d0aef589e22724801a6e33e38b8fc05fd6852f0ea2101bc2b3618864f"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/FOCMotor.h",
+      "bytes": 2314,
+      "sha256": "1cc8793855bc06beec51f4a18c7562b426a7061203a5f685f5cc56aff2db0cfd"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/foc_utils.c",
+      "bytes": 5512,
+      "sha256": "efd37ea7bee98a4bcfc94e5699a574afb9db1951439bfe1f629e3ccf935c241a"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/foc_utils.h",
+      "bytes": 2527,
+      "sha256": "e4b65ca531ee63bc4cce3c943a1f1ff7df8f0abf56f6e5b36c84f2a512bbdad7"
+    },
+    {
+      "path": "Cubli-ST/build_firmware.py",
+      "bytes": 9896,
+      "sha256": "661c3a3f35a8e02605a638291067b0f3f364c2943585543b770d3e8f0eed3d3d"
+    },
+    {
+      "path": "Software/main.py",
+      "bytes": 139381,
+      "sha256": "ba89eb10ab820868d79b27b1326da7f72cc439751c006dd32bdf068c271c526c"
+    },
+    {
+      "path": "Software/requirements.txt",
+      "bytes": 49,
+      "sha256": "db6cd3f9cf8f0d4b81c72877b95127d244248d9d326164dfa58ea1077a503c01"
+    },
+    {
+      "path": "tests/firmware_harness.c",
+      "bytes": 5497,
+      "sha256": "a2134154dd155f28ba2a8fbcb81210582b8a98c370a028133500206bf212dc23"
+    },
+    {
+      "path": "tests/mock_hw.h",
+      "bytes": 1559,
+      "sha256": "bf09698446265890140bd6c6b0034701c2f77b7b0ae62da024d0ebf0987ec2c2"
+    },
+    {
+      "path": "tests/mock_quad_hw.h",
+      "bytes": 2573,
+      "sha256": "7446ad8458400f3d33b1e4e8e6527c55b486397852bc01fcbf00752ea41b59a6"
+    },
+    {
+      "path": "tests/quad_harness.c",
+      "bytes": 5804,
+      "sha256": "46bad457c6e239afa66a85edd8d547f22fe1153f27e4f0ec6a0edecb1286a3db"
+    },
+    {
+      "path": "tests/run_firmware_tests.py",
+      "bytes": 3553,
+      "sha256": "d5eaa80c45996440dd8e8a3b436e662018590854bdaf10b5be29df572bfb6660"
+    },
+    {
+      "path": "tests/run_quad_tests.py",
+      "bytes": 2662,
+      "sha256": "67f959c27254a01235e8252e149284098c420f2be241f573f2c7aa7d383a54cf"
+    },
+    {
+      "path": "tests/test_upper_computer.py",
+      "bytes": 7064,
+      "sha256": "3c086b43878bdf94e265bc5290a529eead5843fcd6a985bc5673ed1d6e81c122"
+    },
+    {
+      "path": "tests/uart_harness.c",
+      "bytes": 1889,
+      "sha256": "ab0cc07ffc3ed4a0e01068276c9753961a2db7f1ba1f52ed2b0cd84cb38af830"
+    }
+  ],
+  "stm32_quad_build": {
+    "encoder": "quad",
+    "ppr": [
+      1024,
+      1024,
+      1024
+    ],
+    "cpr": [
+      4096,
+      4096,
+      4096
+    ],
+    "inputs": 38,
+    "errors": 0,
+    "warnings": 0,
+    "rom_bytes": 36884,
+    "ram_bytes": 11032,
+    "ppr_is_configuration_assumption": true
+  }
+}

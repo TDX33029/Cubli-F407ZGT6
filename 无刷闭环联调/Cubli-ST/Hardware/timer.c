@@ -67,13 +67,18 @@ void TIM5_Micros_Init(void)
 #if ENC_USE_HW_QUAD
 	__HAL_RCC_TIM7_CLK_ENABLE();
 
-	/* TIM7 时基: 1MHz 自由计数 */
+	/* TIM7 时基: 1MHz 自由计数; initialize before enabling its IRQ. */
+    HAL_NVIC_DisableIRQ(TIM7_IRQn);
 	TIM7->CR1 = 0;
+    TIM7->DIER = 0;
+    g_micros_hi16 = 0;
 	TIM7->PSC = 84 - 1;
 	TIM7->ARR = 0xFFFF;
 	TIM7->CNT = 0;
-	TIM7->DIER = TIM_DIER_UIE;
-	TIM7->EGR |= TIM_EGR_UG;
+	TIM7->EGR = TIM_EGR_UG;
+    TIM7->SR = 0;
+    HAL_NVIC_ClearPendingIRQ(TIM7_IRQn);
+    TIM7->DIER = TIM_DIER_UIE;
 
 	/* 溢出中断优先级设为最高, 确保 65.536ms 周期的溢出计数绝不丢失 */
 	HAL_NVIC_SetPriority(TIM7_IRQn, 0, 0);
@@ -94,17 +99,14 @@ void TIM5_Micros_Init(void)
 uint32_t micros(void)
 {
 #if ENC_USE_HW_QUAD
-	uint32_t hi;
-	uint16_t cnt;
-
-	/* 无竞态读取: 溢出中断若在读序列间触发 (高16位已变), 则重读一遍 */
-	do
-	{
-		hi = g_micros_hi16;
-		cnt = (uint16_t)(TIM7->CNT & 0xFFFFU);
-	} while (hi != g_micros_hi16);
-
-	return (uint32_t)((hi << 16) | cnt);
+    uint32_t irq=__get_PRIMASK(),hi;
+    uint16_t cnt;
+    __disable_irq();
+    hi=g_micros_hi16;cnt=(uint16_t)TIM7->CNT;
+    /* Account for an overflow pending while a higher-priority ISR masks TIM7. */
+    if(TIM7->SR & TIM_SR_UIF) {hi++;cnt=(uint16_t)TIM7->CNT;}
+    __set_PRIMASK(irq);
+    return (hi<<16)|cnt;
 #else
 	return TIM5->CNT;
 #endif

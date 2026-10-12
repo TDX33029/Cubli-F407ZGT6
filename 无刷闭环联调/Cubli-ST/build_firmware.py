@@ -3,12 +3,16 @@ import os
 import sys
 import time
 import subprocess
+from pathlib import Path
+import argparse
+import json
 
-def build():
+def build(encoder=None, ppr=None, ppr_axes=(None, None, None)):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
     mdk_dir = "MDK-ARM"
-    obj_dir = "MDK-ARM/CubeMX"
+    variant = "CubeMX-quad" if encoder == "quad" else "CubeMX"
+    obj_dir = "MDK-ARM/" + variant
 
     armcc = "C:/Keil_v5/ARM/ARMCC/bin/armcc.exe"
     armasm = "C:/Keil_v5/ARM/ARMCC/bin/armasm.exe"
@@ -36,6 +40,13 @@ def build():
         inc_args.extend(["-I", p])
 
     defines = ["-D__UVISION_VERSION=542", "-D_RTE_", "-DSTM32F407xx", "-DUSE_HAL_DRIVER"]
+    if encoder is not None:
+        defines.append("-DENC_USE_HW_QUAD=" + ("1" if encoder == "quad" else "0"))
+    if ppr is not None:
+        defines.append(f"-DENC_QUAD_PPR={ppr}")
+    for i, value in enumerate(ppr_axes, 1):
+        if value is not None:
+            defines.append(f"-DENC_QUAD_PPR_M{i}={value}")
     cflags = ["--cpu=Cortex-M4.fp.sp", "-g", "-O2", "--apcs=interwork", "--split_sections", "--c99"] + defines + inc_args
 
     srcs = [
@@ -80,7 +91,21 @@ def build():
     ]
 
     print(f"Building Cubli-F407ZGT6 firmware ({len(srcs)} files)...")
+    # Every object referenced by the linker must be rebuilt; never reuse old HAL objects.
+    import re
+    link_text = Path("MDK-ARM/CubeMX/CubeMX.lnp").read_text(encoding="utf-8-sig")
+    known = {Path(obj).name.lower() for _, _, obj in srcs}
+    for obj in re.findall(r'"([^"\n]+\.o)"', link_text):
+        basename = obj.replace("\\", "/").split("/")[-1].lower()
+        if basename not in known:
+            source = Path("Drivers/STM32F4xx_HAL_Driver/Src") / basename.replace(".o", ".c")
+            if not source.exists():
+                raise FileNotFoundError(f"No source for linker object: {obj}")
+            srcs.append(("c", str(source), "MDK-ARM/CubeMX/" + basename))
+    srcs = [(kind, src, obj_dir + "/" + Path(obj).name) for kind, src, obj in srcs]
+    print(f"Compiling all {len(srcs)} linker inputs; encoder={encoder or 'header default'}; output={obj_dir}")
     errors = 0
+    warnings = 0
     for stype, src, obj in srcs:
         src_path = os.path.normpath(src)
         obj_path = os.path.normpath(obj)
@@ -99,6 +124,10 @@ def build():
                 try: os.remove(obj_path)
                 except Exception: pass
             proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        diagnostics = (proc.stdout + proc.stderr).decode("gbk", errors="replace").strip()
+        if diagnostics:
+            print(f"{src}: {diagnostics}")
+            warnings += diagnostics.lower().count("warning")
         if proc.returncode != 0:
             print(f"FAILED: {os.path.basename(src)}")
             print(proc.stderr.decode("gbk", errors="ignore") or proc.stdout.decode("gbk", errors="ignore"))
@@ -108,11 +137,16 @@ def build():
         print(f"Build failed with {errors} compilation error(s).")
         return False
 
-    print("All files compiled cleanly. Linking...")
+    print(f"Compilation complete: {errors} errors, {warnings} warning messages. Linking...")
     orig_cwd = os.getcwd()
     os.chdir(mdk_dir)
     try:
-        link_cmd = [armlink, "--via=CubeMX/CubeMX.lnp"]
+        link_text = re.sub(r'"cubemx\\([^"\n]+\.o)"', lambda m: '"' + variant + '\\' + m[1] + '"', link_text, flags=re.I)
+        link_text = link_text.replace('CubeMX\\CubeMX.axf', variant + '\\CubeMX.axf')
+        # Keep a separate link response file so a QUAD build cannot corrupt the default build.
+        response_file = Path(variant) / 'build_firmware.lnp'
+        response_file.write_text(link_text, encoding='utf-8')
+        link_cmd = [armlink, '--via=' + str(response_file)]
         proc = subprocess.run(link_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out = proc.stdout.decode("gbk", errors="ignore") + proc.stderr.decode("gbk", errors="ignore")
         if proc.returncode != 0:
@@ -123,13 +157,23 @@ def build():
         print("Link Output:")
         print(out.strip())
 
-        hex_cmd = [fromelf, "--i32", "--output=CubeMX/CubeMX.hex", "CubeMX/CubeMX.axf"]
-        subprocess.run(hex_cmd)
-        print("Successfully generated CubeMX/CubeMX.hex!")
+        hex_cmd = [fromelf, "--i32", f"--output={variant}/CubeMX.hex", f"{variant}/CubeMX.axf"]
+        subprocess.run(hex_cmd, check=True)
+        Path(variant, 'build_config.json').write_text(json.dumps({'encoder_override': encoder, 'ppr_override': ppr, 'axis_ppr_overrides': list(ppr_axes), 'defines': defines, 'input_count': len(srcs), 'warnings': warnings}, indent=2) + '\n', encoding='utf-8')
+        print(f"Successfully generated {variant}/CubeMX.hex!")
         return True
     finally:
         os.chdir(orig_cwd)
 
 if __name__ == "__main__":
-    success = build()
+    parser = argparse.ArgumentParser(description='Build STM32 firmware; QUAD artifacts use a separate directory.')
+    parser.add_argument('--encoder', choices=('i2c', 'quad'), help='Override ENC_USE_HW_QUAD for every source file')
+    parser.add_argument('--ppr', type=int, help='Common AB pulses/revolution BEFORE x4 (1..1024)')
+    for i in range(1, 4):
+        parser.add_argument(f'--ppr-m{i}', type=int, help=f'Override M{i} PPR')
+    args = parser.parse_args()
+    axes = (args.ppr_m1, args.ppr_m2, args.ppr_m3)
+    if any(v is not None and not 1 <= v <= 1024 for v in (args.ppr,) + axes):
+        parser.error('PPR must be 1..1024; the timer counts four edges per AB pulse')
+    success = build(args.encoder, args.ppr, axes)
     sys.exit(0 if success else 1)

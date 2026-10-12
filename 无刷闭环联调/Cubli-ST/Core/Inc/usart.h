@@ -21,7 +21,10 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #define USART_REC_LEN 256
 extern unsigned char USART_RX_BUF[USART_REC_LEN];
-extern unsigned short USART_RX_STA;
+extern volatile unsigned short USART_RX_STA;
+uint8_t USART_ReadLine(char *out);
+void USART_ClearCommands(void);
+uint16_t USART_TxFree(void);
 void USART2_IRQHandler_User(void);
 void USART_Link_IRQHandler(void);
 void usart2_send_str(const char *str);

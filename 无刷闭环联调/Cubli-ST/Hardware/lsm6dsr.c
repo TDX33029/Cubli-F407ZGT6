@@ -17,8 +17,8 @@ uint8_t LSM6DSR_Read_ID(void)
  * 1. 软件复位
  * 2. 检查 WHO_AM_I ID (0x6B)
  * 3. 启用 BDU (块数据更新) 与 IF_INC (连续读地址自增)
- * 4. 配置加速度计: 104Hz, ±2g (CTRL1_XL = 0x40)
- * 5. 配置陀螺仪: 104Hz, ±2000dps (CTRL2_G = 0x4C)
+ * 4. 配置加速度计: 416Hz, ±2g (CTRL1_XL = 0x60)
+ * 5. 配置陀螺仪: 416Hz, ±2000dps (CTRL2_G = 0x6C)
  * 返回值: 0=成功, 1=设备ID错误/无响应
  *******************************************************************************/
 uint8_t LSM6DSR_Init(void)
@@ -41,19 +41,19 @@ uint8_t LSM6DSR_Init(void)
 	SPI2_WriteByte(LSM6DSR_REG_CTRL3_C, 0x44);
 
 	/* 4. 加速度计 CTRL1_XL:
-	 * ODR_XL = 0100 (104 Hz)
+	 * ODR_XL = 0110 (416 Hz)
 	 * FS_XL  = 00 (±2g, 灵敏度 0.061 mg/LSB)
 	 * LPF2_XL_EN = 0
-	 * 写入 0x40
+	 * 写入 0x60
 	 */
-	SPI2_WriteByte(LSM6DSR_REG_CTRL1_XL, 0x40);
+	SPI2_WriteByte(LSM6DSR_REG_CTRL1_XL, 0x60);
 
 	/* 5. 陀螺仪 CTRL2_G:
-	 * ODR_G = 0100 (104 Hz)
+	 * ODR_G = 0110 (416 Hz)
 	 * FS_G  = 1100 (±2000 dps, 灵敏度 70 mdps/LSB)
-	 * 写入 0x4C
+	 * 写入 0x6C
 	 */
-	SPI2_WriteByte(LSM6DSR_REG_CTRL2_G, 0x4C);
+	SPI2_WriteByte(LSM6DSR_REG_CTRL2_G, 0x6C);
 
 	delay_ms(10);
 	return 0;
@@ -66,6 +66,7 @@ uint8_t LSM6DSR_Init(void)
 uint8_t LSM6DSR_Read_Raw(int16_t accel[3], int16_t gyro[3])
 {
 	uint8_t raw[12];
+    if(LSM6DSR_Read_ID()!=LSM6DSR_ID_WHO_AM_I) return 1;
 	/* 从 0x22 (OUTX_L_G) 连续突发读取 12 字节 */
 	SPI2_ReadBytes(LSM6DSR_REG_OUTX_L_G, raw, 12);
 
@@ -91,12 +92,12 @@ uint8_t LSM6DSR_Read_Raw(int16_t accel[3], int16_t gyro[3])
  * ±2g 灵敏度: 0.061 mg/LSB = 0.000061 g/LSB
  * ±2000dps 灵敏度: 70 mdps/LSB = 0.070 dps/LSB
  *******************************************************************************/
-void LSM6DSR_Get_Data(float accel_g[3], float gyro_dps[3])
+uint8_t LSM6DSR_Get_Data(float accel_g[3], float gyro_dps[3])
 {
 	int16_t raw_a[3] = {0};
 	int16_t raw_g[3] = {0};
 
-	LSM6DSR_Read_Raw(raw_a, raw_g);
+	if(LSM6DSR_Read_Raw(raw_a, raw_g)!=0) return 1;
 
 	/* 转换加速度 (g) */
 	accel_g[0] = (float)raw_a[0] * 0.000061f;
@@ -107,4 +108,5 @@ void LSM6DSR_Get_Data(float accel_g[3], float gyro_dps[3])
 	gyro_dps[0] = (float)raw_g[0] * 0.070f;
 	gyro_dps[1] = (float)raw_g[1] * 0.070f;
 	gyro_dps[2] = (float)raw_g[2] * 0.070f;
+    return 0;
 }
