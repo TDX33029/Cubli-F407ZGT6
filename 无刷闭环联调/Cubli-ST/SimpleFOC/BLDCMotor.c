@@ -21,6 +21,7 @@ float voltage_limit;
 int  pole_pairs;
 unsigned long open_loop_timestamp[3];
 float velocity_limit;
+float velocity_ramp_accel = 400.0f;
 float voltage_sensor_align = 3.5f; // 单轴短时对齐电压；提高负载下的扫描跟随余量
 extern float open_loop_angle[3];
 /******************************************************************************/
@@ -266,7 +267,7 @@ static float ramp_velocity_target(float requested, int motor)
 	}
 	velocity_ramp_timestamp[motor] = now_us;
 
-	max_delta = 100.0f * Ts; /* 100 rad/s^2 command slew limit */
+	max_delta = velocity_ramp_accel * Ts;
 	delta = requested - shaft_velocity_sp[motor];
 	if(delta > max_delta) delta = max_delta;
 	else if(delta < -max_delta) delta = -max_delta;

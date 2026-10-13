@@ -150,7 +150,7 @@ int main(void)
 				/* SimpleFOC参数配置 */
 				voltage_power_supply = 12.0f;   // V (DRV8313 12V 硬件供电)
 				voltage_limit = 5.0f;           // V (动态相电压上限设为 5.0V，兼顾急速启停力矩与电气安全)
-				velocity_limit = 60.0f;         // rad/s (最高转速提升至 60.0 rad/s)
+				velocity_limit = 180.0f;        // rad/s (相对原 60 rad/s 上限提高 3 倍)
 				controller = Type_velocity_openloop; // 默认开环安全待机，避免未标定零位时闭环自激扰动
 			pole_pairs = 7;                 // 极对数
 
@@ -497,7 +497,7 @@ void commander_run(void) {
         Control_Status();
     } else if(!strcmp(name,"?") || !strcmp(name,"HELP") || !strcmp(name,"H")) {
         printf("APP 0=DEBUG/1=WORK; DBG 1..3; MODE 0=open/1=closed; TEST [axis]; ALIGN [axis]\r\n"
-               "M1/M2/M3 speed; EN1/EN2/EN3 0/1; STOP; PING (every 250ms)\r\n"
+               "M1/M2/M3 speed independently; EN1/EN2/EN3 0/1; ACC rad/s^2; STOP; PING (every 250ms)\r\n"
                "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BDIR s1 s2 s3; BAL 0/1\r\n"
                "LQR1/2/3 [Kp Kd Kw Ki]; ZERO1/2/3 deg (edge); BU volts; U volts; L rad/s; PID1/2/3 [P I D]; TF seconds\r\n"
                "FF[1/2/3] [coulomb_V bemf_V_per_rad_s]; STATE?\r\n"); Control_Status();
@@ -551,21 +551,33 @@ void commander_run(void) {
         float val=0;
         if(app_mode || cubli_bal.state!=BAL_STATE_DISABLED || safety_trip) {printf("ERR DEBUG_ONLY_OR_LATCHED (DBG to reset)\r\n");return;}
         if(n==1) val=v[0];
-        else if(n==3 && !explicit_axis) {
-            for(i=0;i<3;i++) if(i!=debug_motor-1 && v[i]!=0) {printf("ERR SINGLE_MOTOR_ONLY\r\n");return;}
-            val=v[debug_motor-1];
-        } else {printf("ERR ARGUMENT_COUNT\r\n");return;}
-        if(explicit_axis && explicit_axis!=debug_motor) {printf("ERR SELECTED_AXIS\r\n");return;}
+        else if(n!=3 || explicit_axis || en) {printf("ERR ARGUMENT_COUNT\r\n");return;}
         if(en) {
             if(val!=0 && val!=1) {printf("ERR EN_VALUE\r\n");return;}
-            if(val && controller==Type_velocity && !motor_aligned[debug_motor-1]) {printf("ERR ALIGN_REQUIRED\r\n");return;}
-            set_motor_enable(debug_motor,(uint8_t)val);
+            int axis=explicit_axis?explicit_axis:debug_motor;
+            if(val && controller==Type_velocity && !motor_aligned[axis-1]) {printf("ERR ALIGN_REQUIRED M%d\r\n",axis);return;}
+            if(!val) {
+                if(axis==1) target_m1=0; else if(axis==2) target_m2=0; else target_m3=0;
+            }
+            set_motor_enable((uint8_t)axis,(uint8_t)val);
+            printf("OK DEBUG M%d\r\n",axis);
         } else {
-            val=_constrain(val,-velocity_limit,velocity_limit);
-            target_m1=target_m2=target_m3=0;
-            if(debug_motor==1) target_m1=val; else if(debug_motor==2) target_m2=val; else target_m3=val;
+            if(n==3) {
+                for(i=0;i<3;i++) {
+                    if(controller==Type_velocity && v[i]!=0 && !motor_aligned[i]) {printf("ERR ALIGN_REQUIRED M%d\r\n",i+1);return;}
+                }
+                target_m1=_constrain(v[0],-velocity_limit,velocity_limit);
+                target_m2=_constrain(v[1],-velocity_limit,velocity_limit);
+                target_m3=_constrain(v[2],-velocity_limit,velocity_limit);
+                printf("OK DEBUG M1/M2/M3\r\n");
+            } else {
+                int axis=explicit_axis?explicit_axis:debug_motor;
+                if(controller==Type_velocity && val!=0 && !motor_aligned[axis-1]) {printf("ERR ALIGN_REQUIRED M%d\r\n",axis);return;}
+                val=_constrain(val,-velocity_limit,velocity_limit);
+                if(axis==1) target_m1=val; else if(axis==2) target_m2=val; else target_m3=val;
+                printf("OK DEBUG M%d\r\n",axis);
+            }
         }
-        printf("OK DEBUG M%d\r\n",debug_motor);
     } else if(!strncmp(name,"PID",3) || !strncmp(name,"LQR",3) || !strncmp(name,"ZERO",4) || !strncmp(name,"TF",2) || !strncmp(name,"FF",2)) {
         uint8_t pid=!strncmp(name,"PID",3),lqr=!strncmp(name,"LQR",3),zero=!strncmp(name,"ZERO",4),ff=!strncmp(name,"FF",2);
         int len=zero?4:((!strncmp(name,"TF",2) || ff)?2:3);
@@ -599,9 +611,13 @@ void commander_run(void) {
                 if(n!=1 || v[0]<0.001f || v[0]>0.1f) {printf("ERR TF_RANGE\r\n");return;} lpf_velocity[i].Tf=v[0];
             }
         }
+    } else if(!strcmp(name,"ACC") && n==1) {
+        if(m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
+        if(v[0]<100.0f || v[0]>1500.0f) {printf("ERR ACC_RANGE (100..1500 rad/s^2)\r\n");return;}
+        velocity_ramp_accel=v[0]; printf("OK ACC:%.1f rad/s^2\r\n",velocity_ramp_accel);
     } else if((!strcmp(name,"U") || !strcmp(name,"L") || !strcmp(name,"BU")) && n==1) {
         if(v[0]<=0) {printf("ERR LIMIT\r\n");return;}
-        if(!strcmp(name,"L")) velocity_limit=_constrain(v[0],1,80);
+        if(!strcmp(name,"L")) velocity_limit=_constrain(v[0],1,180);
         else if(!strcmp(name,"BU")) LQR_SetMaxVoltage(_constrain(v[0],0.1f,voltage_limit));
         else voltage_limit=_constrain(v[0],0.1f,voltage_power_supply*0.577350269f);
         printf("OK LIMIT\r\n");

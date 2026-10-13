@@ -1045,7 +1045,7 @@ class MotorControlCard(QGroupBox):
         lbl_target.setStyleSheet("font-size: 12px; color: #475569;")
 
         self.spin_speed = NoWheelDoubleSpinBox()
-        self.spin_speed.setRange(-60.0, 60.0)
+        self.spin_speed.setRange(-180.0, 180.0)
         self.spin_speed.setSingleStep(0.5)
         self.spin_speed.setDecimals(2)
         self.spin_speed.setSuffix(" rad/s")
@@ -1071,9 +1071,9 @@ class MotorControlCard(QGroupBox):
         mid_row.addWidget(self.spin_speed)
         layout.addLayout(mid_row)
 
-        # 禁用鼠标滚轮的水平滑块 (-60.0 ~ +60.0，以 10 倍整数映射: -600 ~ 600)
+        # 禁用鼠标滚轮的水平滑块 (-180.0 ~ +180.0，以 10 倍整数映射)
         self.slider = NoWheelSlider(Qt.Horizontal)
-        self.slider.setRange(-600, 600)
+        self.slider.setRange(-1800, 1800)
         self.slider.setValue(0)
         self.slider.setTickPosition(QSlider.TicksBelow)
         self.slider.setTickInterval(100)
@@ -1106,11 +1106,11 @@ class MotorControlCard(QGroupBox):
 
         # 刻度标记
         scale_row = QHBoxLayout()
-        lbl_scale_min = QLabel("-60")
+        lbl_scale_min = QLabel("-180")
         lbl_scale_min.setStyleSheet("font-size: 10px; color: #94a3b8;")
         lbl_scale_mid = QLabel("0")
         lbl_scale_mid.setStyleSheet("font-size: 10px; color: #94a3b8;")
-        lbl_scale_max = QLabel("+60 rad/s")
+        lbl_scale_max = QLabel("+180 rad/s")
         lbl_scale_max.setStyleSheet("font-size: 10px; color: #94a3b8;")
 
         scale_row.addWidget(lbl_scale_min)
@@ -1557,17 +1557,18 @@ class MainWindow(QMainWindow):
         self.tele_fps_counter = 0
         self.tele_last_fps_time = time.time()
 
-        # 滑条防抖定时器 (50ms)
+        # 滑条防抖定时器 (20ms)
         self.debounce_timer = QTimer()
         self.debounce_timer.setSingleShot(True)
-        self.debounce_timer.setInterval(50)
+        self.debounce_timer.setInterval(20)
         self.debounce_timer.timeout.connect(self._flush_speed_command)
         self.pending_speed = [0.0, 0.0, 0.0]
+        self.pending_axes = set()
         self.pending_flag = False
 
-        # 波形与 3D 渲染定时器 (30 FPS)
+        # 波形定时刷新 (10 FPS); telemetry and 3D state remain event-driven.
         self.plot_timer = QTimer()
-        self.plot_timer.setInterval(33)
+        self.plot_timer.setInterval(100)
         self.plot_timer.timeout.connect(self.update_plots)
         self.plot_timer.start()
 
@@ -1915,7 +1916,7 @@ class MainWindow(QMainWindow):
         row_sync.addWidget(lbl_s_target)
 
         self.spin_sync = QDoubleSpinBox()
-        self.spin_sync.setRange(-60.0, 60.0)
+        self.spin_sync.setRange(-180.0, 180.0)
         self.spin_sync.setSingleStep(0.5)
         self.spin_sync.setDecimals(2)
         self.spin_sync.setSuffix(" rad/s")
@@ -1940,7 +1941,7 @@ class MainWindow(QMainWindow):
 
         # 禁用鼠标滚轮的同步滑条
         self.slider_sync = NoWheelSlider(Qt.Horizontal)
-        self.slider_sync.setRange(-600, 600)
+        self.slider_sync.setRange(-1800, 1800)
         self.slider_sync.setValue(0)
         self.slider_sync.setStyleSheet("""
             QSlider::groove:horizontal {
@@ -2017,7 +2018,7 @@ class MainWindow(QMainWindow):
         # 速度上限 limit
         lbl_vlim = QLabel("极速限制 Limit:")
         self.spin_vlim = QDoubleSpinBox()
-        self.spin_vlim.setRange(1.0, 80.0)
+        self.spin_vlim.setRange(1.0, 180.0)
         self.spin_vlim.setSingleStep(5.0)
         self.spin_vlim.setValue(60.0)
         self.spin_vlim.setSuffix(" rad/s")
@@ -2421,6 +2422,7 @@ class MainWindow(QMainWindow):
 
         self.txt_log = QTextEdit()
         self.txt_log.setReadOnly(True)
+        self.txt_log.document().setMaximumBlockCount(1000)
         self.txt_log.setMinimumHeight(90)
         log_layout.addWidget(self.txt_log)
 
@@ -2632,6 +2634,7 @@ class MainWindow(QMainWindow):
         self.debounce_timer.stop()
         self.pending_flag = False
         self.pending_speed = [0.0, 0.0, 0.0]
+        self.pending_axes.clear()
         self.worker.clear_pending()
         for card in (self.card_m1, self.card_m2, self.card_m3):
             card.set_speed(0.0, emit=False)
@@ -2649,10 +2652,9 @@ class MainWindow(QMainWindow):
         if active_motors is not None:
             self.active_motors = active_motors
         debug = state.get('App', 0) == 0 and state.get('Bal', 0) == 0
-        selected = state.get('Dbg', 1)
         for i, card in enumerate((self.card_m1, self.card_m2, self.card_m3), 1):
-            card.set_operable(not locked and debug and selected == i and self.active_motors[i-1])
-            card.setVisible(state.get("App", 0) == 0 and selected == i)
+            card.set_operable(not locked and debug and self.active_motors[i-1])
+            card.setVisible(state.get("App", 0) == 0)
         self.sync_group.setEnabled(False)
         self.cl_group.setEnabled(not locked and debug)
         self.cl_group.setVisible(state.get("App", 0) == 0)
@@ -2676,11 +2678,11 @@ class MainWindow(QMainWindow):
         layout = QGridLayout()
         outer.addLayout(layout)
         self.combo_app = QComboBox()
-        self.combo_app.addItems(["调试模式（单电机）", "工作模式（平衡）"])
+        self.combo_app.addItems(["调试模式（三电机独立）", "工作模式（平衡）"])
         self.combo_app.activated.connect(lambda i: self._request_state_change(f"APP {i}", {'App': i}))
         layout.addWidget(self.combo_app, 0, 0, 1, 2)
         self.combo_debug = QComboBox()
-        self.combo_debug.addItems(["调试 M1", "调试 M2", "调试 M3"])
+        self.combo_debug.addItems(["自检/对齐 M1", "自检/对齐 M2", "自检/对齐 M3"])
         self.combo_debug.activated.connect(lambda i: self._request_state_change(f"DBG {i+1}", {'Dbg': i+1}))
         layout.addWidget(self.combo_debug, 1, 0, 1, 2)
         btn_reset = QPushButton("复位停机锁存（保持失能）")
@@ -2828,6 +2830,7 @@ class MainWindow(QMainWindow):
     # =====================================================================
     def on_motor_speed_change(self, motor_id, speed):
         self.pending_speed[motor_id - 1] = speed
+        self.pending_axes.add(motor_id)
         self.pending_flag = True
         self.cube_widget.motor_speeds[motor_id - 1] = speed
         if not self.debounce_timer.isActive():
@@ -2838,11 +2841,13 @@ class MainWindow(QMainWindow):
             state = self.device_state or {}
             if state.get("App") != 0 or state.get("Trip") or state.get("Bal") != 0 or self.expected_state:
                 self.pending_flag = False
+                self.pending_axes.clear()
                 return
-            axis = (self.device_state or {}).get("Dbg", 1)
-            cmd = f"M{axis} {self.pending_speed[axis-1]:.2f}"
-            self.worker.send_cmd(cmd)
+            for axis in sorted(self.pending_axes):
+                if self.active_motors[axis - 1]:
+                    self.worker.send_cmd(f"M{axis} {self.pending_speed[axis-1]:.2f}")
             self.pending_flag = False
+            self.pending_axes.clear()
 
     def on_motor_enable_change(self, motor_id, enabled):
         val = 1 if enabled else 0
@@ -3084,42 +3089,42 @@ class MainWindow(QMainWindow):
             self.tele_last_fps_time = time.time()
 
     def update_plots(self):
-        """30 FPS 定时刷新波形图 (示波器平滑滚动时间窗)"""
-        if not self.history_time or len(self.history_time) < 2:
+        """Refresh only the visible plot with a bounded recent time window."""
+        if not self.tab_curves.isVisible() or not self.history_time or len(self.history_time) < 2:
             return
 
         t_data = list(self.history_time)
+        t_cur = t_data[-1]
+        t_min = max(0.0, t_cur - 10.0)
+        t_max = max(10.0, t_cur)
+        first = next((i for i, t in enumerate(t_data) if t >= t_min), max(0, len(t_data) - 1))
+        t_data = t_data[first:]
         n = len(t_data)
         if n < 2:
             return
 
-        t_cur = t_data[-1]
-        t_min = max(0.0, t_cur - 10.0)
-        t_max = max(10.0, t_cur)
-
-        # 1. 刷新 MT6701 实时角度曲线 (0° ~ 360°)
-        if len(self.history_h1) >= n:
-            h1_data = list(self.history_h1)[:n]
-            h2_data = list(self.history_h2)[:n]
-            h3_data = list(self.history_h3)[:n]
+        index = self.tab_curves.currentIndex()
+        if index == 0 and len(self.history_h1) >= first + n:
+            h1_data = list(self.history_h1)[first:first+n]
+            h2_data = list(self.history_h2)[first:first+n]
+            h3_data = list(self.history_h3)[first:first+n]
             self.curve_h1.setData(t_data, h1_data)
             self.curve_h2.setData(t_data, h2_data)
             self.curve_h3.setData(t_data, h3_data)
             self.plot_angle.setXRange(t_min, t_max, padding=0.01)
 
-        # 2. 刷新电机转速曲线 (目标虚线 vs 实测实线)
-        if len(self.history_m1) >= n:
-            m1_data = list(self.history_m1)[:n]
-            m2_data = list(self.history_m2)[:n]
-            m3_data = list(self.history_m3)[:n]
+        elif index == 1 and len(self.history_m1) >= first + n:
+            m1_data = list(self.history_m1)[first:first+n]
+            m2_data = list(self.history_m2)[first:first+n]
+            m3_data = list(self.history_m3)[first:first+n]
             self.curve_m1_tgt.setData(t_data, m1_data)
             self.curve_m2_tgt.setData(t_data, m2_data)
             self.curve_m3_tgt.setData(t_data, m3_data)
 
-            if len(self.history_s1) >= n:
-                s1_data = list(self.history_s1)[:n]
-                s2_data = list(self.history_s2)[:n]
-                s3_data = list(self.history_s3)[:n]
+            if len(self.history_s1) >= first + n:
+                s1_data = list(self.history_s1)[first:first+n]
+                s2_data = list(self.history_s2)[first:first+n]
+                s3_data = list(self.history_s3)[first:first+n]
                 self.curve_s1_act.setData(t_data, s1_data)
                 self.curve_s2_act.setData(t_data, s2_data)
                 self.curve_s3_act.setData(t_data, s3_data)
@@ -3133,18 +3138,16 @@ class MainWindow(QMainWindow):
             bound = max(15.0, abs(min_v) + 5.0, abs(max_v) + 5.0)
             self.plot_speed.setYRange(-bound, bound, padding=0.05)
 
-        # 3. 刷新陀螺仪角速度曲线
-        if len(self.history_gx) >= n:
-            self.curve_gx.setData(t_data, list(self.history_gx)[:n])
-            self.curve_gy.setData(t_data, list(self.history_gy)[:n])
-            self.curve_gz.setData(t_data, list(self.history_gz)[:n])
+        elif index == 2 and len(self.history_gx) >= first + n:
+            self.curve_gx.setData(t_data, list(self.history_gx)[first:first+n])
+            self.curve_gy.setData(t_data, list(self.history_gy)[first:first+n])
+            self.curve_gz.setData(t_data, list(self.history_gz)[first:first+n])
             self.plot_gyro.setXRange(t_min, t_max, padding=0.01)
 
-        # 4. 刷新加速度计曲线
-        if len(self.history_ax) >= n:
-            self.curve_ax.setData(t_data, list(self.history_ax)[:n])
-            self.curve_ay.setData(t_data, list(self.history_ay)[:n])
-            self.curve_az.setData(t_data, list(self.history_az)[:n])
+        elif index == 3 and len(self.history_ax) >= first + n:
+            self.curve_ax.setData(t_data, list(self.history_ax)[first:first+n])
+            self.curve_ay.setData(t_data, list(self.history_ay)[first:first+n])
+            self.curve_az.setData(t_data, list(self.history_az)[first:first+n])
             self.plot_accel.setXRange(t_min, t_max, padding=0.01)
 
     # =====================================================================

@@ -20,6 +20,7 @@ extern float voltage_sensor_align;
 extern int  pole_pairs;
 extern unsigned long open_loop_timestamp[3];
 extern float velocity_limit;
+extern float velocity_ramp_accel;
 extern float current_limit;
 /******************************************************************************/
 void Motor_init(void);
