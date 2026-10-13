@@ -1,6 +1,6 @@
 cubemx\lsm6dsr.o: ../Hardware/lsm6dsr.c
 cubemx\lsm6dsr.o: ../Hardware/lsm6dsr.h
-cubemx\lsm6dsr.o: D:\Program Files\Keil5\ARM\ARMCC\Bin\..\include\stdint.h
+cubemx\lsm6dsr.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 cubemx\lsm6dsr.o: ../Hardware/spi.h
 cubemx\lsm6dsr.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h
 cubemx\lsm6dsr.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f407xx.h
@@ -16,7 +16,7 @@ cubemx\lsm6dsr.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h
 cubemx\lsm6dsr.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h
 cubemx\lsm6dsr.o: ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h
 cubemx\lsm6dsr.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-cubemx\lsm6dsr.o: D:\Program Files\Keil5\ARM\ARMCC\Bin\..\include\stddef.h
+cubemx\lsm6dsr.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 cubemx\lsm6dsr.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h
 cubemx\lsm6dsr.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h
 cubemx\lsm6dsr.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio_ex.h
