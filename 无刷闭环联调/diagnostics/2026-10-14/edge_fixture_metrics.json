@@ -1,0 +1,40 @@
+{
+  "edge_fixture_gain70_dirminus": {
+    "frames": 604,
+    "duration_mcu_s": 12.060035,
+    "Tilt": {
+      "min": 0.03,
+      "max": 0.07,
+      "last": 0.03
+    },
+    "V1": {
+      "min": -0.03,
+      "max": 0.07,
+      "last": 0.0
+    },
+    "U1": {
+      "min": 0.03,
+      "max": 0.08,
+      "last": 0.04
+    }
+  },
+  "edge_fixture_gain70_offset_plus1": {
+    "frames": 202,
+    "duration_mcu_s": 4.020017999999999,
+    "Tilt": {
+      "min": 0.92,
+      "max": 1.13,
+      "last": 0.94
+    },
+    "V1": {
+      "min": 1.57,
+      "max": 26.74,
+      "last": 25.71
+    },
+    "U1": {
+      "min": 0.58,
+      "max": 1.32,
+      "last": 0.64
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "note": "Illustrative free reaction-wheel plant, not identified hardware parameters. Current law u=-Kp*theta-Kd*rate-Kw*wheel. A negative characteristic constant forces a positive real pole.",
+  "illustrative_parameters": {
+    "a": 100.0,
+    "b": 2.0,
+    "c": 80.0,
+    "back_emf": 0.024,
+    "kp": 90.0,
+    "kd": 5.0
+  },
+  "results": {
+    "0.02": {
+      "A": [
+        [
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          -80.0,
+          -10.0,
+          -0.088
+        ],
+        [
+          -7280.0,
+          -410.0,
+          -3.6079999999999997
+        ]
+      ],
+      "poles": [
+        {
+          "real": -8.202222287187649,
+          "imag": 7.654911467627456
+        },
+        {
+          "real": -8.202222287187649,
+          "imag": -7.654911467627456
+        },
+        {
+          "real": 2.7964445743752986,
+          "imag": 0.0
+        }
+      ],
+      "max_real": 2.7964445743752986,
+      "characteristic_constant": -351.9999999999999
+    },
+    "-0.03": {
+      "A": [
+        [
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          -80.0,
+          -10.0,
+          0.011999999999999997
+        ],
+        [
+          -7280.0,
+          -410.0,
+          0.4919999999999999
+        ]
+      ],
+      "poles": [
+        {
+          "real": -4.43086765583289,
+          "imag": 7.391913501063171
+        },
+        {
+          "real": -4.43086765583289,
+          "imag": -7.391913501063171
+        },
+        {
+          "real": -0.6462646883342132,
+          "imag": 0.0
+        }
+      ],
+      "max_real": -0.6462646883342132,
+      "characteristic_constant": 47.99999999999994
+    }
+  }
+}
