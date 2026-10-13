@@ -16,8 +16,10 @@ p.add_argument('--voltage',type=float,default=1.5);p.add_argument('--kp',type=fl
 p.add_argument('--wheel-limit',type=float,default=60);p.add_argument('--tilt-bound',type=float,default=8)
 p.add_argument('--zero-offset',type=float,default=0)
 p.add_argument('--reference-json',type=Path)
+p.add_argument('--preserve-fall',action='store_true')
 a=p.parse_args()
-if not (0<a.run_seconds<=15 and 20<=a.speed_bound<=a.wheel_limit<=120 and 15<=a.wait_seconds<=120 and 0<a.voltage<=4 and 0<=a.kp<=120 and 0<=a.kd<=10 and abs(a.kw)<=.1 and 3<=a.tilt_bound<=20 and abs(a.zero_offset)<=2):raise SystemExit('Fixture trial bounds exceeded')
+run_limit=45 if a.kp==a.kd==a.kw==0 and a.voltage<=.5 else 15
+if not (0<a.run_seconds<=run_limit and 20<=a.speed_bound<=a.wheel_limit<=120 and 15<=a.wait_seconds<=120 and 0<a.voltage<=4 and 0<=a.kp<=120 and 0<=a.kd<=10 and abs(a.kw)<=.1 and 3<=a.tilt_bound<=20 and abs(a.zero_offset)<=2):raise SystemExit('Fixture trial bounds exceeded')
 folder=Path(__file__).resolve().parent/'2026-10-14'
 log=(folder/(a.tag+'.jsonl')).open('x',encoding='utf-8')
 rows=[];frames=[];buf=bytearray();phase='connect';start=time.monotonic();ping=0;state={};watch=False;last_rx=0;run_started=None;result='incomplete';freq_queried=False
@@ -95,7 +97,12 @@ finally:
     run_ended=time.monotonic();watch=False;phase='finish'
     if s.is_open:
         try:
-            cmd('STOP');pump(.2);wait('FAST 0');wait('ZERO1 0');wait('U 2.5');wait('L 15');wait('STATE?')
+            preserve=False
+            if a.preserve_fall and result=='firmware_fall_protection':
+                wait('FAST 0',.3);wait('STATE?',.2)
+                preserve=state.get('EN')=='000' and state.get('Bal')=='4'
+            if not preserve:cmd('STOP');pump(.2);wait('FAST 0');wait('ZERO1 0')
+            wait('U 2.5');wait('L 15');wait('STATE?')
         finally:s.close()
     summary={'settings':{k:(str(v) if isinstance(v,Path) else v) for k,v in vars(a).items()},'result':result,'run_duration':run_ended-run_started if run_started else 0,'last_state':state,
              'last_running_states':[d for t,d in frames if d.get('Bal') in ('3','4')][-10:],
