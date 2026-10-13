@@ -3,21 +3,54 @@ import os
 import sys
 import time
 import subprocess
+import ctypes
 from pathlib import Path
 import argparse
 import json
+import re
 
-def build(encoder=None, ppr=None, ppr_axes=(None, None, None)):
+def rerun_from_ascii_drive_if_needed():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    if script_dir.isascii() or os.name != "nt":
+        return None
+
+    used_drives = ctypes.windll.kernel32.GetLogicalDrives()
+    for letter in "ZYXWVUTSRQPONMLKJIHGFED":
+        if used_drives & (1 << (ord(letter) - ord("A"))):
+            continue
+        drive = letter + ":"
+        mapped_script = drive + "\\build_firmware.py"
+        subprocess.run(["subst", drive, script_dir], check=True)
+        try:
+            return subprocess.run([sys.executable, mapped_script] + sys.argv[1:]).returncode
+        finally:
+            subprocess.run(["subst", drive, "/D"], check=False)
+
+    print("Error: no free drive letter is available for the ASCII build path.")
+    return 1
+
+def build(encoder=None, ppr=None, ppr_axes=(None, None, None), output_variant=None):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
     mdk_dir = "MDK-ARM"
-    variant = "CubeMX-quad" if encoder == "quad" else "CubeMX"
+    variant = output_variant or ("CubeMX-quad" if encoder == "quad" else "CubeMX")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,48}", variant):
+        raise ValueError("Output variant must contain only ASCII letters, digits, '_' or '-'")
     obj_dir = "MDK-ARM/" + variant
 
-    armcc = "C:/Keil_v5/ARM/ARMCC/bin/armcc.exe"
-    armasm = "C:/Keil_v5/ARM/ARMCC/bin/armasm.exe"
-    armlink = "C:/Keil_v5/ARM/ARMCC/bin/armlink.exe"
-    fromelf = "C:/Keil_v5/ARM/ARMCC/bin/fromelf.exe"
+    tool_candidates = [
+        os.environ.get("KEIL_ARMCC_BIN"),
+        r"D:\Program Files\Keil5\ARM\ARMCC\Bin",
+        r"C:\Keil_v5\ARM\ARMCC\Bin",
+    ]
+    tool_dir = next((p for p in tool_candidates if p and os.path.isfile(os.path.join(p, "armcc.exe"))), None)
+    if tool_dir is None:
+        print("Error: ARMCC not found. Set KEIL_ARMCC_BIN to the ARMCC Bin directory.")
+        return False
+    armcc = os.path.join(tool_dir, "armcc.exe")
+    armasm = os.path.join(tool_dir, "armasm.exe")
+    armlink = os.path.join(tool_dir, "armlink.exe")
+    fromelf = os.path.join(tool_dir, "fromelf.exe")
 
     if not os.path.exists(armcc):
         print(f"Error: ARMCC not found at {armcc}")
@@ -92,7 +125,6 @@ def build(encoder=None, ppr=None, ppr_axes=(None, None, None)):
 
     print(f"Building Cubli-F407ZGT6 firmware ({len(srcs)} files)...")
     # Every object referenced by the linker must be rebuilt; never reuse old HAL objects.
-    import re
     link_text = Path("MDK-ARM/CubeMX/CubeMX.lnp").read_text(encoding="utf-8-sig")
     known = {Path(obj).name.lower() for _, _, obj in srcs}
     for obj in re.findall(r'"([^"\n]+\.o)"', link_text):
@@ -166,8 +198,13 @@ def build(encoder=None, ppr=None, ppr_axes=(None, None, None)):
         os.chdir(orig_cwd)
 
 if __name__ == "__main__":
+    mapped_result = rerun_from_ascii_drive_if_needed()
+    if mapped_result is not None:
+        sys.exit(mapped_result)
+
     parser = argparse.ArgumentParser(description='Build STM32 firmware; QUAD artifacts use a separate directory.')
     parser.add_argument('--encoder', choices=('i2c', 'quad'), help='Override ENC_USE_HW_QUAD for every source file')
+    parser.add_argument('--variant', help='Use a separate ASCII-named output directory instead of CubeMX')
     parser.add_argument('--ppr', type=int, help='Common AB pulses/revolution BEFORE x4 (1..1024)')
     for i in range(1, 4):
         parser.add_argument(f'--ppr-m{i}', type=int, help=f'Override M{i} PPR')
@@ -175,5 +212,5 @@ if __name__ == "__main__":
     axes = (args.ppr_m1, args.ppr_m2, args.ppr_m3)
     if any(v is not None and not 1 <= v <= 1024 for v in (args.ppr,) + axes):
         parser.error('PPR must be 1..1024; the timer counts four edges per AB pulse')
-    success = build(args.encoder, args.ppr, axes)
+    success = build(args.encoder, args.ppr, axes, args.variant)
     sys.exit(0 if success else 1)

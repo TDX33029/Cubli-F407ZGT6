@@ -28,11 +28,11 @@ extern void Control_RequestStop(uint8_t reason);
 
 /* ==========================================================================
  * 调试链路串口选择 (printf 遥测与命令解析共用的物理通道)
- *   1 = USART1 (PA9=TX, PA10=RX) -> 板载 ESP32-WROOM32E 无线上位机链路
+ *   1 = USART1 (PA9=TX, PA10=RX) -> 可选 ESP32 无线上位机链路
  *       (ESP32 IO26<-F407 PA9(TX), ESP32 IO25->F407 PA10(RX), 115200-8-N-1)
- *   2 = USART2 (PD5=TX, PD6=RX)  -> 原有线串口直连 PC (调试后备通道)
+ *   2 = USART2 (PD5=TX, PD6=RX)  -> 旧板 USB-TTL 直连 PC
  * ========================================================================== */
-#define DEBUG_LINK_USART   1
+#define DEBUG_LINK_USART   2
 
 #if DEBUG_LINK_USART == 1
   #define DBG_LINK_UART    USART1

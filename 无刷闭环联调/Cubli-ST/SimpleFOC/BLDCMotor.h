@@ -14,7 +14,7 @@ typedef enum
 
 /******************************************************************************/
 extern float voltage_power_supply;
-extern float alignment_travel_deg[3];
+extern float motor_test_travel_deg[3];
 extern float voltage_limit;
 extern float voltage_sensor_align;
 extern int  pole_pairs;
@@ -28,6 +28,8 @@ uint8_t Motor_alignSensor(int motor);
 void Motor_alignAll(void);
 void loopFOC(int motor);
 void move(float new_target, int motor);
+void velocity_feedforward_get(int motor, float *coulomb_v, float *bemf_v_per_rad_s);
+void velocity_feedforward_set(int motor, float coulomb_v, float bemf_v_per_rad_s);
 void setPhaseVoltage(float Uq, float Ud, float angle_el, int motor);
 float velocityOpenloop(float target_velocity, int motor);
 float angleOpenloop(float target_angle, int motor);

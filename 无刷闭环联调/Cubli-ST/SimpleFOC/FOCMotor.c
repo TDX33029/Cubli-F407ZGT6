@@ -19,7 +19,8 @@ float zero_electric_angle[3] = {0.0f, 0.0f, 0.0f};
 int   sensor_direction[3] = {1, 1, 1}; // 默认 CW
 uint8_t motor_aligned[3] = {0, 0, 0};
 uint8_t sensor_valid[3] = {0, 0, 0};
-uint8_t motor_sensor_map[3] = {0, 1, 2}; // 默认映射表：驱动0(TIM1)->I2C1(MT6701-1), 驱动1(TIM3)->I2C2(MT6701-2), 驱动2(TIM4)->I2C3(MT6701-3)
+uint8_t motor_sensor_map[3] = {0, 1, 2};
+uint8_t motor_mapping_valid[3] = {0, 0, 0};
 
 /* 编码器跟踪状态内部结构 */
 float angle_prev[3] = {0.0f, 0.0f, 0.0f};           // 当前单圈机械角度 [0, 2PI)
@@ -81,6 +82,23 @@ void SimpleFOC_PID_Init(void)
 		lpf_velocity[i].y_prev = 0.0f;
 		lpf_velocity[i].timestamp_prev = 0;
 	}
+}
+
+/* Discard angle and velocity history after a drive-to-encoder remap. */
+void reset_sensor_tracking(int motor)
+{
+	if(motor < 0 || motor > 2) return;
+	angle_prev_ts[motor] = 0;
+	angle_vel_prev[motor] = 0.0f;
+	vel_prev_ts[motor] = 0;
+	last_raw_velocity[motor] = 0.0f;
+	angle_prev[motor] = 0.0f;
+	shaft_angle[motor] = 0.0f;
+	shaft_velocity[motor] = 0.0f;
+	lpf_velocity[motor].y_prev = 0.0f;
+	lpf_velocity[motor].timestamp_prev = 0;
+	sensor_valid[motor] = 0;
+	updateSensor(motor);
 }
 
 /******************************************************************************/

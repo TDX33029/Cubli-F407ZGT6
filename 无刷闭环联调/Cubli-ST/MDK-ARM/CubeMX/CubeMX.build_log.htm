@@ -5,11 +5,11 @@
 <h2>Tool Versions:</h2>
 IDE-Version: μVision V5.42.0.0
 Copyright (C) 2025 ARM Ltd and ARM Germany GmbH. All rights reserved.
-License Information: 1 Lenovo, 1, LIC=HN0AE-586QS-74TS0-B5YRQ-CXLRK-YAUB2
+License Information: 1 1, 1, LIC=BUURY-I4SUF-01ZP1-CUJZS-RJ7C6-4M6QY
  
 Tool Versions:
 Toolchain:       MDK-ARM Plus  Version: 5.42.0.0
-Toolchain Path:  C:\Keil_v5\ARM\ARMCC\Bin
+Toolchain Path:  D:\Program Files\Keil5\ARM\ARMCC\Bin
 C Compiler:      Armcc.exe V5.06 update 7 (build 960)
 Assembler:       Armasm.exe V5.06 update 7 (build 960)
 Linker/Locator:  ArmLink.exe V5.06 update 7 (build 960)
@@ -21,36 +21,31 @@ Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V3.3.0.0
 Dialog DLL:      TCM.DLL V1.56.6.0
  
 <h2>Project:</h2>
-D:\Document\tempPrj\Cubli-F407ZGT6\无刷闭环联调\Cubli-ST\MDK-ARM\CubeMX.uvprojx
-Project File Date:  10/07/2026
+D:\Docunemt\临时工程项目\Cubli-F407ZGT6\无刷闭环联调\Cubli-ST\MDK-ARM\CubeMX.uvprojx
+Project File Date:  10/13/2026
 
 <h2>Output:</h2>
-*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
+*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\Program Files\Keil5\ARM\ARMCC\Bin'
 Build target 'CubeMX'
-compiling enc_quad.c...
-compiling stm32f4xx_it.c...
 compiling FOCMotor.c...
+../SimpleFOC/FOCMotor.c(241): error: At end of source:  #5: cannot open source input file "cubemx\focmotor.crf": Invalid argument
+../SimpleFOC/FOCMotor.c: 0 warnings, 1 error
 compiling lqr_balance.c...
-../SimpleFOC/foc_utils.h(21): warning:  #47-D: incompatible redefinition of macro "_PI"  (declared at line 26 of "../Hardware/lqr_balance.h")
-  #define _PI 3.14159265359f
-../Hardware/lqr_balance.c: 1 warning, 0 errors
-compiling BLDCMotor.c...
-compiling usart.c...
-compiling foc_utils.c...
+../Hardware/lqr_balance.c(197): error: At end of source:  #5: cannot open source input file "cubemx\lqr_balance.crf": Invalid argument
+../Hardware/lqr_balance.c: 0 warnings, 1 error
 compiling CurrentSense.c...
+compiling foc_utils.c...
+compiling BLDCMotor.c...
 compiling main.c...
-linking...
-Program Size: Code=39668 RO-data=5060 RW-data=136 ZI-data=3600  
-FromELF: creating hex file...
-"CubeMX\CubeMX.axf" - 0 Error(s), 1 Warning(s).
+"CubeMX\CubeMX.axf" - 2 Error(s), 0 Warning(s).
 
 <h2>Software Packages used:</h2>
 
 Package Vendor: ARM
-                https://www.keil.com/pack/ARM.CMSIS.6.3.0.pack
-                ARM::CMSIS@6.3.0
+                https://www.keil.com/pack/ARM.CMSIS.6.1.0.pack
+                ARM::CMSIS@6.1.0
                 CMSIS (Common Microcontroller Software Interface Standard)
-   * Component: CORE Version: 6.2.0
+   * Component: CORE Version: 6.1.0
 
 Package Vendor: Keil
                 https://www.keil.com/pack/Keil.STM32F4xx_DFP.3.1.1.pack
@@ -59,13 +54,14 @@ Package Vendor: Keil
 
 <h2>Collection of Component include folders:</h2>
   ./RTE/_CubeMX
-  C:/Keil_v5/MDK/PACK/ARM/CMSIS/6.3.0/CMSIS/Core/Include
+  D:/Program Files/Keil5/ARM/CMSIS/6.1.0/CMSIS/Core/Include
 
 <h2>Collection of Component Files used:</h2>
 
-   * Component: ARM::CMSIS:CORE@6.2.0
+   * Component: ARM::CMSIS:CORE@6.1.0
       Include file:  CMSIS/Core/Include/tz_context.h
-Build Time Elapsed:  00:00:03
+Target not created.
+Build Time Elapsed:  00:00:06
 </pre>
 </body>
 </html>

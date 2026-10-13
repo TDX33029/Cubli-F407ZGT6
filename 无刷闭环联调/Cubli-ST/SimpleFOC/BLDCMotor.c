@@ -15,122 +15,175 @@ main中调用的接口函数都在当前文件中
   F4移植: 适配168MHz, TIM1 PWM (PE9/PE11/PE13)
 ************************************************/
 /******************************************************************************/
-float alignment_travel_deg[3]={0,0,0};
+float motor_test_travel_deg[3]={0,0,0};
 float voltage_power_supply;
 float voltage_limit;
 int  pole_pairs;
 unsigned long open_loop_timestamp[3];
 float velocity_limit;
-float voltage_sensor_align = 1.8f; // 校准相电压下调至 1.8V，充足对准同时防止线圈过热
+float voltage_sensor_align = 3.5f; // 单轴短时对齐电压；提高负载下的扫描跟随余量
+extern float open_loop_angle[3];
 /******************************************************************************/
 float velocityOpenloop(float target_velocity, int motor);
 float angleOpenloop(float target_angle, int motor);
+
+static uint8_t detect_motor_encoder(int motor)
+{
+	int i, matched = -1;
+	float saved_voltage_limit = voltage_limit;
+	float previous_deg[3] = {0.0f, 0.0f, 0.0f};
+	float travel_deg[3] = {0.0f, 0.0f, 0.0f};
+	float signed_travel[3] = {0.0f, 0.0f, 0.0f};
+	uint16_t success[3] = {0, 0, 0};
+	uint8_t previous_valid[3] = {0, 0, 0};
+	uint16_t samples = 0;
+	uint32_t start_tick, last_sample_tick;
+	uint8_t aborted = 0;
+
+	if(motor < 0 || motor > 2) return 0;
+	motor_mapping_valid[motor] = 0;
+	set_motor_enable(0, 0);
+	voltage_limit = 3.0f;
+	open_loop_angle[motor] = 0.0f;
+	open_loop_timestamp[motor] = micros();
+	set_motor_enable(motor + 1, 1);
+	delay_ms(20);
+
+	start_tick = HAL_GetTick();
+	last_sample_tick = start_tick;
+	while((HAL_GetTick() - start_tick) < 2000U)
+	{
+		if(Control_Aborted()) {aborted = 1; break;}
+		velocityOpenloop(2.0f, motor);
+
+		if((HAL_GetTick() - last_sample_tick) >= 20U)
+		{
+			last_sample_tick = HAL_GetTick();
+			samples++;
+			for(i = 0; i < 3; i++)
+			{
+				int16_t raw = 0;
+				float angle_deg = 0.0f;
+				if(ENC_GetAngle((uint8_t)i, &raw, &angle_deg) == 0)
+				{
+					success[i]++;
+					if(previous_valid[i])
+					{
+						float diff = angle_deg - previous_deg[i];
+						if(diff > 180.0f) diff -= 360.0f;
+						else if(diff < -180.0f) diff += 360.0f;
+						travel_deg[i] += fabsf(diff);
+						signed_travel[i] += diff;
+					}
+					previous_deg[i] = angle_deg;
+					previous_valid[i] = 1;
+				}
+				else previous_valid[i] = 0;
+			}
+		}
+		delay_us(500);
+	}
+
+	setPhaseVoltage(0.0f, 0.0f, 0.0f, motor);
+	set_motor_enable(motor + 1, 0);
+	voltage_limit = saved_voltage_limit;
+
+	if(aborted)
+	{
+		printf("ERR MAP M%d: SAFETY_ABORT\r\n", motor + 1);
+		return 0;
+	}
+
+	for(i = 0; i < 3; i++)
+	{
+		uint32_t read_pct = samples ? ((uint32_t)success[i] * 100U) / samples : 0U;
+		if(travel_deg[i] >= 20.0f && read_pct >= 80U &&
+		   (matched < 0 || travel_deg[i] > travel_deg[matched])) matched = i;
+	}
+
+	if(matched < 0)
+	{
+		motor_test_travel_deg[motor] = travel_deg[0];
+		for(i = 1; i < 3; i++)
+			if(travel_deg[i] > motor_test_travel_deg[motor]) motor_test_travel_deg[motor] = travel_deg[i];
+		printf("ERR MAP M%d: no encoder followed; ENC1=%.1f/%.0f%% ENC2=%.1f/%.0f%% ENC3=%.1f/%.0f%%\r\n",
+			motor + 1, travel_deg[0], samples ? 100.0f * success[0] / samples : 0.0f,
+			travel_deg[1], samples ? 100.0f * success[1] / samples : 0.0f,
+			travel_deg[2], samples ? 100.0f * success[2] / samples : 0.0f);
+		return 0;
+	}
+
+	for(i = 0; i < 3; i++)
+	{
+		if(i != motor && motor_mapping_valid[i] && motor_sensor_map[i] == (uint8_t)matched)
+		{
+			printf("ERR MAP M%d: ENC%d already assigned to M%d\r\n", motor + 1, matched + 1, i + 1);
+			return 0;
+		}
+	}
+
+	motor_sensor_map[motor] = (uint8_t)matched;
+	motor_mapping_valid[motor] = 1;
+	motor_test_travel_deg[motor] = travel_deg[matched];
+	if(signed_travel[matched] != 0.0f)
+		sensor_direction[motor] = signed_travel[matched] > 0.0f ? 1 : -1;
+	reset_sensor_tracking(motor);
+	printf("OK MAP M%d -> ENC%d, direction=%d, travel=%.1fdeg, reads=%u/%u\r\n",
+		motor + 1, matched + 1, sensor_direction[motor], travel_deg[matched], success[matched], samples);
+	return 1;
+}
+
 /******************************************************************************/
 /* 对单个电机进行电角度零位对齐与旋转方向辨识 (严格遵循官方 SimpleFOC 闭环校准算法) */
 uint8_t Motor_alignSensor(int motor)
 {
-	int i;
-	float start_ang = 0.0f;
-	float mid_ang = 0.0f;
-	float d_rot = 0.0f;
-	float target_align_voltage = voltage_sensor_align;
-
-	if(motor < 0 || motor > 2) return 1;
-    motor_aligned[motor]=0;
-    alignment_travel_deg[motor]=0;
-
-	// 检查该电机绑定的编码器是否在线，未安装则静默跳过
-	uint8_t sens_idx = motor_sensor_map[motor];
 	int16_t test_raw = 0;
 	float test_deg = 0.0f;
-	uint8_t online = 0;
-	online = (ENC_GetAngle(sens_idx, &test_raw, &test_deg) == 0);
+	uint8_t sens_idx;
 
-	if(!online)
+	if(motor < 0 || motor > 2) return 1;
+    motor_aligned[motor] = 0;
+    motor_test_travel_deg[motor] = 0.0f;
+    motor_mapping_valid[motor] = 0;
+
+	if(!detect_motor_encoder(motor)) return 1;
+	sens_idx = motor_sensor_map[motor];
+	if(ENC_GetAngle(sens_idx, &test_raw, &test_deg) != 0)
 	{
-		printf("Align M%d: Encoder on I2C%d is not installed (skip).\r\n", motor + 1, sens_idx + 1);
-		motor_aligned[motor] = 0;
+		motor_mapping_valid[motor] = 0;
+		printf("ERR ALIGN M%d: mapped ENC%d is offline\r\n", motor + 1, sens_idx + 1);
 		return 1;
 	}
 
 	set_motor_enable(motor + 1, 1);
-	delay_ms(50);
-
-	// 1. 定位到电角度 3PI/2 (定子合成磁矢量在 0 度) 并吸合稳定
-	setPhaseVoltage(target_align_voltage, 0, _3PI_2, motor);
-	delay_ms(700);
-
-	// 2. 像官方 SimpleFOC 一样缓慢正向扫过 1 个完整电周期 (360度电角)
-	updateSensor(motor);
-	start_ang = shaftAngle(motor);
-    if(!sensor_valid[motor] || Control_Aborted()) goto align_failed;
-
-	for(i = 0; i <= 200; i++)
-	{
-		float a = _3PI_2 + _2PI * ((float)i / 200.0f);
-		setPhaseVoltage(target_align_voltage, 0, a, motor);
-		updateSensor(motor);
-        if(!sensor_valid[motor] || Control_Aborted()) goto align_failed;
-		delay_us(2000);
-	}
-	updateSensor(motor);
-	mid_ang = shaftAngle(motor);
-
-	// 缓慢反向扫过 1 个完整电周期返回
-	for(i = 200; i >= 0; i--)
-	{
-		float a = _3PI_2 + _2PI * ((float)i / 200.0f);
-		setPhaseVoltage(target_align_voltage, 0, a, motor);
-		updateSensor(motor);
-        if(!sensor_valid[motor] || Control_Aborted()) goto align_failed;
-		delay_us(2000);
-	}
-	updateSensor(motor);
-	delay_ms(200);
-
-	// 计算正向旋转期间转子实际走过的机械弧度辨识旋向
-	d_rot = mid_ang - start_ang;
-	if(d_rot > _PI) d_rot -= _2PI;
-	else if(d_rot < -_PI) d_rot += _2PI;
-
-	if(!sensor_valid[motor] || Control_Aborted() || fabsf(d_rot)<0.02f ||
-       fabsf(fabsf(d_rot)*(float)pole_pairs-_2PI)>_PI) goto align_failed;
-
-	if(d_rot > 0.0f)
-	{
-		sensor_direction[motor] = 1;  // CW
-	}
-	else
-	{
-		sensor_direction[motor] = -1; // CCW
-	}
-
-	// 3. 再次静止定位到 3PI/2 准确测量零电角
-	setPhaseVoltage(target_align_voltage, 0, _3PI_2, motor);
+	delay_ms(20);
+	setPhaseVoltage(voltage_sensor_align, 0, _3PI_2, motor);
 	delay_ms(700);
 	updateSensor(motor);
-	if(!sensor_valid[motor] || Control_Aborted()) goto align_failed;
+	if(!sensor_valid[motor] || Control_Aborted())
+	{
+		setPhaseVoltage(0.0f, 0.0f, 0.0f, motor);
+		set_motor_enable(motor + 1, 0);
+		printf("ERR ALIGN M%d: encoder read or safety abort (ENC%d)\r\n", motor + 1, sens_idx + 1);
+		return 1;
+	}
+
 	zero_electric_angle[motor] = 0.0f;
 	zero_electric_angle[motor] = electricalAngle(motor);
 
 	setPhaseVoltage(0, 0, 0, motor);
 	set_motor_enable(motor + 1, 0); // 对准完成立即关闭通道使能，杜绝等待期间静止发热
 	motor_aligned[motor] = 1;
-    alignment_travel_deg[motor]=fabsf(d_rot)*180.0f/_PI;
 
-	printf("Align M%d OK (using I2C%d): Dir=%s, Zero_Elec=%.2f rad (%.1f deg)\r\n",
+	printf("Align M%d OK (ENC%d): Dir=%s, MapTravel=%.1fdeg, Zero_Elec=%.2f rad (%.1f deg)\r\n",
 		motor + 1,
 		sens_idx + 1,
 		sensor_direction[motor] == 1 ? "CW(+1)" : "CCW(-1)",
+		motor_test_travel_deg[motor],
 		zero_electric_angle[motor],
 		zero_electric_angle[motor] * 180.0f / _PI);
 
 	return 0;
-align_failed:
-    set_motor_enable(motor+1,0);
-    motor_aligned[motor]=0;
-    printf("ERR ALIGN M%d (encoder/movement/abort)\r\n",motor+1);
-    return 1;
 }
 
 /******************************************************************************/
@@ -169,6 +222,33 @@ void loopFOC(int motor)
 float open_loop_angle[3] = {0.0f, 0.0f, 0.0f};
 static uint32_t velocity_ramp_timestamp[3] = {0, 0, 0};
 static uint32_t locked_rotor_since[3] = {0, 0, 0};
+static float velocity_coulomb_ff[3] = {0.45f, 0.45f, 0.45f};
+static float velocity_bemf_ff[3] = {0.045f, 0.045f, 0.045f};
+
+void velocity_feedforward_get(int motor, float *coulomb_v, float *bemf_v_per_rad_s)
+{
+	if(motor < 0 || motor > 2) return;
+	if(coulomb_v) *coulomb_v = velocity_coulomb_ff[motor];
+	if(bemf_v_per_rad_s) *bemf_v_per_rad_s = velocity_bemf_ff[motor];
+}
+
+void velocity_feedforward_set(int motor, float coulomb_v, float bemf_v_per_rad_s)
+{
+	int i;
+	if(motor >= 0 && motor < 3)
+	{
+		velocity_coulomb_ff[motor] = coulomb_v;
+		velocity_bemf_ff[motor] = bemf_v_per_rad_s;
+	}
+	else if(motor < 0)
+	{
+		for(i = 0; i < 3; i++)
+		{
+			velocity_coulomb_ff[i] = coulomb_v;
+			velocity_bemf_ff[i] = bemf_v_per_rad_s;
+		}
+	}
+}
 
 static float ramp_velocity_target(float requested, int motor)
 {
@@ -251,8 +331,8 @@ void move(float new_target, int motor)
 
 			// 3. 极低速丝滑前馈 (Coulomb Friction & Detent Bias Feedforward):
 			// 克服齿槽转矩死区卡顿，确保正向转动时推进力矩平滑向前，不在零点来回刹车跳变
-			float uq_coulomb = 0.45f * tanhf(ramped_target / 0.5f);
-			float uq_bemf = 0.045f * ramped_target;
+			float uq_coulomb = velocity_coulomb_ff[motor] * tanhf(ramped_target / 0.5f);
+			float uq_bemf = velocity_bemf_ff[motor] * ramped_target;
 			float uq_ff = _constrain(uq_coulomb + uq_bemf, -voltage_limit, voltage_limit);
 
 			// 持续饱和且误差较大时限幅，直到速度恢复或目标降至低速区。

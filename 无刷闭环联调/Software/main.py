@@ -1431,11 +1431,30 @@ class SelfTestCard(QGroupBox):
                 self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #64748b;")
                 self.lbl_m_details[i].setText("本轮未检测")
                 self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #64748b;")
-            else:
-                tag = "离线" if "I2C" in st else "堵转"
-                self.lbl_m_tags[i].setText(tag)
+            elif st == 'FAIL_MAP':
+                self.lbl_m_tags[i].setText("映射检测失败")
+                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b45309;")
+                self.lbl_m_details[i].setText(f"未找到随该驱动运动的编码器 | 最大位移: {deg:.1f}°")
+                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b45309;")
+            elif st == 'FAIL_ALIGN':
+                self.lbl_m_tags[i].setText("对齐失败")
+                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b45309;")
+                self.lbl_m_details[i].setText(f"零位吸合未完成 | 映射转角: {deg:.1f}°")
+                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b45309;")
+            elif "I2C" in st or st in ('OFFLINE', 'ENCODER_OFFLINE'):
+                self.lbl_m_tags[i].setText("编码器离线")
                 self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b91c1c;")
-                self.lbl_m_details[i].setText(f"通信: {comm}% | 转角: {deg:.1f}°")
+                self.lbl_m_details[i].setText(f"状态: {st} | 通信: {comm}%")
+                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b91c1c;")
+            elif st in ('STALL', 'STALLED', 'FAIL_STALL'):
+                self.lbl_m_tags[i].setText("堵转")
+                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b91c1c;")
+                self.lbl_m_details[i].setText(f"状态: {st} | 通信: {comm}% | 转角: {deg:.1f}°")
+                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b91c1c;")
+            else:
+                self.lbl_m_tags[i].setText("自检异常")
+                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b91c1c;")
+                self.lbl_m_details[i].setText(f"状态: {st} | 通信: {comm}% | 转角: {deg:.1f}°")
                 self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b91c1c;")
 
         if all_pass:
@@ -1446,7 +1465,12 @@ class SelfTestCard(QGroupBox):
         else:
             self.lbl_badge.setText("自检失败 (控制锁定)")
             self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #b91c1c;")
-            self.lbl_hint.setText("存在异常轴，请检查对应I2C连接、3.3V供电、上拉电阻或电机相线后重测。")
+            if any(report.get(key, {}).get('status') == 'FAIL_MAP' for key in ('m1', 'm2', 'm3')):
+                self.lbl_hint.setText("驱动通道与编码器未能匹配；请看串口 MAP 诊断中的三路位移和通信率。")
+            elif any(report.get(key, {}).get('status') == 'FAIL_ALIGN' for key in ('m1', 'm2', 'm3')):
+                self.lbl_hint.setText("映射已找到，但该轴未完成电角度零位吸合；这不等同于堵转，请查看串口 ERR ALIGN 日志。")
+            else:
+                self.lbl_hint.setText("存在自检异常轴；请结合各轴状态码、通信结果和串口日志检查。")
             self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
 
     def reset_state(self, connected=False):

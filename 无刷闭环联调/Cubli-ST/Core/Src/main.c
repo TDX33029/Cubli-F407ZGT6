@@ -499,7 +499,8 @@ void commander_run(void) {
         printf("APP 0=DEBUG/1=WORK; DBG 1..3; MODE 0=open/1=closed; TEST [axis]; ALIGN [axis]\r\n"
                "M1/M2/M3 speed; EN1/EN2/EN3 0/1; STOP; PING (every 250ms)\r\n"
                "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BDIR s1 s2 s3; BAL 0/1\r\n"
-               "LQR1/2/3 [Kp Kd Kw Ki]; ZERO1/2/3 deg (edge); BU volts; U volts; L rad/s; PID1/2/3 [P I D]; TF seconds; STATE?\r\n"); Control_Status();
+               "LQR1/2/3 [Kp Kd Kw Ki]; ZERO1/2/3 deg (edge); BU volts; U volts; L rad/s; PID1/2/3 [P I D]; TF seconds\r\n"
+               "FF[1/2/3] [coulomb_V bemf_V_per_rad_s]; STATE?\r\n"); Control_Status();
     } else if(!strcmp(name,"APP") && n==1 && (v[0]==0 || v[0]==1)) {
         Control_Stop(); app_mode=(uint8_t)v[0]; if(!control_reset_latch()) return; printf("OK APP:%d\r\n",app_mode);
     } else if(!strcmp(name,"DBG") && n==1 && v[0]>=1 && v[0]<=3 && v[0]==(int)v[0]) {
@@ -537,9 +538,9 @@ void commander_run(void) {
         diagnostic_busy=0; Control_Stop();
         if(!strcmp(name,"TEST") || !strcmp(name,"CHECK")) {
             printf("$TEST_REPORT,M1:%s:%d:%.1f,M2:%s:%d:%.1f,M3:%s:%d:%.1f,ALL:%s#\r\n",
-                   m==1?(ok?"PASS":"FAIL_ALIGN"):"SKIP",m==1&&ok?100:0,m==1?alignment_travel_deg[0]:0,
-                   m==2?(ok?"PASS":"FAIL_ALIGN"):"SKIP",m==2&&ok?100:0,m==2?alignment_travel_deg[1]:0,
-                   m==3?(ok?"PASS":"FAIL_ALIGN"):"SKIP",m==3&&ok?100:0,m==3?alignment_travel_deg[2]:0,ok?"PASS":"FAIL");
+                   m==1?(ok?"PASS":(motor_mapping_valid[0]?"FAIL_ALIGN":"FAIL_MAP")):"SKIP",m==1&&motor_mapping_valid[0]?100:0,m==1?motor_test_travel_deg[0]:0,
+                   m==2?(ok?"PASS":(motor_mapping_valid[1]?"FAIL_ALIGN":"FAIL_MAP")):"SKIP",m==2&&motor_mapping_valid[1]?100:0,m==2?motor_test_travel_deg[1]:0,
+                   m==3?(ok?"PASS":(motor_mapping_valid[2]?"FAIL_ALIGN":"FAIL_MAP")):"SKIP",m==3&&motor_mapping_valid[2]?100:0,m==3?motor_test_travel_deg[2]:0,ok?"PASS":"FAIL");
         }
         printf(ok?"OK ALIGN\r\n":"ERR ALIGN\r\n");
     } else if((!strncmp(name,"EN",2) || name[0]=='M' || name[0]=='T' || (name[0]>='1' && name[0]<='3')) &&
@@ -565,15 +566,17 @@ void commander_run(void) {
             if(debug_motor==1) target_m1=val; else if(debug_motor==2) target_m2=val; else target_m3=val;
         }
         printf("OK DEBUG M%d\r\n",debug_motor);
-    } else if(!strncmp(name,"PID",3) || !strncmp(name,"LQR",3) || !strncmp(name,"ZERO",4) || !strncmp(name,"TF",2)) {
-        uint8_t pid=!strncmp(name,"PID",3),lqr=!strncmp(name,"LQR",3),zero=!strncmp(name,"ZERO",4);
-        int len=zero?4:(!strncmp(name,"TF",2)?2:3);
+    } else if(!strncmp(name,"PID",3) || !strncmp(name,"LQR",3) || !strncmp(name,"ZERO",4) || !strncmp(name,"TF",2) || !strncmp(name,"FF",2)) {
+        uint8_t pid=!strncmp(name,"PID",3),lqr=!strncmp(name,"LQR",3),zero=!strncmp(name,"ZERO",4),ff=!strncmp(name,"FF",2);
+        int len=zero?4:((!strncmp(name,"TF",2) || ff)?2:3);
         char *suffix=name+len;
         if(*suffix>='1' && *suffix<='3') {idx=*suffix-'1';suffix++;}
         if(*suffix=='?') suffix++;
         if(*suffix) {printf("ERR COMMAND\r\n");return;}
         if(idx<0) idx=lqr||zero?(cubli_bal.mode<3?(int)cubli_bal.mode:0):-1;
         if(n && (cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled)) {printf("ERR DISARM_FIRST\r\n");return;}
+        if(ff && n && (n!=2 || v[0]<0.0f || v[0]>1.5f || v[1]<0.0f || v[1]>0.15f)) {printf("ERR FF_RANGE (0~1.5V, 0~0.15V/(rad/s))\r\n");return;}
+        if(ff && n!=0 && n!=2) {printf("ERR FF_ARGUMENTS (use FF[1/2/3] [coulomb bemf])\r\n");return;}
         for(i=0;i<3;i++) if(idx<0 || idx==i) {
             if(pid) {
                 if(n && (n<2 || n>3 || v[0]<0 || v[0]>10 || v[1]<0 || v[1]>50 || (n==3 && (v[2]<0 || v[2]>1)))) {printf("ERR PID_RANGE\r\n");return;}
@@ -587,6 +590,11 @@ void commander_run(void) {
             } else if(zero) {
                 if(n!=1 || fabsf(v[0])>45 || cubli_bal.mode==BAL_MODE_CORNER) {printf("ERR ZERO (edge only, use BZERO for corner)\r\n");return;}
                 LQR_SetZeroAngle(i,v[0]); printf("OK ZERO%d\r\n",i+1);
+            } else if(ff) {
+                float coulomb_v, bemf_v_per_rad_s;
+                if(n) velocity_feedforward_set(i,v[0],v[1]);
+                velocity_feedforward_get(i,&coulomb_v,&bemf_v_per_rad_s);
+                printf("OK FF%d: Coulomb=%.3fV, BEMF=%.5fV/(rad/s)\r\n",i+1,coulomb_v,bemf_v_per_rad_s);
             } else {
                 if(n!=1 || v[0]<0.001f || v[0]>0.1f) {printf("ERR TF_RANGE\r\n");return;} lpf_velocity[i].Tf=v[0];
             }
