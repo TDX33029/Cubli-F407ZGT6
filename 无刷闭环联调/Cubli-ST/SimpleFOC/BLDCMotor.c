@@ -19,6 +19,7 @@ float motor_test_travel_deg[3]={0,0,0};
 float voltage_power_supply;
 float voltage_limit;
 int  pole_pairs;
+uint8_t motor_pole_pairs[3]={MOTOR_PP_M1,MOTOR_PP_M2,MOTOR_PP_M3};
 unsigned long open_loop_timestamp[3];
 float velocity_limit;
 float velocity_ramp_accel = 400.0f;
@@ -44,7 +45,7 @@ static uint8_t detect_motor_encoder(int motor)
 	if(motor < 0 || motor > 2) return 0;
 	motor_mapping_valid[motor] = 0;
 	set_motor_enable(0, 0);
-	voltage_limit = 3.0f;
+	voltage_limit = fminf(3.0f,saved_voltage_limit);
 	open_loop_angle[motor] = 0.0f;
 	open_loop_timestamp[motor] = micros();
 	set_motor_enable(motor + 1, 1);
@@ -138,53 +139,58 @@ static uint8_t detect_motor_encoder(int motor)
 /* 对单个电机进行电角度零位对齐与旋转方向辨识 (严格遵循官方 SimpleFOC 闭环校准算法) */
 uint8_t Motor_alignSensor(int motor)
 {
-	int16_t test_raw = 0;
-	float test_deg = 0.0f;
-	uint8_t sens_idx;
-
-	if(motor < 0 || motor > 2) return 1;
-    motor_aligned[motor] = 0;
-    motor_test_travel_deg[motor] = 0.0f;
-    motor_mapping_valid[motor] = 0;
-
-	if(!detect_motor_encoder(motor)) return 1;
-	sens_idx = motor_sensor_map[motor];
-	if(ENC_GetAngle(sens_idx, &test_raw, &test_deg) != 0)
-	{
-		motor_mapping_valid[motor] = 0;
-		printf("ERR ALIGN M%d: mapped ENC%d is offline\r\n", motor + 1, sens_idx + 1);
-		return 1;
-	}
-
-	set_motor_enable(motor + 1, 1);
-	delay_ms(20);
-	setPhaseVoltage(voltage_sensor_align, 0, _3PI_2, motor);
-	delay_ms(700);
-	updateSensor(motor);
-	if(!sensor_valid[motor] || Control_Aborted())
-	{
-		setPhaseVoltage(0.0f, 0.0f, 0.0f, motor);
-		set_motor_enable(motor + 1, 0);
-		printf("ERR ALIGN M%d: encoder read or safety abort (ENC%d)\r\n", motor + 1, sens_idx + 1);
-		return 1;
-	}
-
-	zero_electric_angle[motor] = 0.0f;
-	zero_electric_angle[motor] = electricalAngle(motor);
-
-	setPhaseVoltage(0, 0, 0, motor);
-	set_motor_enable(motor + 1, 0); // 对准完成立即关闭通道使能，杜绝等待期间静止发热
-	motor_aligned[motor] = 1;
-
-	printf("Align M%d OK (ENC%d): Dir=%s, MapTravel=%.1fdeg, Zero_Elec=%.2f rad (%.1f deg)\r\n",
-		motor + 1,
-		sens_idx + 1,
-		sensor_direction[motor] == 1 ? "CW(+1)" : "CCW(-1)",
-		motor_test_travel_deg[motor],
-		zero_electric_angle[motor],
-		zero_electric_angle[motor] * 180.0f / _PI);
-
-	return 0;
+    int i; float start,finish,forward,reverse,pp_est,align_v,mean=0,lo=0,hi=0;
+    if(motor<0 || motor>2) return 1;
+    motor_aligned[motor]=0;motor_mapping_valid[motor]=0;motor_test_travel_deg[motor]=0;
+    if(!detect_motor_encoder(motor)) return 1;
+    align_v=fminf(voltage_sensor_align,voltage_limit);
+    set_motor_enable(motor+1,1);
+    setPhaseVoltage(align_v,0,_3PI_2,motor);delay_ms(500);updateSensor(motor);
+    if(!sensor_valid[motor] || Control_Aborted()) goto failed;
+    start=shaftAngle(motor);
+    /* Independent, slow forward/backward electrical sweep. Open-loop mapping
+       travel is NOT sufficient to establish commutation direction or pole count. */
+    for(i=1;i<=120;i++) {
+        setPhaseVoltage(align_v,0,_3PI_2+_2PI*i/120.0f,motor);
+        delay_ms(10);updateSensor(motor);
+        if(!sensor_valid[motor] || Control_Aborted()) goto failed;
+        if((i%20)==0) printf("$SCAN,M:%d,Stage:F,Step:%d,Angle:%.4f#\r\n",motor+1,i,shaftAngle(motor));
+    }
+    delay_ms(200);updateSensor(motor);finish=shaftAngle(motor);forward=finish-start;
+    for(i=119;i>=0;i--) {
+        setPhaseVoltage(align_v,0,_3PI_2+_2PI*i/120.0f,motor);
+        delay_ms(10);updateSensor(motor);
+        if(!sensor_valid[motor] || Control_Aborted()) goto failed;
+        if((i%20)==0) printf("$SCAN,M:%d,Stage:R,Step:%d,Angle:%.4f#\r\n",motor+1,i,shaftAngle(motor));
+    }
+    delay_ms(200);updateSensor(motor);reverse=shaftAngle(motor)-finish;
+    if(!sensor_valid[motor] || Control_Aborted()) goto failed;
+    if(fabsf(forward)<0.05f || fabsf(reverse)<0.05f || forward*reverse>=0 ||
+       fabsf(fabsf(forward)-fabsf(reverse))>0.2f*fmaxf(fabsf(forward),fabsf(reverse))) {
+        printf("ERR ALIGN_FOLLOW M%d fwd=%.3f rev=%.3f rad\r\n",motor+1,forward,reverse);goto failed;
+    }
+    pp_est=_2PI/(0.5f*(fabsf(forward)+fabsf(reverse)));
+    printf("[ALIGN] M%d PP_est=%.2f configured=%d fwd=%.3f rev=%.3f\r\n",motor+1,pp_est,motor_pole_pairs[motor],forward,reverse);
+    if((int)(pp_est+0.5f)!=motor_pole_pairs[motor]) {
+        printf("ERR ALIGN_PP M%d expected=%d measured=%.2f (check PP, phases and magnet)\r\n",motor+1,motor_pole_pairs[motor],pp_est);goto failed;
+    }
+    sensor_direction[motor]=forward>0?1:-1;
+    /* Confirm the rotor really settles; do not save a zero while it is vibrating. */
+    for(i=0;i<40;i++) {
+        updateSensor(motor);if(!sensor_valid[motor] || Control_Aborted()) goto failed;
+        if(i==0) lo=hi=shaftAngle(motor);
+        lo=fminf(lo,shaftAngle(motor));hi=fmaxf(hi,shaftAngle(motor));
+        mean+=shaftAngle(motor);delay_ms(2);
+    }
+    if(hi-lo>0.02f) {printf("ERR ALIGN_UNSTABLE M%d spread=%.3f rad\r\n",motor+1,hi-lo);goto failed;}
+    zero_electric_angle[motor]=_normalizeAngle(sensor_direction[motor]*(mean/40.0f)*motor_pole_pairs[motor]);
+    set_motor_enable(motor+1,0);reset_closed_loop_state(motor);reset_motion_state(motor);
+    motor_aligned[motor]=1;
+    printf("Align M%d OK (ENC%d): Dir=%d, PP=%d, Zero_Elec=%.4f rad\r\n",motor+1,motor_sensor_map[motor]+1,sensor_direction[motor],motor_pole_pairs[motor],zero_electric_angle[motor]);
+    return 0;
+failed:
+    set_motor_enable(motor+1,0);motor_aligned[motor]=0;
+    return 1;
 }
 
 /******************************************************************************/
@@ -223,8 +229,15 @@ void loopFOC(int motor)
 float open_loop_angle[3] = {0.0f, 0.0f, 0.0f};
 static uint32_t velocity_ramp_timestamp[3] = {0, 0, 0};
 static uint32_t locked_rotor_since[3] = {0, 0, 0};
-static float velocity_coulomb_ff[3] = {0.45f, 0.45f, 0.45f};
-static float velocity_bemf_ff[3] = {0.045f, 0.045f, 0.045f};
+void reset_motion_state(int motor) {
+    int i,first=motor>=0&&motor<3?motor:0,last=motor>=0&&motor<3?motor:2;
+    for(i=first;i<=last;i++) {
+        velocity_ramp_timestamp[i]=0;locked_rotor_since[i]=0;
+        open_loop_timestamp[i]=0;shaft_velocity_sp[i]=0;
+    }
+}
+static float velocity_coulomb_ff[3] = {0.12f, 0.45f, 0.12f};
+static float velocity_bemf_ff[3] = {0.024f, 0.045f, 0.024f};
 
 void velocity_feedforward_get(int motor, float *coulomb_v, float *bemf_v_per_rad_s)
 {
@@ -267,7 +280,7 @@ static float ramp_velocity_target(float requested, int motor)
 	}
 	velocity_ramp_timestamp[motor] = now_us;
 
-	max_delta = velocity_ramp_accel * Ts;
+	max_delta = (controller==Type_velocity_openloop?fminf(velocity_ramp_accel,100.0f):velocity_ramp_accel) * Ts;
 	delta = requested - shaft_velocity_sp[motor];
 	if(delta > max_delta) delta = max_delta;
 	else if(delta < -max_delta) delta = -max_delta;
@@ -336,28 +349,10 @@ void move(float new_target, int motor)
 			float uq_bemf = velocity_bemf_ff[motor] * ramped_target;
 			float uq_ff = _constrain(uq_coulomb + uq_bemf, -voltage_limit, voltage_limit);
 
-			// 持续饱和且误差较大时限幅，直到速度恢复或目标降至低速区。
-			static uint32_t stall_timer[3] = {0, 0, 0};
-			static uint8_t stall_latched[3] = {0, 0, 0};
-			if(fabsf(speed_err) < 3.0f || fabsf(ramped_target) < 1.0f)
-			{
-				stall_timer[motor] = 0;
-				stall_latched[motor] = 0;
-			}
-			else if(fabsf(voltage[motor].q) >= (voltage_limit - 0.2f))
-			{
-				if(stall_timer[motor] == 0) stall_timer[motor] = now_us;
-				else if((now_us - stall_timer[motor]) > 800000) // 800ms
-				{
-					stall_latched[motor] = 1;
-				}
-			}
-			else
-			{
-				stall_timer[motor] = 0;
-			}
-
-			float output_limit = (stall_latched[motor] && voltage_limit > 1.8f) ? 1.8f : voltage_limit;
+            /* Saturation/following error is not a stall: a rotating wheel may
+               legitimately accelerate at full voltage. The locked-rotor trip
+               above requires measured near-zero motion and stays latched. */
+            float output_limit=voltage_limit;
 			pid_velocity[motor].limit = output_limit;
 			float uq_pid = PID_operator_offset(&pid_velocity[motor], speed_err, uq_ff);
 			voltage[motor].q = _constrain(uq_ff + uq_pid, -output_limit, output_limit);
@@ -482,7 +477,7 @@ float velocityOpenloop(float target_velocity, int motor)
 	if(Ts <= 0.0f || Ts > 0.02f) Ts = 1e-3f;
 	if(fabsf(target_velocity) < 0.05f)
 	{
-		setPhaseVoltage(0.0f, 0.0f, _normalizeAngle(open_loop_angle[motor] * (float)pole_pairs), motor);
+		setPhaseVoltage(0.0f, 0.0f, _normalizeAngle(open_loop_angle[motor] * (float)motor_pole_pairs[motor]), motor);
 		return 0.0f;
 	}
 
@@ -490,7 +485,7 @@ float velocityOpenloop(float target_velocity, int motor)
 	open_loop_angle[motor] = _normalizeAngle(open_loop_angle[motor] + target_velocity * Ts);
 
 	// 电角度 = 机械角度 * 极对数
-	setPhaseVoltage(voltage_limit, 0, _normalizeAngle(open_loop_angle[motor] * (float)pole_pairs), motor);
+	setPhaseVoltage(voltage_limit, 0, _normalizeAngle(open_loop_angle[motor] * (float)motor_pole_pairs[motor]), motor);
 
 	return voltage_limit;
 }

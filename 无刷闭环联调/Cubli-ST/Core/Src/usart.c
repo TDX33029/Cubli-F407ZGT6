@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 unsigned char USART_RX_BUF[USART_REC_LEN];
 volatile unsigned short USART_RX_STA = 0;
@@ -54,6 +55,36 @@ int fputc(int ch, FILE *f)
 	uart_tx_head = next_head;
 	DBG_LINK_UART->CR1 |= USART_CR1_TXEIE; // 使能发送中断，异步后台发送
 	return ch;
+}
+/* Bounded fixed-point formatting: printf %f on Cortex-M4 can pause FOC for
+ * >1ms even with an asynchronous UART. These helpers avoid double conversion. */
+void UART_WriteText(const char *text) {while(*text) fputc((unsigned char)*text++,stdout);}
+void UART_WriteUInt(uint32_t value) {
+    char digits[10];int n=0;
+    do {digits[n++]=(char)('0'+value%10U);value/=10U;} while(value);
+    while(n) fputc(digits[--n],stdout);
+}
+void UART_WriteInt(int32_t value) {
+    uint32_t magnitude;
+    if(value<0) {fputc('-',stdout);magnitude=(uint32_t)(-(value+1))+1U;}
+    else magnitude=(uint32_t)value;
+    UART_WriteUInt(magnitude);
+}
+void UART_WriteFixed(float value,uint8_t decimals) {
+    uint32_t scale=1,mag,fraction,divisor;int32_t fixed;uint8_t i;
+    if(!isfinite(value)) {UART_WriteText("nan");return;}
+    if(decimals>3) decimals=3;
+    for(i=0;i<decimals;i++) scale*=10U;
+    value=value*(float)scale+(value<0?-0.5f:0.5f);
+    if(value>2147483520.0f) value=2147483520.0f;
+    if(value< -2147483520.0f) value=-2147483520.0f;
+    fixed=(int32_t)value;
+    if(fixed<0) {fputc('-',stdout);mag=(uint32_t)(-(fixed+1))+1U;} else mag=(uint32_t)fixed;
+    UART_WriteUInt(mag/scale);
+    if(decimals) {
+        fputc('.',stdout);fraction=mag%scale;
+        for(divisor=scale/10U;divisor;divisor/=10U) {fputc((int)('0'+fraction/divisor),stdout);fraction%=divisor;}
+    }
 }
 /* USER CODE END 0 */
 

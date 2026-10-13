@@ -15,7 +15,7 @@ void Control_Heartbeat(void) {ping_count++;}
 void Control_RequestStop(uint8_t reason) {stop_reason=reason;}
 #include "uart_under_test.c"
 static void bytes(const char *s) {
-    while(*s) {USART1->SR=USART_SR_RXNE;USART1->DR=(unsigned char)*s++;USART_Link_IRQHandler();USART1->SR=0;}
+    while(*s) {DBG_LINK_UART->SR=USART_SR_RXNE;DBG_LINK_UART->DR=(unsigned char)*s++;USART_Link_IRQHandler();DBG_LINK_UART->SR=0;}
 }
 int main(void) {
     char line[256];int i;
@@ -29,9 +29,14 @@ int main(void) {
     bytes("M2 20\n stop \r\n");assert(stop_reason==1&&!USART_ReadLine(line));
     for(i=0;i<300;i++) bytes("X");bytes("EN1 1\n");assert(!USART_ReadLine(line));
     bytes("EN1 1\n");assert(USART_ReadLine(line)&&!strcmp(line,"EN1 1"));
-    bytes("M1 ");USART1->SR=USART_SR_ORE;USART1->DR='3';USART_Link_IRQHandler();USART1->SR=0;
+    bytes("M1 ");DBG_LINK_UART->SR=USART_SR_ORE;DBG_LINK_UART->DR='3';USART_Link_IRQHandler();DBG_LINK_UART->SR=0;
     bytes("4\n");assert(!USART_ReadLine(line));
     stop_reason=0;for(i=0;i<16;i++) bytes("STATE?\n");assert(stop_reason==4&&!USART_ReadLine(line));
+    uart_tx_head=uart_tx_tail=0;
+    UART_WriteText("$T,");UART_WriteFixed(-2.345f,2);UART_WriteText(",");UART_WriteFixed(.002f,3);
+    UART_WriteText(",");UART_WriteUInt(UINT32_MAX);UART_WriteText(",");UART_WriteInt(INT32_MIN);UART_WriteText("#");
+    uart_tx_buf[uart_tx_head]=0;assert(!strcmp((char*)uart_tx_buf,"$T,-2.35,0.002,4294967295,-2147483648#"));
+    uart_tx_head=uart_tx_tail=0;
     for(i=0;i<2000;i++) cubli_fputc('A',NULL);assert(USART_TxFree()==0); /* full TX never blocks */
     puts("PASS: UART bursts, priority STOP/PING, damaged/oversize lines, RX queue overflow, nonblocking TX");
     return 0;

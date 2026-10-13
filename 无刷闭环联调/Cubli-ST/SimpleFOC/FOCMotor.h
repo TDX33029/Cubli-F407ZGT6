@@ -60,6 +60,10 @@ float shaftAngle(int motor);
 float shaftVelocity(int motor);
 float electricalAngle(int motor);
 void updateSensor(int motor);
+typedef struct {uint32_t samples,errors; volatile uint32_t last_us; uint32_t max_gap_us,max_read_us;} EncoderDiagnostics_t;
+extern EncoderDiagnostics_t encoder_diag[3];
+extern uint32_t encoder_diag_epoch;
+void reset_encoder_diagnostics(void);
 /******************************************************************************/
 
 #endif

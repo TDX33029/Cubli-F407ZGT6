@@ -310,7 +310,7 @@ class SerialWorker(QThread):
                     fields[key] = float(fields[key])
                     if not math.isfinite(fields[key]):
                         raise ValueError('non-finite state')
-                if fields['App'] not in (0, 1) or fields['Dbg'] not in (1, 2, 3) or fields['BMode'] not in (1, 2, 3, 4) or fields['Bal'] not in range(5):
+                if fields['App'] not in (0, 1) or fields['Dbg'] not in (1, 2, 3) or fields['BMode'] not in (1, 2, 3, 4) or fields['Bal'] not in range(7):
                     raise ValueError('invalid state range')
                 if any(fields[key] not in (0, 1) for key in ('Mode', 'Cal', 'IMU')):
                     raise ValueError('invalid flags')
@@ -330,6 +330,24 @@ class SerialWorker(QThread):
                         fields[key] = int(fields[key])
                         if not 1 <= fields[key] <= 16384:
                             raise ValueError('invalid CPR')
+                for key in ('Map1', 'Map2', 'Map3', 'PP1', 'PP2', 'PP3', 'Dir1', 'Dir2', 'Dir3', 'Ref', 'Axis1', 'Axis2', 'Axis3', 'AxesOK', 'DirOK'):
+                    if key in fields:
+                        fields[key] = int(fields[key])
+                        if key.startswith('Map') and fields[key] not in (1, 2, 3):
+                            raise ValueError('invalid map')
+                        if key.startswith('PP') and not 1 <= fields[key] <= 32:
+                            raise ValueError('invalid pole pairs')
+                        if key.startswith('Dir') and fields[key] not in (-1, 1):
+                            raise ValueError('invalid encoder direction')
+                        if key.startswith('Axis') and fields[key] not in (1, 2, 3):
+                            raise ValueError('invalid body axis')
+                        if key in ('Ref', 'AxesOK', 'DirOK') and fields[key] not in (0, 1):
+                            raise ValueError('invalid reference status')
+                for key in ('AxisMask', 'DirMask', 'CountMs'):
+                    if key in fields:
+                        fields[key] = int(fields[key])
+                        if not 0 <= fields[key] <= (15000 if key == 'CountMs' else 7):
+                            raise ValueError('invalid countdown/configuration mask')
                 for key in ('D1', 'D2', 'D3'):
                     if key in fields:
                         fields[key] = int(fields[key])
@@ -1525,6 +1543,7 @@ class MainWindow(QMainWindow):
         self.device_state = None
         self.expected_state = {}
         self.sync_directions = False
+        self.sync_axes = False
         self.speed_mode = 0
         self.active_motors = (False, False, False)
 
@@ -2669,7 +2688,10 @@ class MainWindow(QMainWindow):
         self.combo_debug.setEnabled(connected and not self.self_test_running and state.get('App', 0) == 0)
         needed = self.active_motors if state.get('BMode') == 4 else (self.active_motors[state.get('BMode', 1)-1],)
         self.btn_balance_start.setEnabled(connected and not self.self_test_running and not self.expected_state and
-            state.get('App') == 1 and bool(state.get('Cal')) and bool(state.get('IMU')) and all(needed))
+            state.get('App') == 1 and state.get('Bal', 0) in (0, 4) and bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 1)) and bool(state.get('AxesOK', 1)) and bool(state.get('DirOK', 1)) and all(needed))
+        self.btn_balance_countdown.setEnabled(connected and not self.self_test_running and not self.expected_state and
+            state.get('App') == 1 and state.get('BMode', 1) != 4 and state.get('Bal', 0) in (0, 4) and
+            bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 0)) and bool(state.get('AxesOK', 0)) and bool(state.get('DirOK', 0)) and all(needed))
         self.card_self_test.btn_run_test.setEnabled(connected and not self.self_test_running and state.get('App', 0) == 0)
 
     def _create_mode_panel(self):
@@ -2693,7 +2715,7 @@ class MainWindow(QMainWindow):
         layout = QGridLayout(self.balance_config)
         layout.setContentsMargins(0, 0, 0, 0)
         self.combo_balance = QComboBox()
-        self.combo_balance.addItems(["边沿 M1（X轴）", "边沿 M2（Y轴）", "边沿 M3（Z轴）", "顶点（三轴）"])
+        self.combo_balance.addItems(["边沿 M1", "边沿 M2", "边沿 M3", "顶点（三轴）"])
         self.combo_balance.activated.connect(lambda i: self._request_state_change(f"BMODE {i+1}", {'BMode': i+1}))
         layout.addWidget(self.combo_balance, 2, 0, 1, 2)
         btn_cal = QPushButton("静止校准 IMU")
@@ -2730,15 +2752,35 @@ class MainWindow(QMainWindow):
         btn_read = QPushButton("读取平衡参数")
         btn_read.clicked.connect(lambda: self.worker.send_cmd(f"LQR{self.combo_gain_axis.currentIndex()+1}?"))
         layout.addWidget(btn_read, 11, 1)
+        self.axis_combos = []
+        for axis in range(3):
+            combo = QComboBox()
+            combo.addItems([f'M{axis+1}轮轴 → IMU X', f'M{axis+1}轮轴 → IMU Y', f'M{axis+1}轮轴 → IMU Z'])
+            combo.setCurrentIndex(axis)
+            self.axis_combos.append(combo)
+            layout.addWidget(combo, 12+axis, 0, 1, 2)
+        btn_axes = QPushButton('确认轮轴对应（先失能，需重采姿态）')
+        btn_axes.clicked.connect(self.action_send_axes)
+        layout.addWidget(btn_axes, 15, 0, 1, 2)
         self.direction_combos = []
         for axis in range(3):
             combo = QComboBox()
             combo.addItems([f"M{axis+1} 机架方向 +1", f"M{axis+1} 机架方向 -1"])
             self.direction_combos.append(combo)
-            layout.addWidget(combo, 12+axis, 0, 1, 2)
+            layout.addWidget(combo, 16+axis, 0, 1, 2)
         btn_dir = QPushButton("设置机架方向（先失能）")
         btn_dir.clicked.connect(self.action_send_direction)
-        layout.addWidget(btn_dir, 15, 0, 1, 2)
+        layout.addWidget(btn_dir, 19, 0, 1, 2)
+        self.btn_balance_countdown = QPushButton("等待入位，8秒倒计时后启动（边沿）")
+        self.btn_balance_countdown.setToolTip("先采集目标姿态；±10°内PG5倒计时，离位取消。PG8闪烁表示需靠近并稳住，常亮表示约±3°且低角速度。PG6运行，PG7跌倒停机。")
+        self.btn_balance_countdown.clicked.connect(lambda: self._request_state_change("BSTART 8"))
+        layout.addWidget(self.btn_balance_countdown, 20, 0, 1, 2)
+        btn_axis_one = QPushButton("只确认当前边沿轮轴")
+        btn_axis_one.clicked.connect(self.action_send_edge_axis)
+        layout.addWidget(btn_axis_one, 21, 0)
+        btn_dir_one = QPushButton("只确认当前边沿方向")
+        btn_dir_one.clicked.connect(self.action_send_edge_direction)
+        layout.addWidget(btn_dir_one, 21, 1)
         self.mode_group.setEnabled(False)
         return self.mode_group
 
@@ -2746,6 +2788,21 @@ class MainWindow(QMainWindow):
         self._request_state_change("BAL 0")
         values = ' '.join(f'{spin.value():.4f}' for spin in self.balance_spins)
         self.worker.send_cmd(f"LQR{self.combo_gain_axis.currentIndex()+1} {values}")
+
+    def action_send_axes(self):
+        axes = ' '.join(str(c.currentIndex()+1) for c in self.axis_combos)
+        self._request_state_change(f'BAXIS {axes}')
+
+    def action_send_edge_axis(self):
+        axis = self.combo_balance.currentIndex()
+        if axis < 3:
+            self._request_state_change(f'BAXIS{axis+1} {self.axis_combos[axis].currentIndex()+1}')
+
+    def action_send_edge_direction(self):
+        axis = self.combo_balance.currentIndex()
+        if axis < 3:
+            sign = 1 if self.direction_combos[axis].currentIndex() == 0 else -1
+            self._request_state_change(f'BDIR{axis+1} {sign}')
 
     def action_send_direction(self):
         signs = ' '.join('1' if c.currentIndex() == 0 else '-1' for c in self.direction_combos)
@@ -2762,11 +2819,22 @@ class MainWindow(QMainWindow):
         if first_state and "VLimit" in state:
             self.spin_vq.setValue(float(state["VLimit"]))
             self.spin_vlim.setValue(float(state["SLimit"]))
+        if first_state or self.sync_axes:
+            for axis, combo in enumerate(self.axis_combos, 1):
+                if f'Axis{axis}' in state:
+                    combo.setCurrentIndex(state[f'Axis{axis}']-1)
+            self.sync_axes = False
         if first_state or self.sync_directions:
             for axis, combo in enumerate(self.direction_combos, 1):
                 if f"D{axis}" in state:
                     combo.setCurrentIndex(0 if state[f"D{axis}"] == 1 else 1)
             self.sync_directions = False
+        for axis, card in enumerate((self.card_m1, self.card_m2, self.card_m3), 1):
+            if f'Map{axis}' in state:
+                enc = state[f'Map{axis}']
+                pp = state.get(f'PP{axis}', '?')
+                card.setTitle(f"M{axis} | TIM{(1,3,4)[axis-1]} | EN PD{axis-1} | ENC{enc} | PP{pp}")
+                card.setToolTip(f"当前电机反馈来自编码器通道{enc}；极对数{pp}；编码器方向{state.get(f'Dir{axis}', '?')}")
         self.active_motors = tuple(c == '1' for c in state['Aligned'])
         self.self_test_passed = any(self.active_motors)
         if all(state.get(k) == v for k, v in self.expected_state.items()):
@@ -2778,9 +2846,15 @@ class MainWindow(QMainWindow):
         self.on_mode_changed(state['Mode'])
         for card, en in zip((self.card_m1, self.card_m2, self.card_m3), state['EN']):
             card.set_enable_state(en == '1')
-        names = {0: '已失能', 1: 'IMU静止校准中', 2: '等待5°捕获窗口', 3: '平衡运行', 4: '跌倒/传感器保护，需手动重启'}
+        names = {0: '已失能', 1: 'IMU静止校准中', 2: '等待3°接管窗口', 3: '平衡运行', 4: '跌倒/传感器保护，需手动重启', 5: '倒计时：靠近目标并扶稳，PG8常亮才可接管', 6: '等待扶到目标±10°内，电机失能'}
         self.lbl_balance.setText(f"{names.get(state['Bal'], '未知状态')} | 倾斜 {state['Tilt']:.2f}°\n"
             f"Uq {state['U1']:+.2f} / {state['U2']:+.2f} / {state['U3']:+.2f} V | 故障 {state['Fault']} | 停机码 {state['Trip']}")
+        if state['Bal'] == 5:
+            self.lbl_balance.setText(self.lbl_balance.text() + f"\n剩余 {float(state.get('CountMs', 0))/1000:.1f} 秒；PG5闪烁")
+        if state.get('AxesOK') == 0 or state.get('DirOK') == 0:
+            self.lbl_balance.setText(self.lbl_balance.text() + '\n需确认轮轴映射 BAXIS 与机架方向 BDIR')
+        if state.get('Ref') == 0:
+            self.lbl_balance.setText(self.lbl_balance.text() + '\n当前模式尚未采集平衡姿态（BZERO）')
         if state.get('EncType') == 1:
             self.lbl_balance.setText(self.lbl_balance.text() + f"\nF4正交 CPR={state.get('C1', '?')}/{state.get('C2', '?')}/{state.get('C3', '?')}，计数器状态不能判断模块在线")
         self.set_motor_controls_locked(bool(self.expected_state) or self.self_test_running or bool(state['Trip']))
@@ -2910,6 +2984,7 @@ class MainWindow(QMainWindow):
 
     def on_mode_changed(self, mode):
         self.speed_mode = mode
+        self.btn_mode_toggle.setToolTip("快速变速请使用已完成对齐的闭环模式；开环仅用于低速调试。")
         if mode == 1:
             self.btn_mode_toggle.setText("闭环调速模式 [已开启]")
             self.btn_mode_toggle.setStyleSheet("""
@@ -2924,7 +2999,7 @@ class MainWindow(QMainWindow):
                 }
             """)
         else:
-            self.btn_mode_toggle.setText("开环模式 [点击切闭环]")
+            self.btn_mode_toggle.setText("开环低速模式 [点击切闭环]")
             self.btn_mode_toggle.setStyleSheet("""
                 QPushButton {
                     background-color: #f1f5f9;
@@ -2991,7 +3066,7 @@ class MainWindow(QMainWindow):
         # 互锁拦截：如果尚未通过硬件自检，拦截致动类电机控制指令，保护设备安全
         if not self.self_test_passed:
             cmd_upper = cmd.upper()
-            allowed_prefixes = ("TEST", "CHECK", "?", "H", "HELP", "IMU", "HALL", "ENC", "TELE", "SENSOR", "STOP")
+            allowed_prefixes = ("TEST", "CHECK", "?", "H", "HELP", "IMU", "HALL", "ENC", "TELE", "SENSOR", "STOP", "STATE?", "PP", "FREQ", "APP", "CAL_IMU", "BZERO", "BAXIS", "BDIR", "ACC", "FAST")
             if not any(cmd_upper.startswith(p) for p in allowed_prefixes):
                 self.status_bar.showMessage("操作已被互锁拦截：必须先执行并通过硬件自检后方可控制电机。")
                 self.append_log(f"<span style='color: #f59e0b;'>[拦截] 未通过硬件自检，拒绝执行电机控制指令: {cmd}</span>")
@@ -3154,6 +3229,8 @@ class MainWindow(QMainWindow):
     # 日志输出管理
     # =====================================================================
     def on_log_rx(self, line):
+        if line.startswith("OK BAXIS"):
+            self.sync_axes = True
         if line == "OK BDIR":
             self.sync_directions = True
         if line.startswith(("OK ALIGN", "ERR ALIGN", "ERR SAFETY_TRIP")):

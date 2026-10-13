@@ -28,7 +28,7 @@ with contextlib.nullcontext(tempfile.mkdtemp(prefix='cubli-control-')) as tmp:
         (tmp / f'{name}_under_test.c').write_text(code, encoding='utf-8')
     uart = (ST / 'Core/Src/usart.c').read_text(encoding='utf-8-sig')
     uart = uart.split('/* USER CODE BEGIN 0 */')[1].split('/* USER CODE END 0 */')[0] + uart.split('/* USER CODE BEGIN 1 */')[1].split('/* USER CODE END 1 */')[0]
-    uart = uart.replace('#include "stm32f4xx.h"', '#include "mock_hw.h"').replace('int fputc(', 'int cubli_fputc(')
+    uart = uart.replace('#include "stm32f4xx.h"', '#include "mock_hw.h"').replace('fputc(', 'cubli_fputc(')
     (tmp / 'uart_under_test.c').write_text(uart, encoding='utf-8')
     for f in ['mock_hw.h', 'firmware_harness.c', 'uart_harness.c']:
         (tmp / f).write_bytes((TESTS / f).read_bytes())
@@ -37,7 +37,7 @@ with contextlib.nullcontext(tempfile.mkdtemp(prefix='cubli-control-')) as tmp:
     batch.write_text('@echo off\ncall "' + vs + '\\VC\\Auxiliary\\Build\\vcvars64.bat" >nul\n' + subprocess.list2cmdline(compile_line) + '\n', encoding='utf-8')
     subprocess.run(['cmd.exe', '/c', str(batch)], cwd=tmp, check=True)
     result = subprocess.run([str(tmp/'harness.exe')], cwd=tmp, capture_output=True, text=True)
-    if result.returncode: print(result.stdout, result.stderr)
+    if result.returncode: print(result.stdout[-8000:], result.stderr)
     result.check_returncode()
     print(result.stdout.strip().splitlines()[-1], flush=True)
     compile_line[compile_line.index('firmware_harness.c')] = 'uart_harness.c'

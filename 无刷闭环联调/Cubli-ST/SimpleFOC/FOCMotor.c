@@ -2,6 +2,17 @@
 #include "MyProject.h"
 
 /******************************************************************************/
+EncoderDiagnostics_t encoder_diag[3];
+uint32_t encoder_diag_epoch;
+void reset_encoder_diagnostics(void) {
+    int i;
+    /* Keep safety freshness timestamps valid even when FREQ is reset while running. */
+    for(i=0;i<3;i++) {
+        encoder_diag[i].samples=encoder_diag[i].errors=0;
+        encoder_diag[i].max_gap_us=encoder_diag[i].max_read_us=0;
+    }
+    encoder_diag_epoch=micros();
+}
 float shaft_angle[3] = {0.0f, 0.0f, 0.0f};      //!< current motor continuous angle (rad)
 float electrical_angle[3] = {0.0f, 0.0f, 0.0f};
 float shaft_velocity[3] = {0.0f, 0.0f, 0.0f};   //!< measured filtered velocity (rad/s)
@@ -45,7 +56,7 @@ void reset_closed_loop_state(int motor)
 	int k;
 	for(k = start; k <= end; k++)
 	{
-		float rotor_el = (float)sensor_direction[k] * shaft_angle[k] * (float)pole_pairs - zero_electric_angle[k];
+		float rotor_el = (float)sensor_direction[k] * shaft_angle[k] * (float)motor_pole_pairs[k] - zero_electric_angle[k];
 		target_angle_el[k] = rotor_el;
 		move_timestamp_prev[k] = micros();
 		pid_velocity[k].error_prev = 0.0f;
@@ -67,8 +78,8 @@ void SimpleFOC_PID_Init(void)
 	for(i = 0; i < 3; i++)
 	{
 		// 速度环 PID 参数：配合反电势前馈与全速域混合架构
-		pid_velocity[i].P = 0.20f;           // 适中比例增益
-		pid_velocity[i].I = 1.50f;           // 稳健积分增益
+		pid_velocity[i].P = i==1?0.20f:0.30f;           // 适中比例增益
+		pid_velocity[i].I = i==1?1.50f:0.80f;           // 稳健积分增益
 		pid_velocity[i].D = 0.000f;          // 速度环置零 D 项，彻底消除高频毛刺与抖动
 		pid_velocity[i].output_ramp = 0.0f;  // 不人为限制输出斜率，消除相角滞后
 		pid_velocity[i].limit = 6.0f;        // 默认与 voltage_limit (6.0V) 对齐，释放充沛电磁转矩
@@ -77,8 +88,8 @@ void SimpleFOC_PID_Init(void)
 		pid_velocity[i].integral_prev = 0.0f;
 		pid_velocity[i].timestamp_prev = 0;
 
-		// 速度测量低通滤波器 (时间常数 12ms，适中相位延迟，完美压制高频噪声)
-		lpf_velocity[i].Tf = 0.012f;
+		// M1/M3按12V实机阶跃整定为4ms；M2保留12ms，待硬件检修后单独整定
+		lpf_velocity[i].Tf = i==1?0.012f:0.004f;
 		lpf_velocity[i].y_prev = 0.0f;
 		lpf_velocity[i].timestamp_prev = 0;
 	}
@@ -110,7 +121,7 @@ void updateSensor(int motor)
 	uint8_t res = 1;
 	float rad = 0.0f;
 	float d_angle = 0.0f;
-	uint32_t now_us = micros();
+	uint32_t read_start=micros(),now_us=read_start;
 	uint32_t d_us = 0;
 	float Ts = 0.0f;
 	float raw_vel = 0.0f;
@@ -124,14 +135,20 @@ void updateSensor(int motor)
 	 * 三路 I2C 绝对式读取 (原方法) 或 TIM2/TIM5/TIM8 硬件正交解码 (新方法)
 	 */
 	res = ENC_GetAngle(sens_idx, &raw, &deg);
+    now_us=micros();
+    if(now_us-read_start>encoder_diag[motor].max_read_us) encoder_diag[motor].max_read_us=now_us-read_start;
 
     counts_per_rev=(float)ENC_CountsPerRev(sens_idx);
 	if(res != 0 || counts_per_rev<=0 || raw<0 || (float)raw>=counts_per_rev)
 	{
 		sensor_valid[motor] = 0;
+        encoder_diag[motor].errors++;
 		return;
 	}
 	sensor_valid[motor] = 1;
+    if(encoder_diag[motor].last_us && now_us-encoder_diag[motor].last_us>encoder_diag[motor].max_gap_us)
+        encoder_diag[motor].max_gap_us=now_us-encoder_diag[motor].last_us;
+    encoder_diag[motor].last_us=now_us;encoder_diag[motor].samples++;
 
 	/* 转换到单圈绝对弧度 [0, 2PI)
 	 * I2C 模式: 14-bit 绝对值 (16384 counts/圈)
@@ -234,7 +251,7 @@ float shaftVelocity(int motor)
 float electricalAngle(int motor)
 {
 	if(motor < 0 || motor > 2) return 0.0f;
-	return _normalizeAngle((float)(sensor_direction[motor]) * (angle_prev[motor] * (float)pole_pairs) - zero_electric_angle[motor]);
+	return _normalizeAngle((float)(sensor_direction[motor]) * (angle_prev[motor] * (float)motor_pole_pairs[motor]) - zero_electric_angle[motor]);
 }
 /******************************************************************************/
 

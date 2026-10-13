@@ -81,8 +81,10 @@ void Boot_PG4_Blink_5s(void);
 void Motor_Encoder_OpenLoop_SelfTest(void);
 void Control_Stop(void);
 void Control_Status(void);
+static void Control_Telemetry(void);
+static void Control_FastTelemetry(void);
 uint8_t Control_Aborted(void);
-static uint8_t app_mode=0, debug_motor=1, diagnostic_busy=0;
+static uint8_t app_mode=0, debug_motor=1, diagnostic_busy=0, fast_mask=0;
 static volatile uint8_t safety_trip=0;
 static volatile uint32_t last_ping_ms=0;
 static uint32_t main_alive_ms=0;
@@ -151,10 +153,11 @@ int main(void)
 				voltage_power_supply = 12.0f;   // V (DRV8313 12V 硬件供电)
 				voltage_limit = 5.0f;           // V (动态相电压上限设为 5.0V，兼顾急速启停力矩与电气安全)
 				velocity_limit = 180.0f;        // rad/s (相对原 60 rad/s 上限提高 3 倍)
-				controller = Type_velocity_openloop; // 默认开环安全待机，避免未标定零位时闭环自激扰动
+				controller = Type_velocity; // 默认闭环且硬件失能；完成对齐后才能显式使能
 			pole_pairs = 7;                 // 极对数
 
-					SimpleFOC_PID_Init();           // 初始化速度闭环 PID 与低通滤波器
+					SimpleFOC_PID_Init();
+                    reset_encoder_diagnostics();           // 初始化速度闭环 PID 与低通滤波器
 					LQR_Balance_Init();             // 初始化 Cubli 反作用飞轮 LQR 平衡控制器
 					reset_closed_loop_state(-1);    // 初始化闭环同步电角度与控制时间戳
 				set_motor_enable(0, 0);         // 上电默认失能三路电机，等待上位机自检指令解锁
@@ -235,7 +238,12 @@ int main(void)
 	  /* Infinite loop */
 	  /* USER CODE BEGIN WHILE */
 		static uint32_t last_bal_tick = 0;
+        static uint32_t last_fast_tick=0;
         static uint8_t reported_trip=0;
+#if !ENC_USE_HW_QUAD
+        static uint32_t last_idle_tick=0;
+        static uint8_t idle_encoder=0;
+#endif
 #if ENC_USE_HW_QUAD
         static uint32_t last_encoder_tick=0;
 #endif
@@ -245,11 +253,51 @@ int main(void)
 				/* 5ms (200Hz) 高频平衡与姿态控制任务: IMU数据采集、卡尔曼滤波姿态解算与LQR控制循环 */
 				uint32_t cur_tick = HAL_GetTick();
                 main_alive_ms=cur_tick;
+                /* PG5 countdown, PG6 running, PG7 fall/fault, PG8 ready. */
+                {
+                    uint32_t pins=GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8,on=0;
+                    int m=(int)cubli_bal.mode;
+                    uint8_t aligned=m<3?motor_aligned[m]:(motor_aligned[0]&&motor_aligned[1]&&motor_aligned[2]);
+                    if(cubli_bal.state==BAL_STATE_COUNTDOWN) {
+                        uint32_t remaining=LQR_CountdownRemainingMs();
+                        if(remaining>1000U?(cur_tick%1000U<150U):(cur_tick%250U<125U)) on|=GPIO_PIN_5;
+                    }
+                    if(cubli_bal.state==BAL_STATE_BALANCING) on|=GPIO_PIN_6;
+                    if(cubli_bal.state==BAL_STATE_FALL_PROTECT || safety_trip>1) on|=GPIO_PIN_7;
+                    if(app_mode && !safety_trip && cubli_bal.state!=BAL_STATE_FALL_PROTECT &&
+                       LQR_AxesConfirmed() && LQR_DirectionsConfirmed() &&
+                       aligned && cubli_bal.reference_valid[m] && cur_tick-last_ping_ms<=1500U &&
+                       cubli_bal.attitude.is_calibrated && cubli_bal.attitude.valid &&
+                       cubli_bal.pose_tilt_deg<cubli_bal.capture_angle*RAD_TO_DEG) {
+                        float *w=cubli_bal.attitude.gyro_rad;
+                        if((cubli_bal.pose_tilt_deg<3 && w[0]*w[0]+w[1]*w[1]+w[2]*w[2]<0.04f) ||
+                           (cur_tick%500U)<250U) on|=GPIO_PIN_8;
+                    }
+                    GPIOG->BSRR=on|((pins&~on)<<16);
+                }
                 if(safety_trip && reported_trip!=safety_trip) {
                     Control_Stop(); USART_ClearCommands();
                     printf("ERR SAFETY_TRIP:%d\r\n",safety_trip);
                 }
                 reported_trip=safety_trip;
+                if(fast_mask && cur_tick-last_fast_tick>=(app_mode?20U:10U)) {
+                    last_fast_tick=cur_tick;
+                    if(USART_TxFree()>160) Control_FastTelemetry();
+                }
+#if !ENC_USE_HW_QUAD
+                /* Observe one disabled wheel per millisecond even while another
+                   axis runs; its coasting angle and enable-time sample stay current. */
+                if(cur_tick-last_idle_tick>=1) {
+                    uint8_t attempts;
+                    last_idle_tick=cur_tick;
+                    for(attempts=0;attempts<3;attempts++) {
+                        uint8_t axis=idle_encoder;
+                        idle_encoder=(idle_encoder+1)%3;
+                        if((axis==0 && !m1_enabled) || (axis==1 && !m2_enabled) ||
+                           (axis==2 && !m3_enabled)) {updateSensor(axis);break;}
+                    }
+                }
+#endif
 #if ENC_USE_HW_QUAD
                 /* Keep freewheeling/disabled encoders sampled at >=1kHz, not 25Hz. */
                 if(cur_tick-last_encoder_tick>=1) {
@@ -290,33 +338,19 @@ int main(void)
 				{
 					time1_cntr = 0;
 					tele_counter++;
-#if !ENC_USE_HW_QUAD
-                    if(app_mode==0 && !m1_enabled && !m2_enabled && !m3_enabled) {
-                        int sensor; for(sensor=0;sensor<3;sensor++) updateSensor(sensor);
-                    }
-#endif
+
 
 					/* 依据动态映射表获取每个电机对应的编码器实时机械角度 (直接读取FOC核心更新的角度，避免总线重复阻塞) */
-					float m_angle_deg[3];
-					m_angle_deg[0] = angle_prev[0] * 180.0f / _PI;
-					m_angle_deg[1] = angle_prev[1] * 180.0f / _PI;
-					m_angle_deg[2] = angle_prev[2] * 180.0f / _PI;
 
-						if(telemetry_enabled && USART_TxFree() > 512)
+
+						if(telemetry_enabled && !fast_mask && USART_TxFree() > 512)
 						{
 							/* 扩展标准化遥测格式 (包含三电机目标速度、相电压、使能状态、电角度、六轴陀螺仪加速度、通道映射后MT6701角度H1/H2/H3、实测滤波转速S1/S2/S3、解算Pitch/Roll姿态角及平衡状态Bal) */
-							printf("$TELE,M1:%.2f,M2:%.2f,M3:%.2f,Vq:%.2f,EN:%d%d%d,A1:%.2f,A2:%.2f,A3:%.2f,Gx:%.1f,Gy:%.1f,Gz:%.1f,Ax:%.2f,Ay:%.2f,Az:%.2f,H1:%.1f,H2:%.1f,H3:%.1f,S1:%.2f,S2:%.2f,S3:%.2f,Pit:%.2f,Rol:%.2f,Bal:%d#\r\n",
-								target_m1, target_m2, target_m3,
-								voltage_limit,
-								m1_enabled, m2_enabled, m3_enabled,
-								shaft_angle[0], shaft_angle[1], shaft_angle[2],
-								imu_gyro[0], imu_gyro[1], imu_gyro[2],
-								imu_accel[0], imu_accel[1], imu_accel[2],
-								m_angle_deg[0], m_angle_deg[1], m_angle_deg[2],
-								shaft_velocity[0], shaft_velocity[1], shaft_velocity[2],
-								cubli_bal.attitude.pitch_deg, cubli_bal.attitude.roll_deg, cubli_bal.state);
-                            if((tele_counter % 5)==0) Control_Status();
+                            Control_Telemetry();
+
 						}
+
+                if((telemetry_enabled || fast_mask) && (tele_counter%5)==0) Control_Status();
 
 				/* 200ms (5次) 翻转LED指示灯: PG0对应M1, PG1对应M2, PG2对应M3 */
 				if((tele_counter % 5) == 0)
@@ -335,7 +369,7 @@ int main(void)
 				if(tele_counter >= 25)
 				{
 					tele_counter = 0;
-					if(!telemetry_enabled)
+					if(!telemetry_enabled && !m1_enabled && !m2_enabled && !m3_enabled)
 					{
 						printf("M1:%.3f[%lu %lu %lu]  M2:%.3f[%lu %lu %lu]  M3:%.3f[%lu %lu %lu]  Vq=%.2f\r\n",
 							shaft_angle[0],
@@ -432,8 +466,14 @@ void Control_SafetyTick(void) {
     uint32_t now=HAL_GetTick();
     uint8_t armed=m1_enabled || m2_enabled || m3_enabled;
     if(safety_trip) {Control_RequestStop(safety_trip);return;}
-    if(armed || cubli_bal.state==BAL_STATE_STANDBY) {
+    if(armed || cubli_bal.state==BAL_STATE_STANDBY || cubli_bal.state==BAL_STATE_COUNTDOWN || cubli_bal.state==BAL_STATE_WAIT_POSE) {
         if(now-last_ping_ms>1500) {Control_RequestStop(2);return;}
+        if(!diagnostic_busy) {
+            uint32_t us=micros();
+            if((m1_enabled && us-encoder_diag[0].last_us>5000U) ||
+               (m2_enabled && us-encoder_diag[1].last_us>5000U) ||
+               (m3_enabled && us-encoder_diag[2].last_us>5000U)) {Control_RequestStop(8);return;}
+        }
         if(!diagnostic_busy && now-main_alive_ms>30) {Control_RequestStop(5);return;}
         if((m1_enabled && !(GPIOG->IDR&GPIO_PIN_9)) ||
            (m2_enabled && !(GPIOG->IDR&GPIO_PIN_10)) ||
@@ -444,13 +484,19 @@ void set_motor_enable(uint8_t motor,uint8_t en) {
     int i; uint32_t irq=__get_PRIMASK();
     volatile uint8_t *flags[3]={&m1_enabled,&m2_enabled,&m3_enabled};
     TIM_TypeDef *timers[3]={TIM1,TIM3,TIM4};
+    /* Read real feedback before arming, outside the interrupt-masked section.
+       Do not fabricate freshness or weaken the running 5ms safety deadline. */
+    if(en && !safety_trip) for(i=0;i<3;i++) if((motor==0 || motor==i+1) && !*flags[i]) {
+        updateSensor(i);
+        if(!sensor_valid[i]) {Control_RequestStop(6);return;}
+    }
     __disable_irq();
     for(i=0;i<3;i++) if(motor==0 || motor==i+1) {
         if(en && (safety_trip || HAL_GetTick()-last_ping_ms>1500 ||
                   !(GPIOG->IDR&(GPIO_PIN_9<<i)))) {
             Control_RequestStop(3); break;
         }
-        if(en && !*flags[i]) reset_closed_loop_state(i);
+        if(en && !*flags[i]) {reset_closed_loop_state(i);reset_motion_state(i);}
         *flags[i]=en?1:0;
         if(en) GPIOD->BSRR=GPIO_PIN_0<<i;
         else {
@@ -465,21 +511,97 @@ void set_motor_enable(uint8_t motor,uint8_t en) {
 void Control_Stop(void) {
     LQR_Balance_Enable(false); set_motor_enable(0,0);
     target=target_m1=target_m2=target_m3=0;
-    reset_closed_loop_state(-1);
+    reset_closed_loop_state(-1);reset_motion_state(-1);
 }
 static uint8_t control_reset_latch(void) {
     if(HAL_GetTick()-last_ping_ms>1500) {printf("ERR HEARTBEAT (send PING)\r\n");return 0;}
     Control_Stop(); safety_trip=0; main_alive_ms=HAL_GetTick(); return 1;
 }
+static void report_int(const char *key,int32_t value) {UART_WriteText(",");UART_WriteText(key);UART_WriteText(":");UART_WriteInt(value);}
+static void report_float(const char *key,float value,uint8_t decimals) {UART_WriteText(",");UART_WriteText(key);UART_WriteText(":");UART_WriteFixed(value,decimals);}
+static void report_en(void) {UART_WriteText(",EN:");UART_WriteInt(m1_enabled);UART_WriteInt(m2_enabled);UART_WriteInt(m3_enabled);}
+static void Control_FastTelemetry(void) {
+    int i;char key[3]={'R','1',0};
+    UART_WriteText("$FAST,T:");UART_WriteUInt(micros());
+    for(i=0;i<3;i++) if(fast_mask&(1U<<i)) {
+        key[1]=(char)('1'+i);key[0]='R';report_float(key,shaft_velocity_sp[i],2);
+        key[0]='V';report_float(key,shaft_velocity[i],2);key[0]='U';report_float(key,voltage[i].q,2);
+    }
+    if(app_mode && cubli_bal.mode!=BAL_MODE_CORNER) {
+        report_float("Tilt",cubli_bal.tilt_deg,2);
+        report_float("Rate",cubli_bal.attitude.gyro_rad[cubli_bal.body_axis[cubli_bal.mode]],3);
+        report_int("Bal",cubli_bal.state);
+    }
+    UART_WriteText("#\r\n");
+}
+static void Control_Telemetry(void) {
+    UART_WriteText("$TELE");
+    report_float("M1",target_m1,2);
+    report_float("M2",target_m2,2);
+    report_float("M3",target_m3,2);
+    report_float("Vq",voltage_limit,2);
+    report_en();
+    report_float("A1",shaft_angle[0],2);
+    report_float("A2",shaft_angle[1],2);
+    report_float("A3",shaft_angle[2],2);
+    report_float("Gx",imu_gyro[0],1);
+    report_float("Gy",imu_gyro[1],1);
+    report_float("Gz",imu_gyro[2],1);
+    report_float("Ax",imu_accel[0],2);
+    report_float("Ay",imu_accel[1],2);
+    report_float("Az",imu_accel[2],2);
+    report_float("H1",angle_prev[0]*RAD_TO_DEG,1);
+    report_float("H2",angle_prev[1]*RAD_TO_DEG,1);
+    report_float("H3",angle_prev[2]*RAD_TO_DEG,1);
+    report_float("S1",shaft_velocity[0],2);
+    report_float("S2",shaft_velocity[1],2);
+    report_float("S3",shaft_velocity[2],2);
+    report_float("Pit",cubli_bal.attitude.pitch_deg,2);
+    report_float("Rol",cubli_bal.attitude.roll_deg,2);
+    report_int("Bal",cubli_bal.state);UART_WriteText("#\r\n");
+}
 void Control_Status(void) {
-    if(USART_TxFree()<384) return;
-    printf("$STATE,App:%d,Dbg:%d,Mode:%d,BMode:%d,Bal:%d,Cal:%d,IMU:%d,Aligned:%d%d%d,EN:%d%d%d,Fault:%lu,Trip:%d,Tilt:%.2f,U1:%.2f,U2:%.2f,U3:%.2f,D1:%d,D2:%d,D3:%d,Enc:%d%d%d,VLimit:%.2f,SLimit:%.2f,EncType:%d,C1:%u,C2:%u,C3:%u#\r\n",
-           app_mode,debug_motor,controller==Type_velocity?1:0,cubli_bal.mode+1,cubli_bal.state,
-           cubli_bal.attitude.is_calibrated,imu_online && cubli_bal.attitude.valid,
-           motor_aligned[0],motor_aligned[1],motor_aligned[2],m1_enabled,m2_enabled,m3_enabled,
-           (~GPIOG->IDR>>9)&7UL,safety_trip,cubli_bal.tilt_deg,voltage[0].q,voltage[1].q,voltage[2].q,
-           cubli_bal.body_direction[0],cubli_bal.body_direction[1],cubli_bal.body_direction[2],sensor_valid[0],sensor_valid[1],sensor_valid[2],voltage_limit,velocity_limit,ENC_USE_HW_QUAD,
-           ENC_CountsPerRev(0),ENC_CountsPerRev(1),ENC_CountsPerRev(2));
+    if(USART_TxFree()<512) return;
+    UART_WriteText("$STATE");
+    report_int("App",app_mode);
+    report_int("Dbg",debug_motor);
+    report_int("Mode",controller==Type_velocity?1:0);
+    report_int("BMode",cubli_bal.mode+1);
+    report_int("Bal",cubli_bal.state);
+    report_int("Cal",cubli_bal.attitude.is_calibrated);
+    report_int("IMU",imu_online && cubli_bal.attitude.valid);
+    UART_WriteText(",Aligned:");
+    UART_WriteInt(motor_aligned[0]);UART_WriteInt(motor_aligned[1]);UART_WriteInt(motor_aligned[2]);
+    report_en();
+    report_int("Fault",(~GPIOG->IDR>>9)&7UL);
+    report_int("Trip",safety_trip);
+    report_float("Tilt",cubli_bal.tilt_deg,2);
+    report_float("PoseTilt",cubli_bal.pose_tilt_deg,2);
+    report_float("U1",voltage[0].q,2);
+    report_float("U2",voltage[1].q,2);
+    report_float("U3",voltage[2].q,2);
+    report_int("D1",cubli_bal.body_direction[0]);
+    report_int("D2",cubli_bal.body_direction[1]);
+    report_int("D3",cubli_bal.body_direction[2]);
+    UART_WriteText(",Enc:");UART_WriteInt(sensor_valid[0]);UART_WriteInt(sensor_valid[1]);UART_WriteInt(sensor_valid[2]);
+    report_float("VLimit",voltage_limit,2);report_float("SLimit",velocity_limit,2);report_int("EncType",ENC_USE_HW_QUAD);
+    report_int("C1",ENC_CountsPerRev(0));
+    report_int("C2",ENC_CountsPerRev(1));
+    report_int("C3",ENC_CountsPerRev(2));
+    report_int("Map1",motor_sensor_map[0]+1);
+    report_int("Map2",motor_sensor_map[1]+1);
+    report_int("Map3",motor_sensor_map[2]+1);
+    report_int("PP1",motor_pole_pairs[0]);
+    report_int("PP2",motor_pole_pairs[1]);
+    report_int("PP3",motor_pole_pairs[2]);
+    report_int("Dir1",sensor_direction[0]);
+    report_int("Dir2",sensor_direction[1]);
+    report_int("Dir3",sensor_direction[2]);
+    report_int("Ref",cubli_bal.reference_valid[cubli_bal.mode]);
+    report_int("Axis1",cubli_bal.body_axis[0]+1);report_int("Axis2",cubli_bal.body_axis[1]+1);report_int("Axis3",cubli_bal.body_axis[2]+1);
+    report_int("AxesOK",LQR_AxesConfirmed());report_int("DirOK",LQR_DirectionsConfirmed());
+    report_int("AxisMask",cubli_bal.axes_confirmed_mask);report_int("DirMask",cubli_bal.directions_confirmed_mask);
+    report_int("CountMs",LQR_CountdownRemainingMs());UART_WriteText("#\r\n");
 }
 /* Exact tokens, finite numbers, and argument counts; no prefix/atoi fallthrough. */
 void commander_run(void) {
@@ -497,8 +619,9 @@ void commander_run(void) {
         Control_Status();
     } else if(!strcmp(name,"?") || !strcmp(name,"HELP") || !strcmp(name,"H")) {
         printf("APP 0=DEBUG/1=WORK; DBG 1..3; MODE 0=open/1=closed; TEST [axis]; ALIGN [axis]\r\n"
+               "PP1/PP2/PP3 pairs; PP?; FREQ 1=reset, FREQ?=sample diagnostics\r\n"
                "M1/M2/M3 speed independently; EN1/EN2/EN3 0/1; ACC rad/s^2; STOP; PING (every 250ms)\r\n"
-               "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BDIR s1 s2 s3; BAL 0/1\r\n"
+               "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BAXIS1/2/3 1..3; BDIR1/2/3 +/-1; BAL 0/1; BSTART 3..15 seconds; BCAP 2..10 deg\r\n"
                "LQR1/2/3 [Kp Kd Kw Ki]; ZERO1/2/3 deg (edge); BU volts; U volts; L rad/s; PID1/2/3 [P I D]; TF seconds\r\n"
                "FF[1/2/3] [coulomb_V bemf_V_per_rad_s]; STATE?\r\n"); Control_Status();
     } else if(!strcmp(name,"APP") && n==1 && (v[0]==0 || v[0]==1)) {
@@ -511,9 +634,18 @@ void commander_run(void) {
         if(v[0]) {
             if(!app_mode || !imu_online || !control_reset_latch()) {printf("ERR BAL PRECONDITION\r\n");return;}
             LQR_Balance_Enable(true);
-            if(cubli_bal.state!=BAL_STATE_STANDBY) {printf("ERR BAL (calibrate IMU and align required motors)\r\n");return;}
+            if(cubli_bal.state!=BAL_STATE_STANDBY) {printf("ERR BAL (ALIGN, CAL_IMU, BAXIS, BDIR, BZERO required)\r\n");return;}
         }
         printf("OK BAL:%d\r\n",(int)v[0]);
+    } else if(!strcmp(name,"BSTART") && n==1 && v[0]>=3 && v[0]<=15 && v[0]==(int)v[0]) {
+        Control_Stop();
+        if(!app_mode || !imu_online || !control_reset_latch() || !LQR_StartCountdown((uint8_t)v[0])) {
+            printf("ERR BSTART (edge ALIGN/CAL_IMU/BAXIS/BDIR/BZERO required)\r\n");return;
+        }
+        printf("OK BSTART\r\n");
+    } else if(!strcmp(name,"BCAP") && n==1 && v[0]>=2 && v[0]<=10) {
+        if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
+        cubli_bal.capture_angle=v[0]*DEG_TO_RAD;printf("OK BCAP\r\n");
     } else if(!strcmp(name,"BMODE") && n==1 && v[0]>=1 && v[0]<=4 && v[0]==(int)v[0]) {
         Control_Stop(); LQR_Balance_SetMode((BalanceMode_e)((int)v[0]-1)); printf("OK BMODE:%d\r\n",(int)v[0]);
     } else if(!strcmp(name,"CAL_IMU") && n==0) {
@@ -521,10 +653,22 @@ void commander_run(void) {
         if(!imu_online) {printf("ERR IMU_OFFLINE\r\n");return;}
         LQR_Balance_StartCalib(); printf("OK CAL_IMU:START\r\n");
     } else if(!strcmp(name,"BZERO") && n==0) {
-        Control_Stop(); printf(LQR_CaptureReference()?"OK BZERO\r\n":"ERR BZERO (IMU/axis)\r\n");
+        Control_Stop(); printf(LQR_CaptureReference()?"OK BZERO\r\n":"ERR BZERO (CAL_IMU/BAXIS/BDIR/IMU/pose)\r\n");
+    } else if(strlen(name)==6 && !strncmp(name,"BAXIS",5) && name[5]>='1' && name[5]<='3' && n==1 && v[0]>=1 && v[0]<=3 && v[0]==(int)v[0]) {
+        Control_Stop();LQR_ConfirmAxis((uint8_t)(name[5]-'1'),(uint8_t)v[0]-1);
+        printf("OK BAXIS (selected axis; BDIR and BZERO required)\r\n");
+    } else if(strlen(name)==5 && !strncmp(name,"BDIR",4) && name[4]>='1' && name[4]<='3' && n==1 && (v[0]==1 || v[0]==-1)) {
+        Control_Stop();LQR_ConfirmDirection((uint8_t)(name[4]-'1'),(int)v[0]);printf("OK BDIR\r\n");
+    } else if(!strcmp(name,"BAXIS") && n==3) {
+        for(i=0;i<3;i++) if(v[i]<1 || v[i]>3 || v[i]!=(int)v[i]) {printf("ERR BAXIS (X=1 Y=2 Z=3)\r\n");return;}
+        if(v[0]==v[1] || v[0]==v[2] || v[1]==v[2]) {printf("ERR BAXIS (axes must differ)\r\n");return;}
+        Control_Stop();for(i=0;i<3;i++) cubli_bal.body_axis[i]=(uint8_t)v[i]-1;
+        cubli_bal.axes_confirmed_mask=7;cubli_bal.directions_confirmed_mask=0;
+        memset(cubli_bal.reference_valid,0,sizeof(cubli_bal.reference_valid));
+        printf("OK BAXIS (BDIR and BZERO required)\r\n");
     } else if(!strcmp(name,"BDIR") && n==3) {
         for(i=0;i<3;i++) if(v[i]!=1 && v[i]!=-1) {printf("ERR BDIR\r\n");return;}
-        Control_Stop(); for(i=0;i<3;i++) cubli_bal.body_direction[i]=(int)v[i]; printf("OK BDIR\r\n");
+        Control_Stop(); for(i=0;i<3;i++) cubli_bal.body_direction[i]=(int)v[i]; cubli_bal.directions_confirmed_mask=7; printf("OK BDIR\r\n");
     } else if(!strcmp(name,"MODE") && n==1 && (v[0]==0 || v[0]==1)) {
         if(app_mode) {printf("ERR DEBUG_ONLY\r\n");return;}
         Control_Stop(); controller=v[0]?Type_velocity:Type_velocity_openloop; printf("OK MODE:%d\r\n",(int)v[0]);
@@ -555,7 +699,7 @@ void commander_run(void) {
         if(en) {
             if(val!=0 && val!=1) {printf("ERR EN_VALUE\r\n");return;}
             int axis=explicit_axis?explicit_axis:debug_motor;
-            if(val && controller==Type_velocity && !motor_aligned[axis-1]) {printf("ERR ALIGN_REQUIRED M%d\r\n",axis);return;}
+            if(val && !motor_aligned[axis-1]) {printf("ERR ALIGN_REQUIRED M%d\r\n",axis);return;}
             if(!val) {
                 if(axis==1) target_m1=0; else if(axis==2) target_m2=0; else target_m3=0;
             }
@@ -563,6 +707,7 @@ void commander_run(void) {
             printf("OK DEBUG M%d\r\n",axis);
         } else {
             if(n==3) {
+                if(controller==Type_velocity_openloop && (fabsf(v[0])>OPENLOOP_VELOCITY_LIMIT || fabsf(v[1])>OPENLOOP_VELOCITY_LIMIT || fabsf(v[2])>OPENLOOP_VELOCITY_LIMIT)) {printf("ERR OPEN_LOOP_LIMIT (use MODE 1 for fast motion)\r\n");return;}
                 for(i=0;i<3;i++) {
                     if(controller==Type_velocity && v[i]!=0 && !motor_aligned[i]) {printf("ERR ALIGN_REQUIRED M%d\r\n",i+1);return;}
                 }
@@ -572,10 +717,30 @@ void commander_run(void) {
                 printf("OK DEBUG M1/M2/M3\r\n");
             } else {
                 int axis=explicit_axis?explicit_axis:debug_motor;
+                if(controller==Type_velocity_openloop && fabsf(val)>OPENLOOP_VELOCITY_LIMIT) {printf("ERR OPEN_LOOP_LIMIT (use MODE 1 for fast motion)\r\n");return;}
                 if(controller==Type_velocity && val!=0 && !motor_aligned[axis-1]) {printf("ERR ALIGN_REQUIRED M%d\r\n",axis);return;}
                 val=_constrain(val,-velocity_limit,velocity_limit);
                 if(axis==1) target_m1=val; else if(axis==2) target_m2=val; else target_m3=val;
                 printf("OK DEBUG M%d\r\n",axis);
+            }
+        }
+    } else if((!strcmp(name,"PP?") || !strcmp(name,"PP")) && n==0) {
+        printf("$PP,M1:%d,M2:%d,M3:%d#\r\n",motor_pole_pairs[0],motor_pole_pairs[1],motor_pole_pairs[2]);
+    } else if(strlen(name)==3 && name[0]=='P' && name[1]=='P' && name[2]>='1' && name[2]<='3' && n==1) {
+        int m=name[2]-'1';
+        if(v[0]<1 || v[0]>32 || v[0]!=(int)v[0]) {printf("ERR PP_RANGE (integer 1..32)\r\n");return;}
+        if(m1_enabled || m2_enabled || m3_enabled || cubli_bal.state!=BAL_STATE_DISABLED) {printf("ERR DISARM_FIRST\r\n");return;}
+        motor_pole_pairs[m]=(uint8_t)v[0];motor_aligned[m]=0;reset_motion_state(m);
+        printf("OK PP%d:%d (ALIGN required)\r\n",m+1,motor_pole_pairs[m]);
+    } else if((!strcmp(name,"FREQ") || !strcmp(name,"FREQ?")) && n<=1) {
+        if(n) {reset_encoder_diagnostics();printf("OK FREQ RESET\r\n");}
+        else {
+            float seconds=(micros()-encoder_diag_epoch)*1e-6f;
+            for(i=0;i<3;i++) {
+                EncoderDiagnostics_t *d=&encoder_diag[i];
+                UART_WriteText("$FREQ");report_int("M",i+1);report_int("Map",motor_sensor_map[i]+1);report_int("PP",motor_pole_pairs[i]);
+                report_int("Hz",seconds>0?(int32_t)(d->samples/seconds+0.5f):0);report_int("GapUs",d->max_gap_us);
+                report_int("ReadUs",d->max_read_us);report_int("Errors",d->errors);UART_WriteText("#\r\n");
             }
         }
     } else if(!strncmp(name,"PID",3) || !strncmp(name,"LQR",3) || !strncmp(name,"ZERO",4) || !strncmp(name,"TF",2) || !strncmp(name,"FF",2)) {
@@ -586,7 +751,7 @@ void commander_run(void) {
         if(*suffix=='?') suffix++;
         if(*suffix) {printf("ERR COMMAND\r\n");return;}
         if(idx<0) idx=lqr||zero?(cubli_bal.mode<3?(int)cubli_bal.mode:0):-1;
-        if(n && (cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled)) {printf("ERR DISARM_FIRST\r\n");return;}
+        if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
         if(ff && n && (n!=2 || v[0]<0.0f || v[0]>1.5f || v[1]<0.0f || v[1]>0.15f)) {printf("ERR FF_RANGE (0~1.5V, 0~0.15V/(rad/s))\r\n");return;}
         if(ff && n!=0 && n!=2) {printf("ERR FF_ARGUMENTS (use FF[1/2/3] [coulomb bemf])\r\n");return;}
         for(i=0;i<3;i++) if(idx<0 || idx==i) {
@@ -621,6 +786,8 @@ void commander_run(void) {
         else if(!strcmp(name,"BU")) LQR_SetMaxVoltage(_constrain(v[0],0.1f,voltage_limit));
         else voltage_limit=_constrain(v[0],0.1f,voltage_power_supply*0.577350269f);
         printf("OK LIMIT\r\n");
+    } else if(!strcmp(name,"FAST") && n==1 && v[0]>=0 && v[0]<=7 && v[0]==(int)v[0]) {
+        fast_mask=(uint8_t)v[0];printf("OK FAST:%d\r\n",fast_mask);
     } else if(!strcmp(name,"TELE") && n==1 && (v[0]==0 || v[0]==1)) {
         telemetry_enabled=(uint8_t)v[0]; printf("OK TELE:%d\r\n",telemetry_enabled);
     } else if(!strcmp(name,"ENC?") || !strcmp(name,"ENC") || !strcmp(name,"HALL")) {
@@ -634,6 +801,7 @@ void commander_run(void) {
         Control_Status();
     } else if(!strcmp(name,"SENSOR") && n==1 && (v[0]==1 || v[0]==2)) {
         Control_Stop(); cubli_bal.attitude.is_calibrated=false; cubli_bal.attitude.valid=false;
+        memset(cubli_bal.reference_valid,0,sizeof(cubli_bal.reference_valid));
         imu_active_type=(uint8_t)v[0];
         imu_online=(imu_active_type==1?LSM6DSR_Init():MPU6050_Init())==0;
         printf("OK SENSOR:%d ONLINE:%d\r\n",imu_active_type,imu_online);

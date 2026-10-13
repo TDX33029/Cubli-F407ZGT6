@@ -3,6 +3,7 @@ TIM_TypeDef quad_tim[5];
 uint32_t enabled_clocks;
 float voltage_power_supply=12,voltage_limit=5,velocity_limit=60;
 int pole_pairs=7;
+uint8_t motor_pole_pairs[3]={7,7,7};
 static GPIO_InitTypeDef gpio_cfg[4];
 static void *gpio_port[4];
 static int gpio_calls;
