@@ -1,0 +1,207 @@
+{
+  "settings": {
+    "port": "COM9",
+    "axes": [
+      1,
+      3
+    ],
+    "speeds": [
+      20.0,
+      60.0,
+      120.0,
+      150.0,
+      180.0
+    ],
+    "voltage": 5.0,
+    "dual": true,
+    "hold": 3.0,
+    "tag": "highspeed_dual_fixed"
+  },
+  "steps": [
+    {
+      "phase": "axes[1, 3]_v20",
+      "target": 20.0,
+      "axes": {
+        "1": {
+          "target": 20.0,
+          "n": 70,
+          "mean": 19.986,
+          "std": 0.265,
+          "min": 19.36,
+          "max": 20.64,
+          "uq_mean": 0.592,
+          "uq_peak": 0.78,
+          "saturation_fraction": 0.0
+        },
+        "3": {
+          "target": -20.0,
+          "n": 70,
+          "mean": -19.99,
+          "std": 0.187,
+          "min": -20.34,
+          "max": -19.58,
+          "uq_mean": -0.57,
+          "uq_peak": 0.7,
+          "saturation_fraction": 0.0
+        }
+      }
+    },
+    {
+      "phase": "axes[1, 3]_v60",
+      "target": 60.0,
+      "axes": {
+        "1": {
+          "target": 60.0,
+          "n": 71,
+          "mean": 59.97,
+          "std": 1.254,
+          "min": 57.72,
+          "max": 62.18,
+          "uq_mean": 1.455,
+          "uq_peak": 2.13,
+          "saturation_fraction": 0.0
+        },
+        "3": {
+          "target": -60.0,
+          "n": 71,
+          "mean": -59.998,
+          "std": 0.413,
+          "min": -60.77,
+          "max": -59.23,
+          "uq_mean": -1.461,
+          "uq_peak": 1.69,
+          "saturation_fraction": 0.0
+        }
+      }
+    },
+    {
+      "phase": "axes[1, 3]_v120",
+      "target": 120.0,
+      "axes": {
+        "1": {
+          "target": 120.0,
+          "n": 72,
+          "mean": 119.94,
+          "std": 2.423,
+          "min": 116.17,
+          "max": 124.2,
+          "uq_mean": 2.733,
+          "uq_peak": 3.86,
+          "saturation_fraction": 0.0
+        },
+        "3": {
+          "target": -120.0,
+          "n": 72,
+          "mean": -119.949,
+          "std": 0.63,
+          "min": -121.27,
+          "max": -118.75,
+          "uq_mean": -3.109,
+          "uq_peak": 3.46,
+          "saturation_fraction": 0.0
+        }
+      }
+    },
+    {
+      "phase": "axes[1, 3]_v150",
+      "target": 150.0,
+      "axes": {
+        "1": {
+          "target": 150.0,
+          "n": 66,
+          "mean": 150.067,
+          "std": 2.702,
+          "min": 145.98,
+          "max": 154.6,
+          "uq_mean": 3.364,
+          "uq_peak": 4.58,
+          "saturation_fraction": 0.0
+        },
+        "3": {
+          "target": -150.0,
+          "n": 66,
+          "mean": -149.976,
+          "std": 0.716,
+          "min": -151.54,
+          "max": -148.6,
+          "uq_mean": -4.175,
+          "uq_peak": 4.58,
+          "saturation_fraction": 0.0
+        }
+      }
+    },
+    {
+      "phase": "axes[1, 3]_v180",
+      "target": 180.0,
+      "axes": {
+        "1": {
+          "target": 180.0,
+          "n": 69,
+          "mean": 178.223,
+          "std": 3.133,
+          "min": 173.61,
+          "max": 183.56,
+          "uq_mean": 4.065,
+          "uq_peak": 5.0,
+          "saturation_fraction": 0.348
+        },
+        "3": {
+          "target": -180.0,
+          "n": 69,
+          "mean": -161.317,
+          "std": 1.099,
+          "min": -163.4,
+          "max": -159.01,
+          "uq_mean": -5.0,
+          "uq_peak": 5.0,
+          "saturation_fraction": 1.0
+        }
+      }
+    }
+  ],
+  "frequency": [],
+  "result": "stopped",
+  "error": "RuntimeError('Steady tracking/ripple outside stage criteria')",
+  "final_state": {
+    "App": "0",
+    "Dbg": "1",
+    "Mode": "1",
+    "BMode": "1",
+    "Bal": "0",
+    "Cal": "0",
+    "IMU": "1",
+    "Aligned": "101",
+    "EN": "000",
+    "Fault": "0",
+    "Trip": "1",
+    "Tilt": "0.00",
+    "U1": "0.00",
+    "U2": "0.00",
+    "U3": "0.00",
+    "D1": "1",
+    "D2": "1",
+    "D3": "1",
+    "Enc": "111",
+    "VLimit": "2.50",
+    "SLimit": "15.00",
+    "EncType": "0",
+    "C1": "16384",
+    "C2": "16384",
+    "C3": "16384",
+    "Map1": "3",
+    "Map2": "2",
+    "Map3": "2",
+    "PP1": "7",
+    "PP2": "7",
+    "PP3": "7",
+    "Dir1": "1",
+    "Dir2": "1",
+    "Dir3": "1",
+    "Ref": "0",
+    "Axis1": "1",
+    "Axis2": "2",
+    "Axis3": "3",
+    "AxesOK": "0",
+    "DirOK": "0"
+  }
+}

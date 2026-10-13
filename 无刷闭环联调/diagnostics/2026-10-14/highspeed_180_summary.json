@@ -1,0 +1,259 @@
+{
+  "settings": {
+    "port": "COM9",
+    "axes": [
+      1,
+      3
+    ],
+    "speeds": [
+      180.0
+    ],
+    "voltage": 5.0,
+    "dual": false,
+    "hold": 1.8,
+    "tag": "highspeed_180"
+  },
+  "steps": [
+    {
+      "phase": "axes[1]_v180",
+      "target": 180.0,
+      "axes": {
+        "1": {
+          "target": 180.0,
+          "n": 70,
+          "mean": 178.48,
+          "std": 2.965,
+          "min": 174.46,
+          "max": 183.41,
+          "uq_mean": 4.277,
+          "uq_peak": 5.0,
+          "saturation_fraction": 0.414
+        }
+      }
+    },
+    {
+      "phase": "axes[1]_reverse-180",
+      "target": -180.0,
+      "axes": {
+        "1": {
+          "target": -180.0,
+          "n": 72,
+          "mean": -179.825,
+          "std": 3.15,
+          "min": -185.49,
+          "max": -174.46,
+          "uq_mean": -3.956,
+          "uq_peak": 5.0,
+          "saturation_fraction": 0.264
+        }
+      }
+    },
+    {
+      "phase": "axes[1]_return180",
+      "target": 180.0,
+      "axes": {
+        "1": {
+          "target": 180.0,
+          "n": 69,
+          "mean": 179.914,
+          "std": 2.976,
+          "min": 175.0,
+          "max": 185.21,
+          "uq_mean": 4.288,
+          "uq_peak": 5.0,
+          "saturation_fraction": 0.304
+        }
+      }
+    },
+    {
+      "phase": "axes[1]_zero",
+      "target": 0,
+      "axes": {
+        "1": {
+          "target": 0,
+          "n": 70,
+          "mean": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "uq_mean": 0.0,
+          "uq_peak": 0.0,
+          "saturation_fraction": 0.0
+        }
+      }
+    },
+    {
+      "phase": "axes[3]_v180",
+      "target": 180.0,
+      "axes": {
+        "3": {
+          "target": 180.0,
+          "n": 70,
+          "mean": 180.041,
+          "std": 0.734,
+          "min": 178.17,
+          "max": 180.9,
+          "uq_mean": 4.095,
+          "uq_peak": 4.65,
+          "saturation_fraction": 0.0
+        }
+      }
+    },
+    {
+      "phase": "axes[3]_reverse-180",
+      "target": -180.0,
+      "axes": {
+        "3": {
+          "target": -180.0,
+          "n": 71,
+          "mean": -180.252,
+          "std": 0.823,
+          "min": -181.71,
+          "max": -178.69,
+          "uq_mean": -4.367,
+          "uq_peak": 4.82,
+          "saturation_fraction": 0.0
+        }
+      }
+    },
+    {
+      "phase": "axes[3]_return180",
+      "target": 180.0,
+      "axes": {
+        "3": {
+          "target": 180.0,
+          "n": 70,
+          "mean": 180.332,
+          "std": 0.753,
+          "min": 178.42,
+          "max": 181.68,
+          "uq_mean": 4.02,
+          "uq_peak": 4.55,
+          "saturation_fraction": 0.0
+        }
+      }
+    },
+    {
+      "phase": "axes[3]_zero",
+      "target": 0,
+      "axes": {
+        "3": {
+          "target": 0,
+          "n": 71,
+          "mean": -0.542,
+          "std": 0.421,
+          "min": -1.55,
+          "max": 0.3,
+          "uq_mean": -0.139,
+          "uq_peak": 0.27,
+          "saturation_fraction": 0.0
+        }
+      }
+    }
+  ],
+  "frequency": [
+    {
+      "phase": "axes[1]_zero",
+      "M": "1",
+      "Map": "3",
+      "PP": "7",
+      "Hz": "7317",
+      "GapUs": "464",
+      "ReadUs": "126",
+      "Errors": "0"
+    },
+    {
+      "phase": "axes[1]_zero",
+      "M": "2",
+      "Map": "2",
+      "PP": "7",
+      "Hz": "0",
+      "GapUs": "0",
+      "ReadUs": "0",
+      "Errors": "0"
+    },
+    {
+      "phase": "axes[1]_zero",
+      "M": "3",
+      "Map": "2",
+      "PP": "7",
+      "Hz": "0",
+      "GapUs": "0",
+      "ReadUs": "0",
+      "Errors": "0"
+    },
+    {
+      "phase": "axes[3]_zero",
+      "M": "1",
+      "Map": "3",
+      "PP": "7",
+      "Hz": "0",
+      "GapUs": "0",
+      "ReadUs": "0",
+      "Errors": "0"
+    },
+    {
+      "phase": "axes[3]_zero",
+      "M": "2",
+      "Map": "2",
+      "PP": "7",
+      "Hz": "0",
+      "GapUs": "0",
+      "ReadUs": "0",
+      "Errors": "0"
+    },
+    {
+      "phase": "axes[3]_zero",
+      "M": "3",
+      "Map": "2",
+      "PP": "7",
+      "Hz": "7315",
+      "GapUs": "426",
+      "ReadUs": "126",
+      "Errors": "0"
+    }
+  ],
+  "result": "passed",
+  "final_state": {
+    "App": "0",
+    "Dbg": "1",
+    "Mode": "1",
+    "BMode": "1",
+    "Bal": "0",
+    "Cal": "1",
+    "IMU": "1",
+    "Aligned": "101",
+    "EN": "000",
+    "Fault": "0",
+    "Trip": "1",
+    "Tilt": "0.00",
+    "U1": "0.00",
+    "U2": "0.00",
+    "U3": "0.00",
+    "D1": "1",
+    "D2": "1",
+    "D3": "1",
+    "Enc": "111",
+    "VLimit": "2.50",
+    "SLimit": "15.00",
+    "EncType": "0",
+    "C1": "16384",
+    "C2": "16384",
+    "C3": "16384",
+    "Map1": "3",
+    "Map2": "2",
+    "Map3": "2",
+    "PP1": "7",
+    "PP2": "7",
+    "PP3": "7",
+    "Dir1": "1",
+    "Dir2": "1",
+    "Dir3": "1",
+    "Ref": "0",
+    "Axis1": "1",
+    "Axis2": "2",
+    "Axis3": "3",
+    "AxesOK": "0",
+    "DirOK": "0"
+  }
+}
