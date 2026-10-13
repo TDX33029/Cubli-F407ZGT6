@@ -106,6 +106,20 @@ bool LQR_StartCountdown(uint8_t seconds) {
     cubli_bal.state=BAL_STATE_WAIT_POSE;
     return true;
 }
+bool LQR_StartProbe(float volts,uint16_t duration_ms) {
+    int i,m=(int)cubli_bal.mode;
+    if(cubli_bal.state!=BAL_STATE_DISABLED || m>2 || !LQR_AxesConfirmed() ||
+       !motor_aligned[m] || !cubli_bal.attitude.valid || !cubli_bal.attitude.is_calibrated ||
+       HAL_GetTick()-cubli_bal.attitude.last_sample_ms>30 || Control_Aborted() ||
+       !isfinite(volts) || fabsf(volts)>3 || fabsf(volts)>voltage_limit ||
+       duration_ms<20 || duration_ms>120) return false;
+    updateSensor(m);if(!sensor_valid[m] || fabsf(shaft_velocity[m])>5) return false;
+    for(i=0;i<3;i++) cubli_bal.probe_start_gravity[i]=cubli_bal.attitude.gravity[i];
+    cubli_bal.probe_voltage=volts;cubli_bal.probe_deadline_us=micros()+1000U*duration_ms;
+    cubli_bal.last_update_us=micros();
+    set_motor_enable(m+1,1);if(Control_Aborted()) return false;
+    cubli_bal.state=BAL_STATE_PROBE;return true;
+}
 void LQR_Balance_StartCalib(void) {
     clear_output(); cubli_bal.state=BAL_STATE_CALIBRATING;
     cubli_bal.attitude.is_calibrated=false; cubli_bal.calib_samples=0;
@@ -171,6 +185,14 @@ void LQR_Balance_Loop(void) {
     cubli_bal.last_update_us=now;
     bool active=cubli_bal.state==BAL_STATE_STANDBY || cubli_bal.state==BAL_STATE_BALANCING ||
                 cubli_bal.state==BAL_STATE_COUNTDOWN || cubli_bal.state==BAL_STATE_WAIT_POSE;
+    if(cubli_bal.state==BAL_STATE_PROBE) {
+        float probe_err[3];
+        if(!cubli_bal.attitude.valid || HAL_GetTick()-cubli_bal.attitude.last_sample_ms>30 ||
+           dt<=0 || dt>0.03f || Control_Aborted() || norm3(cubli_bal.attitude.gyro_rad)>2) {LQR_Trip();return;}
+        cross3(g,cubli_bal.probe_start_gravity,probe_err);
+        if(atan2f(norm3(probe_err),dot3(g,cubli_bal.probe_start_gravity))>10*DEG_TO_RAD) {LQR_Trip();return;}
+        return;
+    }
     if(!cubli_bal.attitude.valid) {if(active) LQR_Trip();return;}
     cross3(g,ref,err);
     full_tilt=atan2f(norm3(err),dot3(g,ref));
@@ -261,11 +283,20 @@ void LQR_Balance_Loop(void) {
 }
 void LQR_Motor_Loop(void) {
     int i,m=(int)cubli_bal.mode,first=m<3?m:0,last=m<3?m:2;
-    if(cubli_bal.state!=BAL_STATE_BALANCING && cubli_bal.state!=BAL_STATE_STANDBY) return;
+    if(cubli_bal.state!=BAL_STATE_BALANCING && cubli_bal.state!=BAL_STATE_STANDBY && cubli_bal.state!=BAL_STATE_PROBE) return;
     if(Control_Aborted() || !cubli_bal.attitude.valid || HAL_GetTick()-cubli_bal.attitude.last_sample_ms>30) {LQR_Trip();return;}
+    if(cubli_bal.state==BAL_STATE_PROBE && (int32_t)(micros()-cubli_bal.probe_deadline_us)>=0) {
+        clear_output();cubli_bal.state=BAL_STATE_DISABLED;return;
+    }
     for(i=first;i<=last;i++) {
         loopFOC(i);
         if(!sensor_valid[i] || !motor_aligned[i]) {LQR_Trip();return;}
+        if(cubli_bal.state==BAL_STATE_PROBE) {
+            if(fabsf(shaft_velocity[i])>60) {LQR_Trip();return;}
+            voltage[i].q=_constrain(cubli_bal.probe_voltage,-voltage_limit,voltage_limit);voltage[i].d=0;
+            cubli_bal.control_u[i]=voltage[i].q;
+            setPhaseVoltage(voltage[i].q,0,electrical_angle[i],i);continue;
+        }
         if(cubli_bal.state==BAL_STATE_BALANCING) {
             if(fabsf(cubli_bal.control_u[i])>1.8f && fabsf(shaft_velocity[i])<0.1f) {
                 uint32_t now=micros();

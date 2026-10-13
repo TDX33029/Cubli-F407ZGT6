@@ -7,7 +7,7 @@
 #define RAD_TO_DEG (180.0f / 3.141592653589793f)
 typedef enum { BAL_STATE_DISABLED, BAL_STATE_CALIBRATING, BAL_STATE_STANDBY,
                BAL_STATE_BALANCING, BAL_STATE_FALL_PROTECT, BAL_STATE_COUNTDOWN,
-               BAL_STATE_WAIT_POSE } BalanceState_e;
+               BAL_STATE_WAIT_POSE, BAL_STATE_PROBE } BalanceState_e;
 typedef enum { BAL_MODE_EDGE_M1, BAL_MODE_EDGE_M2, BAL_MODE_EDGE_M3,
                BAL_MODE_CORNER } BalanceMode_e;
 /* Voltage-domain state feedback; gains require identification on the real plant. */
@@ -37,6 +37,8 @@ typedef struct {
     uint32_t capture_since_ms;
     uint32_t countdown_deadline_ms, countdown_stable_ms;
     uint8_t countdown_seconds;
+    uint32_t probe_deadline_us;
+    float probe_voltage, probe_start_gravity[3];
     float max_angle_trip, capture_angle;
     uint32_t last_update_us, calib_samples;
     float gyro_calib_sum[3];
@@ -48,6 +50,7 @@ void LQR_Balance_Loop(void);       /* 200Hz state feedback only */
 void LQR_Motor_Loop(void);         /* fast encoder commutation in main loop */
 void LQR_Balance_Enable(bool enable);
 bool LQR_StartCountdown(uint8_t seconds);
+bool LQR_StartProbe(float voltage_v, uint16_t duration_ms);
 uint32_t LQR_CountdownRemainingMs(void);
 bool LQR_AxesConfirmed(void);
 bool LQR_DirectionsConfirmed(void);

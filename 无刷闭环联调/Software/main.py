@@ -310,7 +310,7 @@ class SerialWorker(QThread):
                     fields[key] = float(fields[key])
                     if not math.isfinite(fields[key]):
                         raise ValueError('non-finite state')
-                if fields['App'] not in (0, 1) or fields['Dbg'] not in (1, 2, 3) or fields['BMode'] not in (1, 2, 3, 4) or fields['Bal'] not in range(7):
+                if fields['App'] not in (0, 1) or fields['Dbg'] not in (1, 2, 3) or fields['BMode'] not in (1, 2, 3, 4) or fields['Bal'] not in range(8):
                     raise ValueError('invalid state range')
                 if any(fields[key] not in (0, 1) for key in ('Mode', 'Cal', 'IMU')):
                     raise ValueError('invalid flags')
@@ -2846,7 +2846,7 @@ class MainWindow(QMainWindow):
         self.on_mode_changed(state['Mode'])
         for card, en in zip((self.card_m1, self.card_m2, self.card_m3), state['EN']):
             card.set_enable_state(en == '1')
-        names = {0: '已失能', 1: 'IMU静止校准中', 2: '等待3°接管窗口', 3: '平衡运行', 4: '跌倒/传感器保护，需手动重启', 5: '倒计时：靠近目标并扶稳，PG8常亮才可接管', 6: '等待扶到目标±10°内，电机失能'}
+        names = {0: '已失能', 1: 'IMU静止校准中', 2: '等待3°接管窗口', 3: '平衡运行', 4: '跌倒/传感器保护，需手动重启', 5: '倒计时：靠近目标并扶稳，PG8常亮才可接管', 6: '等待扶到目标±10°内，电机失能', 7: '定时短力矩探测，结束自动失能'}
         self.lbl_balance.setText(f"{names.get(state['Bal'], '未知状态')} | 倾斜 {state['Tilt']:.2f}°\n"
             f"Uq {state['U1']:+.2f} / {state['U2']:+.2f} / {state['U3']:+.2f} V | 故障 {state['Fault']} | 停机码 {state['Trip']}")
         if state['Bal'] == 5:

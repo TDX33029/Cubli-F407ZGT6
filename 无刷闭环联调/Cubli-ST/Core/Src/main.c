@@ -262,7 +262,7 @@ int main(void)
                         uint32_t remaining=LQR_CountdownRemainingMs();
                         if(remaining>1000U?(cur_tick%1000U<150U):(cur_tick%250U<125U)) on|=GPIO_PIN_5;
                     }
-                    if(cubli_bal.state==BAL_STATE_BALANCING) on|=GPIO_PIN_6;
+                    if(cubli_bal.state==BAL_STATE_BALANCING || cubli_bal.state==BAL_STATE_PROBE) on|=GPIO_PIN_6;
                     if(cubli_bal.state==BAL_STATE_FALL_PROTECT || safety_trip>1) on|=GPIO_PIN_7;
                     if(app_mode && !safety_trip && cubli_bal.state!=BAL_STATE_FALL_PROTECT &&
                        LQR_AxesConfirmed() && LQR_DirectionsConfirmed() &&
@@ -280,7 +280,7 @@ int main(void)
                     printf("ERR SAFETY_TRIP:%d\r\n",safety_trip);
                 }
                 reported_trip=safety_trip;
-                if(fast_mask && cur_tick-last_fast_tick>=(app_mode?20U:10U)) {
+                if(fast_mask && cur_tick-last_fast_tick>=((app_mode && cubli_bal.state!=BAL_STATE_PROBE)?20U:10U)) {
                     last_fast_tick=cur_tick;
                     if(USART_TxFree()>160) Control_FastTelemetry();
                 }
@@ -350,7 +350,7 @@ int main(void)
 
 						}
 
-                if((telemetry_enabled || fast_mask) && (tele_counter%5)==0) Control_Status();
+                if((telemetry_enabled || fast_mask) && (tele_counter%5)==0 && cubli_bal.state!=BAL_STATE_PROBE) Control_Status();
 
 				/* 200ms (5次) 翻转LED指示灯: PG0对应M1, PG1对应M2, PG2对应M3 */
 				if((tele_counter % 5) == 0)
@@ -531,6 +531,11 @@ static void Control_FastTelemetry(void) {
         report_float("Tilt",cubli_bal.tilt_deg,2);
         report_float("Rate",cubli_bal.attitude.gyro_rad[cubli_bal.body_axis[cubli_bal.mode]],3);
         report_int("Bal",cubli_bal.state);
+        if(cubli_bal.state==BAL_STATE_PROBE) {
+            report_float("Wx",cubli_bal.attitude.gyro_rad[0],3);
+            report_float("Wy",cubli_bal.attitude.gyro_rad[1],3);
+            report_float("Wz",cubli_bal.attitude.gyro_rad[2],3);
+        }
     }
     UART_WriteText("#\r\n");
 }
@@ -643,6 +648,10 @@ void commander_run(void) {
             printf("ERR BSTART (edge ALIGN/CAL_IMU/BAXIS/BDIR/BZERO required)\r\n");return;
         }
         printf("OK BSTART\r\n");
+    } else if(!strcmp(name,"BPROBE") && n==2 && fabsf(v[0])<=3 && v[1]>=20 && v[1]<=120 && v[1]==(int)v[1]) {
+        if(!app_mode || cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST_WORK_ONLY\r\n");return;}
+        if(!control_reset_latch() || !LQR_StartProbe(v[0],(uint16_t)v[1])) {printf("ERR BPROBE_PRECONDITION\r\n");return;}
+        printf("OK BPROBE\r\n");return; /* Keep the short pulse trace free of a large STATE frame. */
     } else if(!strcmp(name,"BCAP") && n==1 && v[0]>=2 && v[0]<=10) {
         if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
         cubli_bal.capture_angle=v[0]*DEG_TO_RAD;printf("OK BCAP\r\n");

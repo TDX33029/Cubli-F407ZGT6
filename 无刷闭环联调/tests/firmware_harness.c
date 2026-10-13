@@ -134,6 +134,16 @@ int main(void) {
  for(i=0;i<621;i++){advance();gravity(0,0,1);LQR_Balance_Loop();assert(!m1_enabled);}
  assert(cubli_bal.state==BAL_STATE_WAIT_POSE);cubli_bal.attitude.gyro_rad[1]=0;
  command("BSTART 3");fake_ms+=1501;Control_SafetyTick();assert(safety_trip==2&&!m1_enabled);
+ /* Torque identification must time out on the MCU, without a host STOP. */
+ setup();command("APP 1");cubli_bal.attitude.is_calibrated=true;gravity(0,0,1);
+ command("BPROBE 0.75 80");assert(!m1_enabled);command("BAXIS1 2");
+ assert(!cubli_bal.directions_confirmed_mask);command("BPROBE 3.1 80");assert(!m1_enabled);
+ command("BPROBE 0.75 80");assert(cubli_bal.state==BAL_STATE_PROBE&&m1_enabled&&!m2_enabled&&!m3_enabled);
+ LQR_Motor_Loop();assert(fabsf(voltage[0].q-.75f)<.0001f);
+ fake_us+=79000;fake_ms+=79;gravity(0,0,1);LQR_Motor_Loop();assert(m1_enabled);
+ fake_us+=1000;fake_ms++;gravity(0,0,1);LQR_Motor_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_DISABLED&&voltage[0].q==0);
+ command("BPROBE -0.75 80");LQR_Motor_Loop();assert(voltage[0].q<0);
+ advance();gravity(-sinf(.3f),0,cosf(.3f));LQR_Balance_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_FALL_PROTECT);
  setup();command("EN1 1");fake_ms+=1501;main_alive_ms=fake_ms;Control_SafetyTick();assert(safety_trip==2&&!m1_enabled);
  setup();command("EN1 1");mock_gpio.IDR&=~GPIO_PIN_9;Control_SafetyTick();assert(safety_trip==3&&!m1_enabled);
  setup();command("EN1 1");fake_us+=6000;fake_ms+=6;Control_Heartbeat();Control_SafetyTick();assert(safety_trip==8&&!m1_enabled);
