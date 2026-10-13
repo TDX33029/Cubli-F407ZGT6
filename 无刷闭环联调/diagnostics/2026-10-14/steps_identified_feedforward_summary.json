@@ -1,0 +1,582 @@
+[
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 1,
+    "phase": "M1_r0_v5",
+    "target": 5,
+    "samples": 10,
+    "min": 0.0,
+    "max": 5.33,
+    "mean_after_150ms": 5.082,
+    "last": 5.3
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 1,
+    "phase": "M1_r0_v-5",
+    "target": -5,
+    "samples": 9,
+    "min": -5.4,
+    "max": 4.97,
+    "mean_after_150ms": -5.276,
+    "last": -5.21
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 1,
+    "phase": "M1_r0_v10",
+    "target": 10,
+    "samples": 12,
+    "min": -4.73,
+    "max": 10.53,
+    "mean_after_150ms": 10.299,
+    "last": 10.26
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 1,
+    "phase": "M1_r0_v-10",
+    "target": -10,
+    "samples": 13,
+    "min": -10.67,
+    "max": 10.11,
+    "mean_after_150ms": -10.292,
+    "last": -10.37
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 1,
+    "phase": "M1_r0_v0",
+    "target": 0,
+    "samples": 8,
+    "min": -10.37,
+    "max": 0.12,
+    "mean_after_150ms": -0.037,
+    "last": -0.01
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 1,
+    "phase": "M1_r1_v5",
+    "target": 5,
+    "samples": 9,
+    "min": -0.01,
+    "max": 5.35,
+    "mean_after_150ms": 5.142,
+    "last": 5.06
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 1,
+    "phase": "M1_r1_v-5",
+    "target": -5,
+    "samples": 9,
+    "min": -5.58,
+    "max": 5.18,
+    "mean_after_150ms": -5.342,
+    "last": -5.46
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 1,
+    "phase": "M1_r1_v10",
+    "target": 10,
+    "samples": 12,
+    "min": -5.17,
+    "max": 10.46,
+    "mean_after_150ms": 10.311,
+    "last": 10.13
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 1,
+    "phase": "M1_r1_v-10",
+    "target": -10,
+    "samples": 13,
+    "min": -10.67,
+    "max": 10.29,
+    "mean_after_150ms": -10.308,
+    "last": -10.26
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 1,
+    "phase": "M1_r1_v0",
+    "target": 0,
+    "samples": 8,
+    "min": -10.39,
+    "max": 0.13,
+    "mean_after_150ms": -0.045,
+    "last": 0.0
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse0",
+    "target": 10,
+    "samples": 3,
+    "min": 0.0,
+    "max": 10.21,
+    "last": 10.21
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse1",
+    "target": -10,
+    "samples": 3,
+    "min": -8.13,
+    "max": 10.43,
+    "last": -8.13
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse2",
+    "target": 10,
+    "samples": 3,
+    "min": -10.09,
+    "max": 9.15,
+    "last": 9.15
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse3",
+    "target": -10,
+    "samples": 3,
+    "min": -7.8,
+    "max": 10.07,
+    "last": -7.8
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse4",
+    "target": 10,
+    "samples": 2,
+    "min": -10.13,
+    "max": -0.89,
+    "last": -0.89
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse5",
+    "target": -10,
+    "samples": 3,
+    "min": -4.57,
+    "max": 9.01,
+    "last": -4.57
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse6",
+    "target": 10,
+    "samples": 3,
+    "min": -9.91,
+    "max": 7.78,
+    "last": 7.78
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse7",
+    "target": -10,
+    "samples": 3,
+    "min": -8.01,
+    "max": 9.88,
+    "last": -8.01
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse8",
+    "target": 10,
+    "samples": 2,
+    "min": -10.03,
+    "max": -0.89,
+    "last": -0.89
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse9",
+    "target": -10,
+    "samples": 3,
+    "min": -5.46,
+    "max": 8.86,
+    "last": -5.46
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse10",
+    "target": 10,
+    "samples": 3,
+    "min": -9.91,
+    "max": 7.87,
+    "last": 7.87
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse11",
+    "target": -10,
+    "samples": 3,
+    "min": -8.81,
+    "max": 9.79,
+    "last": -8.81
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse12",
+    "target": 10,
+    "samples": 2,
+    "min": -10.11,
+    "max": 0.01,
+    "last": 0.01
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse13",
+    "target": -10,
+    "samples": 3,
+    "min": -6.48,
+    "max": 9.3,
+    "last": -6.48
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse14",
+    "target": 10,
+    "samples": 3,
+    "min": -10.0,
+    "max": 7.6,
+    "last": 7.6
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse15",
+    "target": -10,
+    "samples": 3,
+    "min": -8.7,
+    "max": 9.96,
+    "last": -8.7
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse16",
+    "target": 10,
+    "samples": 2,
+    "min": -10.17,
+    "max": 0.13,
+    "last": 0.13
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse17",
+    "target": -10,
+    "samples": 3,
+    "min": -7.25,
+    "max": 9.2,
+    "last": -7.25
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse18",
+    "target": 10,
+    "samples": 3,
+    "min": -9.93,
+    "max": 7.97,
+    "last": 7.97
+  },
+  {
+    "axis": 1,
+    "phase": "M1_pulse19",
+    "target": -10,
+    "samples": 3,
+    "min": -8.37,
+    "max": 10.15,
+    "last": -8.37
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 3,
+    "phase": "M3_r0_v5",
+    "target": 5,
+    "samples": 9,
+    "min": 0.0,
+    "max": 5.45,
+    "mean_after_150ms": 5.136,
+    "last": 5.14
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 3,
+    "phase": "M3_r0_v-5",
+    "target": -5,
+    "samples": 9,
+    "min": -5.49,
+    "max": 5.09,
+    "mean_after_150ms": -5.212,
+    "last": -5.17
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 3,
+    "phase": "M3_r0_v10",
+    "target": 10,
+    "samples": 13,
+    "min": -5.17,
+    "max": 10.42,
+    "mean_after_150ms": 10.23,
+    "last": 10.16
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 3,
+    "phase": "M3_r0_v-10",
+    "target": -10,
+    "samples": 12,
+    "min": -10.47,
+    "max": 10.06,
+    "mean_after_150ms": -10.326,
+    "last": -10.34
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 3,
+    "phase": "M3_r0_v0",
+    "target": 0,
+    "samples": 8,
+    "min": -10.49,
+    "max": 0.47,
+    "mean_after_150ms": 0.088,
+    "last": 0.01
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 3,
+    "phase": "M3_r1_v5",
+    "target": 5,
+    "samples": 9,
+    "min": -0.03,
+    "max": 5.49,
+    "mean_after_150ms": 5.116,
+    "last": 4.91
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 3,
+    "phase": "M3_r1_v-5",
+    "target": -5,
+    "samples": 9,
+    "min": -5.4,
+    "max": 5.08,
+    "mean_after_150ms": -5.282,
+    "last": -5.4
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 3,
+    "phase": "M3_r1_v10",
+    "target": 10,
+    "samples": 13,
+    "min": -5.03,
+    "max": 10.28,
+    "mean_after_150ms": 10.22,
+    "last": 10.01
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 3,
+    "phase": "M3_r1_v-10",
+    "target": -10,
+    "samples": 12,
+    "min": -10.45,
+    "max": 10.05,
+    "mean_after_150ms": -10.315,
+    "last": -10.04
+  },
+  {
+    "uq_mean_after_800ms": null,
+    "axis": 3,
+    "phase": "M3_r1_v0",
+    "target": 0,
+    "samples": 8,
+    "min": -10.2,
+    "max": 0.18,
+    "mean_after_150ms": -0.025,
+    "last": -0.03
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse0",
+    "target": 10,
+    "samples": 3,
+    "min": 0.0,
+    "max": 10.12,
+    "last": 10.12
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse1",
+    "target": -10,
+    "samples": 2,
+    "min": -0.05,
+    "max": 10.06,
+    "last": -0.05
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse2",
+    "target": 10,
+    "samples": 3,
+    "min": -9.06,
+    "max": 4.8,
+    "last": 4.8
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse3",
+    "target": -10,
+    "samples": 3,
+    "min": -6.89,
+    "max": 10.19,
+    "last": -6.89
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse4",
+    "target": 10,
+    "samples": 3,
+    "min": -9.99,
+    "max": 8.55,
+    "last": 8.55
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse5",
+    "target": -10,
+    "samples": 2,
+    "min": 1.02,
+    "max": 10.2,
+    "last": 1.02
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse6",
+    "target": 10,
+    "samples": 3,
+    "min": -8.97,
+    "max": 5.73,
+    "last": 5.73
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse7",
+    "target": -10,
+    "samples": 3,
+    "min": -8.26,
+    "max": 10.05,
+    "last": -8.26
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse8",
+    "target": 10,
+    "samples": 3,
+    "min": -10.21,
+    "max": 8.72,
+    "last": 8.72
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse9",
+    "target": -10,
+    "samples": 2,
+    "min": 0.53,
+    "max": 10.08,
+    "last": 0.53
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse10",
+    "target": 10,
+    "samples": 3,
+    "min": -9.28,
+    "max": 7.01,
+    "last": 7.01
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse11",
+    "target": -10,
+    "samples": 3,
+    "min": -7.96,
+    "max": 9.98,
+    "last": -7.96
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse12",
+    "target": 10,
+    "samples": 3,
+    "min": -9.91,
+    "max": 9.28,
+    "last": 9.28
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse13",
+    "target": -10,
+    "samples": 2,
+    "min": 1.45,
+    "max": 10.04,
+    "last": 1.45
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse14",
+    "target": 10,
+    "samples": 3,
+    "min": -9.05,
+    "max": 6.51,
+    "last": 6.51
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse15",
+    "target": -10,
+    "samples": 3,
+    "min": -8.34,
+    "max": 10.06,
+    "last": -8.34
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse16",
+    "target": 10,
+    "samples": 2,
+    "min": -10.2,
+    "max": -3.6,
+    "last": -3.6
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse17",
+    "target": -10,
+    "samples": 3,
+    "min": -4.77,
+    "max": 8.38,
+    "last": -4.77
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse18",
+    "target": 10,
+    "samples": 3,
+    "min": -9.86,
+    "max": 7.79,
+    "last": 7.79
+  },
+  {
+    "axis": 3,
+    "phase": "M3_pulse19",
+    "target": -10,
+    "samples": 3,
+    "min": -8.52,
+    "max": 10.09,
+    "last": -8.52
+  }
+]

@@ -1,0 +1,523 @@
+{
+  "validation_date": "2026-10-14",
+  "board": {
+    "port": "COM9",
+    "uart": "USART2 PD5/PD6 115200 8N1",
+    "device_id": "0x413",
+    "flash_bytes": 1048576,
+    "stlink_sn": "190A071F7116303030303032",
+    "motor_supply_v_user_confirmed": 12,
+    "tested_uq_limit_v": 2.5
+  },
+  "flashed": {
+    "variant": "CubeMX-motor-diagnostics",
+    "encoder": "I2C",
+    "download_verified": true,
+    "backup": {
+      "path": "D:\\Document\\tempPrj\\Cubli-F407ZGT6\\.codex-debug\\20261014\\firmware_before.bin",
+      "bytes": 1048576,
+      "sha256": "433710da5956ca796e7b65e4af4af8ef195350e1cf85b9a99f877d36224f6663"
+    }
+  },
+  "builds": {
+    "i2c": {
+      "errors": 0,
+      "warnings": 0,
+      "inputs": 38,
+      "code": 41636,
+      "ro": 1784,
+      "rw": 208,
+      "zi": 10936
+    },
+    "quad": {
+      "errors": 0,
+      "warnings": 0,
+      "inputs": 38,
+      "code": 40032,
+      "ro": 1916,
+      "rw": 200,
+      "zi": 10936,
+      "flashed": false
+    }
+  },
+  "tests": {
+    "control_c": "passed",
+    "uart_c": "passed including fixed-point formatter",
+    "quad_c": "passed",
+    "upper_computer_cases": 16,
+    "upper_computer": "passed",
+    "hardware_motor_1_and_3": "passed bounded reversal experiment",
+    "hardware_motor_2": "failed commutation sweep; deferred hardware inspection",
+    "hardware_balance": "not run"
+  },
+  "final_runtime": {
+    "enabled": "000",
+    "aligned": "101",
+    "balance": 0,
+    "imu_calibrated": true,
+    "axes_confirmed": false,
+    "directions_confirmed": false,
+    "reference_captured": false,
+    "voltage_limit": 2.5,
+    "velocity_limit": 15,
+    "trip": 1,
+    "trip_reason": "intentional STOP",
+    "fault": 0
+  },
+  "sources": [
+    {
+      "path": "Cubli-ST/build_firmware.py",
+      "bytes": 11561,
+      "sha256": "829e68344f21f83f7e32af3a3b5e061014a7ea8cce71f42ed377c55d2437aba2"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/gpio.h",
+      "bytes": 1348,
+      "sha256": "6325a074fd384790edd4a9489609e6fa8e699f149b68eb9d88f1afa3edb7dbf7"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/i2c.h",
+      "bytes": 1935,
+      "sha256": "17fc866eab9f89767d6b3052ef29f6ced39ea3113d7b882cefafa035d97a2b79"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/main.h",
+      "bytes": 2003,
+      "sha256": "e07a43ebc634ce451e2f80884378d112e048e06235fb49fdc2d9a2b5057d28c5"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/MyProject.h",
+      "bytes": 1544,
+      "sha256": "1495dc25f03a4cde6c30569981c051e14fc696618630599bc4f4e98f1408daf4"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/stm32f4xx_hal_conf.h",
+      "bytes": 20032,
+      "sha256": "88a723f3c52a0f32ff68f36451a3f7d27f7e8a8cab835757f0b6e498094fbac1"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/stm32f4xx_it.h",
+      "bytes": 1957,
+      "sha256": "4d5788a9dae8bfd864488f947097392b82baf67107339b07b7817f1d65386a82"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/tim.h",
+      "bytes": 1521,
+      "sha256": "5607ab0f9fee9868c463e57f7d211c05879b043229dc76ba2d636502ac145639"
+    },
+    {
+      "path": "Cubli-ST/Core/Inc/usart.h",
+      "bytes": 1540,
+      "sha256": "78ec9f6578c20d4675cea57f9b95d284801b0961897d2ba7c652d34b1037b600"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/gpio.c",
+      "bytes": 3902,
+      "sha256": "845a34d5c67f4de0da29909d99f545425c262eeb4915b893223ce9d2bdf7a714"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/i2c.c",
+      "bytes": 13392,
+      "sha256": "43f4ea5fa7bf2d40e74b40e20a2db2717614ec18e1356929541ba7551f9473ea"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/main.c",
+      "bytes": 38230,
+      "sha256": "c5e7f4e940286addddf9a99071100e13a3c444c08368090f64c1900ef522652f"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/stm32f4xx_hal_msp.c",
+      "bytes": 2229,
+      "sha256": "3217d99dc7006dc46ac384717641fe84386f05fc71db0a3340fa0eae810bc1b7"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/stm32f4xx_it.c",
+      "bytes": 6888,
+      "sha256": "dc1439153f07c1a2f2c14d9c43c5b78d731fa071f78bb84281c13b0481a643e1"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/system_stm32f4xx.c",
+      "bytes": 27442,
+      "sha256": "077c7d9b06d04e9fe3d60ea68f9e228edf98b2f801f80e5349a3ba1465197b00"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/tim.c",
+      "bytes": 10816,
+      "sha256": "5b9213a8079cbb797c7519c57af1f1a3970ebe0c5351deb60548886af558bd75"
+    },
+    {
+      "path": "Cubli-ST/Core/Src/usart.c",
+      "bytes": 10711,
+      "sha256": "97da429ea71a51c2c51756f9de5610aadda56f5bac08b7b8d0c6f035609160c9"
+    },
+    {
+      "path": "Cubli-ST/Hardware/delay.c",
+      "bytes": 816,
+      "sha256": "88e4be93f9677a7eafb8319b740bd39893d0ef6c6e2c923109722c6839a2cc19"
+    },
+    {
+      "path": "Cubli-ST/Hardware/delay.h",
+      "bytes": 371,
+      "sha256": "5355d8b9030c9f3bc6b6a0f9a5a5aaf93b15f8e1e7a6a0fbcf26261032dc9f6a"
+    },
+    {
+      "path": "Cubli-ST/Hardware/enc_quad.c",
+      "bytes": 3539,
+      "sha256": "6408c0b330be26b28788c70c9f248140ed09606affb384b968c57ed28119de4e"
+    },
+    {
+      "path": "Cubli-ST/Hardware/enc_quad.h",
+      "bytes": 2470,
+      "sha256": "af6cbd3dfa6815e66bd145c8d97166d17c6edaa0bfcf5d2eda4ba17ecfb85b05"
+    },
+    {
+      "path": "Cubli-ST/Hardware/lqr_balance.c",
+      "bytes": 9592,
+      "sha256": "c9ce3581807c1c03a58d3ee0c3832e934f80baa0ea15a0a71efe882272c5c019"
+    },
+    {
+      "path": "Cubli-ST/Hardware/lqr_balance.h",
+      "bytes": 2329,
+      "sha256": "5ac17c1a384ad376a0b6a3b97272f9a859fbb726ccd9834b60e8fa40b32ce68d"
+    },
+    {
+      "path": "Cubli-ST/Hardware/lsm6dsr.c",
+      "bytes": 3662,
+      "sha256": "12bd43fa4f860f5be925e993fc6aa25ee42d049602e5f2786055b004af7e1ba1"
+    },
+    {
+      "path": "Cubli-ST/Hardware/lsm6dsr.h",
+      "bytes": 2655,
+      "sha256": "790f30b07474ba402045c976911ddc527bb88a7cfc056c3f0bd554d7dd561f0b"
+    },
+    {
+      "path": "Cubli-ST/Hardware/mpu6050.c",
+      "bytes": 4668,
+      "sha256": "e2face17685497b00d18160601a9c9e0a2f770d7a76ab52e6d52a4bc7938fbf7"
+    },
+    {
+      "path": "Cubli-ST/Hardware/mpu6050.h",
+      "bytes": 987,
+      "sha256": "f25cc207c0c026b2ed42b82096fee201a2b40ef75547e64cd184f4bab0ad4796"
+    },
+    {
+      "path": "Cubli-ST/Hardware/spi.c",
+      "bytes": 3448,
+      "sha256": "5129432cf5ee310cbd336bb68760fe784e5e2f8491fbd75ba5d2b130555c46ba"
+    },
+    {
+      "path": "Cubli-ST/Hardware/spi.h",
+      "bytes": 590,
+      "sha256": "50103d70eee5197a959ad0625547777323c3a01cff4db56d74f722d4e05c4f7f"
+    },
+    {
+      "path": "Cubli-ST/Hardware/timer.c",
+      "bytes": 3381,
+      "sha256": "36b68bd17f9c3216edaaebd984da6dfb5be63b63aa55bdc861ec78538699677e"
+    },
+    {
+      "path": "Cubli-ST/Hardware/timer.h",
+      "bytes": 777,
+      "sha256": "0243f51223d0640b2040fefb9b4a4b73cffcfa8a90b9e989a5e24aeec03d389c"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/BLDCMotor.c",
+      "bytes": 19758,
+      "sha256": "954604922eb0eaa4f353be2a1b998ba6a9d5f2f27ee4e360409bbb0542153271"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/BLDCMotor.h",
+      "bytes": 1726,
+      "sha256": "24c0c85ddfbb52ed6f99f2974ecbcdddecaf1ef7ee98386cb145dd1c649fc7ca"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/CurrentSense.c",
+      "bytes": 2305,
+      "sha256": "155ea4947021f4b4cb06e7f5bd389dce4c47216e0b2a06966dd135b94cfccb07"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/CurrentSense.h",
+      "bytes": 468,
+      "sha256": "b3b12a46c759478783ba9e52addaa9fdb71a43babde2a3c6f4a3c42dc78d0a37"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/foc_utils.c",
+      "bytes": 5512,
+      "sha256": "efd37ea7bee98a4bcfc94e5699a574afb9db1951439bfe1f629e3ccf935c241a"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/foc_utils.h",
+      "bytes": 2527,
+      "sha256": "e4b65ca531ee63bc4cce3c943a1f1ff7df8f0abf56f6e5b36c84f2a512bbdad7"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/FOCMotor.c",
+      "bytes": 9363,
+      "sha256": "af44782ea08878062c01a775e1ae151d8a849ae7f67b56dfdca3f58284cf187f"
+    },
+    {
+      "path": "Cubli-ST/SimpleFOC/FOCMotor.h",
+      "bytes": 2621,
+      "sha256": "eb6204c4820539fbd29a4e21707f71a6b8a0b7630d9cadaa5bca46766537188c"
+    },
+    {
+      "path": "Software/main.py",
+      "bytes": 145234,
+      "sha256": "ac65ba57a7b5d071ecac59a0ecd5263889d719ce52ef90e362d96f59f7ff9d19"
+    },
+    {
+      "path": "Software/README.md",
+      "bytes": 8992,
+      "sha256": "ecd8200c3ebc8708d6a048a75c2c2032e50340baee7e1f8ca7a9a4fbfdf395b7"
+    },
+    {
+      "path": "tests/firmware_harness.c",
+      "bytes": 9010,
+      "sha256": "9a758eb304c1164bd8956edfa8c554e1fdfe5c537a12b371d41ad6c473d8d578"
+    },
+    {
+      "path": "tests/mock_hw.h",
+      "bytes": 1757,
+      "sha256": "2a9628a170981df22fea78796195cfe56694f4b81838f5152450269fec715eb1"
+    },
+    {
+      "path": "tests/mock_quad_hw.h",
+      "bytes": 2573,
+      "sha256": "7446ad8458400f3d33b1e4e8e6527c55b486397852bc01fcbf00752ea41b59a6"
+    },
+    {
+      "path": "tests/quad_harness.c",
+      "bytes": 5842,
+      "sha256": "07f441b21cf53ed1aa0aed82d1d33d3fc35ce635c4023a5b6627b0f28374be67"
+    },
+    {
+      "path": "tests/run_firmware_tests.py",
+      "bytes": 3553,
+      "sha256": "a60cc4a6cd1d496485de575eac8a99d4b3ebb16f586946b9e76aaeaa7b2c2d19"
+    },
+    {
+      "path": "tests/run_quad_tests.py",
+      "bytes": 2662,
+      "sha256": "67f959c27254a01235e8252e149284098c420f2be241f573f2c7aa7d383a54cf"
+    },
+    {
+      "path": "tests/test_upper_computer.py",
+      "bytes": 9028,
+      "sha256": "c86ce84f8a31c97b064e88993f6fa81c433c09111c6502a3670035c37a6015fb"
+    },
+    {
+      "path": "tests/uart_harness.c",
+      "bytes": 2365,
+      "sha256": "ec3b92b943966ee641c88431e564dd1a5384cd8b4e59420636df29bed0112a5c"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX-motor-diagnostics/CubeMX.hex",
+      "bytes": 122758,
+      "sha256": "d7476f976c41324633374cac890089b9057db79f68414b4fc9ccd1341284fc53"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX-motor-diagnostics/CubeMX.axf",
+      "bytes": 1008876,
+      "sha256": "626f02541c224dbd85f9619012ce588f56d5112eb5b7fa04b7b9adde4320e555"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX-motor-diagnostics/CubeMX.map",
+      "bytes": 326726,
+      "sha256": "bcc8283887f584916df7ee7dadde4153b299b8438e41e2253cca38d00f1acad1"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX-motor-diagnostics-quad/CubeMX.hex",
+      "bytes": 118602,
+      "sha256": "ae80e6a9558492845c7a68948de5762c721a24cb97e0a607f2884029ee6fc5c6"
+    },
+    {
+      "path": "Cubli-ST/MDK-ARM/CubeMX-motor-diagnostics-quad/build_config.json",
+      "bytes": 310,
+      "sha256": "7b495494b5cf84e90e8378e229dbea5efda8a51ccfa4c384f2aa43df514ee37d"
+    }
+  ],
+  "captures": [
+    {
+      "path": "diagnostics/2026-10-14/final_device_state.txt",
+      "bytes": 19920,
+      "sha256": "247fb2f17cf0a2f2e1164addb34c035eb5ac408db949ae0e98aaaae5959a349a"
+    },
+    {
+      "path": "diagnostics/2026-10-14/final_dual_100Hz.jsonl",
+      "bytes": 170632,
+      "sha256": "bb2701efc5b4d3e02cb0b7d91816dcb9db23cccc808a8ae4f1f419f4e4cddec4"
+    },
+    {
+      "path": "diagnostics/2026-10-14/final_dual_100Hz_summary.json",
+      "bytes": 1143,
+      "sha256": "f1499676174c7b2d69983a00f3f6066f0974f8c07d490da13ccdf52fa75a2236"
+    },
+    {
+      "path": "diagnostics/2026-10-14/final_metrics.json",
+      "bytes": 409,
+      "sha256": "6f262787dfb9baf34e1d6604761d8e521deb23bb0f70dbb83c5a6805c0c6222a"
+    },
+    {
+      "path": "diagnostics/2026-10-14/healthy_axes_new_scan.jsonl",
+      "bytes": 68424,
+      "sha256": "cc2e9a098d6c8e29c26cdcc7af25ee6446a0d22394c1937cadfb6216878e766e"
+    },
+    {
+      "path": "diagnostics/2026-10-14/healthy_axes_new_scan_summary.json",
+      "bytes": 2409,
+      "sha256": "ea019a37a1047cb607d4cdf4c7ce7dc4c14672c928214577861b8e0085c15f99"
+    },
+    {
+      "path": "diagnostics/2026-10-14/idle_sampling.txt",
+      "bytes": 12451,
+      "sha256": "2f06bfdb758de34a74fc73db1482c70ba95877453d61424a2b0dd690169c5473"
+    },
+    {
+      "path": "diagnostics/2026-10-14/initial_threeaxis.jsonl",
+      "bytes": 73939,
+      "sha256": "539ac7f69e40dff7feefebba35278f732d51ade0ca5b65d9b7c43f37d2701b2a"
+    },
+    {
+      "path": "diagnostics/2026-10-14/initial_threeaxis_summary.json",
+      "bytes": 2333,
+      "sha256": "c958b417eab824818ea0f24b98ac6d3d3a205906e150bb26bd39305dee6ea04a"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m1_m3_aligned_closedloop.jsonl",
+      "bytes": 72008,
+      "sha256": "d42286231e8504b63596c183721e25f84c395a4400e43243510b546f3eeacfa4"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m1_m3_aligned_closedloop_summary.json",
+      "bytes": 1567,
+      "sha256": "dc7e1f85bcf59ddf936c92e3882321be2badb328c3329d1813e93f2fb0826912"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_aligned_closedloop.jsonl",
+      "bytes": 42767,
+      "sha256": "71d6af8a115cc173a7ca7e38ede2548c2ecca0aa0a5fe89cda1f1794ff943b3b"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_aligned_closedloop_summary.json",
+      "bytes": 787,
+      "sha256": "46c5e5a88692161924c7d6f2c79c9d40e6d4754693630b0443e7fd32b4b30a46"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_mapped_openloop_negative.jsonl",
+      "bytes": 30833,
+      "sha256": "24558468fb583f40ae78e975152c01c47bf20f01ca11fbb52d2b4a304a278233"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_mapped_openloop_negative_summary.json",
+      "bytes": 788,
+      "sha256": "d8592603c6f97fb7cd86bc181b4ce0f9e652af654f21930500602e0fa1a4842a"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_mapped_openloop_positive.jsonl",
+      "bytes": 30801,
+      "sha256": "4fe4716d44ccbd063f22eaf969d6c365d3439ea23d18ce844078f88f02515bb8"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_mapped_openloop_positive_summary.json",
+      "bytes": 788,
+      "sha256": "4d71bc791ac9d18a460692827a4aa3ed8dd40596f192060556d1a144338d2414"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_new_alignment_scan.jsonl",
+      "bytes": 19249,
+      "sha256": "cd9c43eef77185493bcac131dcf2c3d7aadb2d259369215e72a1203c835862b9"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_new_alignment_scan_summary.json",
+      "bytes": 62,
+      "sha256": "81d9c1af24555490220925266acc42808ca54ae05bec8242d667012af76f4081"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_openloop_2p5V.jsonl",
+      "bytes": 30891,
+      "sha256": "18c67082a69eb424402aa000f7ee73fe3f1517b22f6b8e31137422acc64f11fa"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_openloop_2p5V_summary.json",
+      "bytes": 786,
+      "sha256": "a5431e6b12d7cc036aacc99df38c626e10f4cb4037409eb10523ab53e3b808dd"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_slow_scan_3V.jsonl",
+      "bytes": 20274,
+      "sha256": "27bb926bfb8bbdd01bff0b06ab1d99eaa2d997bdea7ccdb27ec387f2c4d3535d"
+    },
+    {
+      "path": "diagnostics/2026-10-14/m2_slow_scan_3V_summary.json",
+      "bytes": 62,
+      "sha256": "81d9c1af24555490220925266acc42808ca54ae05bec8242d667012af76f4081"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steady_voltage_identification.jsonl",
+      "bytes": 168520,
+      "sha256": "500f62f563f95f51e5bd3d6ba22a7cf7f3b2100aa05e19c6b49f1b7643e66089"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steady_voltage_identification_summary.json",
+      "bytes": 2165,
+      "sha256": "564889b73aa551c523a9b79e8d7f7dd49849ee18c69ed670602d97900abb5f2d"
+    },
+    {
+      "path": "diagnostics/2026-10-14/step_comparison.png",
+      "bytes": 331269,
+      "sha256": "26f5ed733c1fdc8e78066b1d7d0397768b56d7498d954f97ad5d1a6cb8374483"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steps_fast_telemetry_baseline.jsonl",
+      "bytes": 122946,
+      "sha256": "aa1968ef8cef62e529b47a1c89f9ff6e03e3f795ea4bf7ff3e2eb493cc84fa0d"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steps_fast_telemetry_baseline_summary.json",
+      "bytes": 3624,
+      "sha256": "6f88513cf83905b67e2d9d101ac7944fa9ed5687cd5455e5ec8050c215f48477"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steps_identified_feedforward.jsonl",
+      "bytes": 183514,
+      "sha256": "a75a8c2f2536ef3ac94d004f347ea6f1e693ba95b716ddd9da5256cc02f547a3"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steps_identified_feedforward_summary.json",
+      "bytes": 10251,
+      "sha256": "f3da22ef56c6166492a04150a21a71c8f5e106d92a044329547f9c28ad11d47e"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steps_pid030_080.jsonl",
+      "bytes": 120620,
+      "sha256": "7303c87d2ee5914ab237b09049476a63753846fcca86227e5e01aa3383097710"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steps_pid030_080_summary.json",
+      "bytes": 3620,
+      "sha256": "601a0c23303a9762deb6c96ebc80df31cd842438ab884a73e3746f07684435c0"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steps_tf4ms.jsonl",
+      "bytes": 116267,
+      "sha256": "7cc48c22a549a09e9702b3595bd98fd6b201a948c5decbe2c73c29b616afd4f3"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steps_tf4ms_ff008.jsonl",
+      "bytes": 118637,
+      "sha256": "e5218f7ccdf8126e0ed48dcafaf2c8a009d866e0ea492807fb97840bf0ec8e65"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steps_tf4ms_ff008_summary.json",
+      "bytes": 3625,
+      "sha256": "4abf5589f8b1cb9817bed58a0edd2dd77f53e9cc8f2dbd254700397eff8e1473"
+    },
+    {
+      "path": "diagnostics/2026-10-14/steps_tf4ms_summary.json",
+      "bytes": 3619,
+      "sha256": "0bf1cbc26473c79e0189e6da010021a4c227029d84b5ced81ef91a230137a799"
+    }
+  ]
+}

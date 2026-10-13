@@ -1,0 +1,19 @@
+{
+  "1": {
+    "reference_zero_crossings": 43,
+    "matched_velocity_crossings": 43,
+    "median_delay_ms": 21.58,
+    "max_delay_ms": 23.67
+  },
+  "3": {
+    "reference_zero_crossings": 43,
+    "matched_velocity_crossings": 43,
+    "median_delay_ms": 21.65,
+    "max_delay_ms": 23.13
+  },
+  "capture": {
+    "frames": 716,
+    "median_period_ms": 10.061,
+    "max_period_ms": 10.272
+  }
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "phase": "run_M2",
+    "tele_samples": 20,
+    "encoder_travel_deg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "speed_min": -0.01,
+    "speed_max": 0.0,
+    "speed_mean": -0.001,
+    "last_state": {
+      "App": "0",
+      "Dbg": "1",
+      "Mode": "0",
+      "BMode": "1",
+      "Bal": "0",
+      "Cal": "0",
+      "IMU": "1",
+      "Aligned": "000",
+      "EN": "010",
+      "Fault": "0",
+      "Trip": "0",
+      "Tilt": "0.00",
+      "U1": "0.00",
+      "U2": "2.50",
+      "U3": "0.00",
+      "D1": "1",
+      "D2": "1",
+      "D3": "1",
+      "Enc": "111",
+      "VLimit": "2.50",
+      "SLimit": "10.00",
+      "EncType": "0",
+      "C1": "16384",
+      "C2": "16384",
+      "C3": "16384",
+      "kind": "state"
+    }
+  }
+]
