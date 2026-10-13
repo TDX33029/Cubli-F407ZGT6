@@ -106,11 +106,15 @@ int main(void) {
  assert(cubli_bal.axes_confirmed_mask==1&&cubli_bal.directions_confirmed_mask==1);
  command("BCAP 11");assert(fabsf(cubli_bal.capture_angle-10*DEG_TO_RAD)<.0001f);
  command("BCAP 8");assert(fabsf(cubli_bal.capture_angle-8*DEG_TO_RAD)<.0001f);command("BCAP 10");
+ command("BTRIP 26");assert(fabsf(cubli_bal.max_angle_trip-20*DEG_TO_RAD)<.0001f);
+ command("BTRIP 18");assert(fabsf(cubli_bal.max_angle_trip-18*DEG_TO_RAD)<.0001f);command("BTRIP 20");
  assert(LQR_AxesConfirmed()&&LQR_DirectionsConfirmed());
  command("BMODE 4");assert(!LQR_AxesConfirmed()&&!LQR_DirectionsConfirmed());command("BMODE 1");
  command("APP 1");cubli_bal.attitude.is_calibrated=true;gravity(0,0,1);
+ command("BREF 0 0 0");assert(!cubli_bal.reference_valid[0]);command("BREF 0 1 0");assert(!cubli_bal.reference_valid[0]);
+ set_motor_enable(1,1);command("BREF 0 0 1");assert(!cubli_bal.reference_valid[0]);set_motor_enable(1,0);
  command("BSTART 3");assert(cubli_bal.state==BAL_STATE_DISABLED); /* Target must be captured deliberately. */
- command("BZERO");command("BSTART 3");assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
+ command("BZERO");command("BREF 0 0 1");assert(cubli_bal.reference[0][2]==1);command("BSTART 3");assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
  for(i=0;i<21;i++){advance();gravity(0,0,1);LQR_Balance_Loop();assert(!m1_enabled);}
  assert(cubli_bal.state==BAL_STATE_COUNTDOWN);
  saved=cubli_bal.countdown_deadline_ms;command("BCAP 2");assert(cubli_bal.capture_angle==10*DEG_TO_RAD);
@@ -124,6 +128,7 @@ int main(void) {
  assert(cubli_bal.state==BAL_STATE_STANDBY&&cubli_bal.reference_valid[0]);
  for(i=0;i<22;i++){advance();gravity(0,0,1);LQR_Motor_Loop();LQR_Balance_Loop();}
  assert(cubli_bal.state==BAL_STATE_BALANCING&&m1_enabled&&!m2_enabled&&!m3_enabled);
+ advance();gravity(-sinf(.3f),0,cosf(.3f));LQR_Balance_Loop();assert(cubli_bal.state==BAL_STATE_BALANCING&&m1_enabled); /* 17.2deg is inside the requested 20deg limit. */
  /* Falling perpendicular to the controlled edge is still a real fall. */
  advance();gravity(0,sinf(.4f),cosf(.4f));LQR_Balance_Loop();assert(cubli_bal.state==BAL_STATE_FALL_PROTECT&&!m1_enabled);
  for(i=0;i<30;i++){advance();gravity(0,0,1);LQR_Balance_Loop();}assert(cubli_bal.state==BAL_STATE_FALL_PROTECT);

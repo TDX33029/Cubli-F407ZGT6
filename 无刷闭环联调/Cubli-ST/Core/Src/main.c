@@ -582,6 +582,7 @@ void Control_Status(void) {
     report_int("Trip",safety_trip);
     report_float("Tilt",cubli_bal.tilt_deg,2);
     report_float("PoseTilt",cubli_bal.pose_tilt_deg,2);
+    report_float("TripDeg",cubli_bal.max_angle_trip*RAD_TO_DEG,1);
     report_float("U1",voltage[0].q,2);
     report_float("U2",voltage[1].q,2);
     report_float("U3",voltage[2].q,2);
@@ -626,7 +627,7 @@ void commander_run(void) {
         printf("APP 0=DEBUG/1=WORK; DBG 1..3; MODE 0=open/1=closed; TEST [axis]; ALIGN [axis]\r\n"
                "PP1/PP2/PP3 pairs; PP?; FREQ 1=reset, FREQ?=sample diagnostics\r\n"
                "M1/M2/M3 speed independently; EN1/EN2/EN3 0/1; ACC rad/s^2; STOP; PING (every 250ms)\r\n"
-               "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BAXIS1/2/3 1..3; BDIR1/2/3 +/-1; BAL 0/1; BSTART 3..15 seconds; BCAP 2..10 deg\r\n"
+               "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BREF gx gy gz; BAXIS1/2/3 1..3; BDIR1/2/3 +/-1; BAL 0/1; BSTART 3..15 seconds; BCAP 2..10 deg; BTRIP 10..25 deg; BPROBE volts ms\r\n"
                "LQR1/2/3 [Kp Kd Kw Ki]; ZERO1/2/3 deg (edge); BU volts; U volts; L rad/s; PID1/2/3 [P I D]; TF seconds\r\n"
                "FF[1/2/3] [coulomb_V bemf_V_per_rad_s]; STATE?\r\n"); Control_Status();
     } else if(!strcmp(name,"APP") && n==1 && (v[0]==0 || v[0]==1)) {
@@ -655,6 +656,16 @@ void commander_run(void) {
     } else if(!strcmp(name,"BCAP") && n==1 && v[0]>=2 && v[0]<=10) {
         if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
         cubli_bal.capture_angle=v[0]*DEG_TO_RAD;printf("OK BCAP\r\n");
+    } else if(!strcmp(name,"BTRIP") && n==1 && v[0]>=10 && v[0]<=25) {
+        if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
+        cubli_bal.max_angle_trip=v[0]*DEG_TO_RAD;printf("OK BTRIP\r\n");
+    } else if(!strcmp(name,"BREF") && n==3) {
+        float norm=sqrtf(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);int m=(int)cubli_bal.mode;
+        if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled || m>2 || !LQR_AxesConfirmed() || !LQR_DirectionsConfirmed() ||
+           !cubli_bal.attitude.is_calibrated || norm<0.9f || norm>1.1f ||
+           fabsf(v[cubli_bal.body_axis[m]])/norm>0.25f) {printf("ERR BREF (normalized saved edge reference required)\r\n");return;}
+        for(i=0;i<3;i++) cubli_bal.reference[m][i]=v[i]/norm;
+        cubli_bal.reference_valid[m]=true;cubli_bal.gains[m].theta_0=0;printf("OK BREF\r\n");
     } else if(!strcmp(name,"BMODE") && n==1 && v[0]>=1 && v[0]<=4 && v[0]==(int)v[0]) {
         Control_Stop(); LQR_Balance_SetMode((BalanceMode_e)((int)v[0]-1)); printf("OK BMODE:%d\r\n",(int)v[0]);
     } else if(!strcmp(name,"CAL_IMU") && n==0) {

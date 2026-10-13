@@ -1,0 +1,16 @@
+{
+  "source": "edge_fixture_signedwheel_gain90.jsonl",
+  "source_pose": {
+    "Pit": -1.32,
+    "Rol": 42.91,
+    "Ax": -0.68,
+    "Ay": -0.02,
+    "Az": 0.74
+  },
+  "gravity": [
+    -0.6806680339702225,
+    -0.02303630818760623,
+    0.7322297153463507
+  ],
+  "note": "Reference held by user before PG6; stored to avoid replacing it with a fixture endpoint on reboot."
+}

@@ -15,8 +15,9 @@ p.add_argument('--update-direction',action='store_true')
 p.add_argument('--voltage',type=float,default=1.5);p.add_argument('--kp',type=float,default=20);p.add_argument('--kd',type=float,default=1.2);p.add_argument('--kw',type=float,default=.02)
 p.add_argument('--wheel-limit',type=float,default=60);p.add_argument('--tilt-bound',type=float,default=8)
 p.add_argument('--zero-offset',type=float,default=0)
+p.add_argument('--reference-json',type=Path)
 a=p.parse_args()
-if not (0<a.run_seconds<=15 and 20<=a.speed_bound<=a.wheel_limit<=120 and 15<=a.wait_seconds<=120 and 0<a.voltage<=4 and 0<=a.kp<=120 and 0<=a.kd<=10 and 0<=a.kw<=.1 and 3<=a.tilt_bound<=12 and abs(a.zero_offset)<=2):raise SystemExit('Fixture trial bounds exceeded')
+if not (0<a.run_seconds<=15 and 20<=a.speed_bound<=a.wheel_limit<=120 and 15<=a.wait_seconds<=120 and 0<a.voltage<=4 and 0<=a.kp<=120 and 0<=a.kd<=10 and abs(a.kw)<=.1 and 3<=a.tilt_bound<=20 and abs(a.zero_offset)<=2):raise SystemExit('Fixture trial bounds exceeded')
 folder=Path(__file__).resolve().parent/'2026-10-14'
 log=(folder/(a.tag+'.jsonl')).open('x',encoding='utf-8')
 rows=[];frames=[];buf=bytearray();phase='connect';start=time.monotonic();ping=0;state={};watch=False;last_rx=0;run_started=None;result='incomplete';freq_queried=False
@@ -65,9 +66,14 @@ try:
     if a.wide_window:wait('BCAP 10')
     phase='capture_target';pump(.5)
     if not a.reuse_reference:
-        for attempt in range(10):
-            wait('BZERO',.3)
-            if state.get('Ref')=='1':break
+        if a.reference_json:
+            g=json.loads(a.reference_json.read_text(encoding='utf-8'))['gravity']
+            if len(g)!=3 or not .9<sum(float(v)**2 for v in g)**.5<1.1:raise RuntimeError('Invalid saved gravity reference')
+            wait('BREF '+' '.join(f'{float(v):.8f}' for v in g),.2)
+        else:
+            for attempt in range(10):
+                wait('BZERO',.3)
+                if state.get('Ref')=='1':break
     if state.get('Ref')!='1':raise RuntimeError('Target capture failed; hold chosen edge still')
     wait(f'ZERO1 {a.zero_offset}')
     phase='wait_pose_and_countdown';wait('FAST 1');wait('FREQ 1');wait('BSTART 8',.15)
@@ -91,7 +97,7 @@ finally:
         try:
             cmd('STOP');pump(.2);wait('FAST 0');wait('ZERO1 0');wait('U 2.5');wait('L 15');wait('STATE?')
         finally:s.close()
-    summary={'settings':vars(a),'result':result,'run_duration':run_ended-run_started if run_started else 0,'last_state':state,
+    summary={'settings':{k:(str(v) if isinstance(v,Path) else v) for k,v in vars(a).items()},'result':result,'run_duration':run_ended-run_started if run_started else 0,'last_state':state,
              'last_running_states':[d for t,d in frames if d.get('Bal') in ('3','4')][-10:],
              'frequency':[r['data'] for r in rows if r['kind']=='rx' and r['data'].startswith('$FREQ,')]}
     (folder/(a.tag+'_summary.json')).write_text(json.dumps(summary,indent=2)+'\n',encoding='utf-8');log.close()

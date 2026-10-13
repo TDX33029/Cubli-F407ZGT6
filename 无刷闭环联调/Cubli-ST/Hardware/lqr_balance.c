@@ -56,7 +56,7 @@ void LQR_Trip(void) {
 void LQR_Balance_Init(void) {
     int i;
     memset(&cubli_bal,0,sizeof(cubli_bal));
-    cubli_bal.max_angle_trip=15*DEG_TO_RAD;
+    cubli_bal.max_angle_trip=20*DEG_TO_RAD;
     cubli_bal.capture_angle=10*DEG_TO_RAD;
     cubli_bal.K_yaw_damping=0.3f;
     for(i=0;i<3;i++) {

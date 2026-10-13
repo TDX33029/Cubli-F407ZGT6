@@ -82,6 +82,14 @@ class UpperTests(unittest.TestCase):
         self.win.worker._process_received_line(STATE.replace('App:0','App:1').replace('EN:010','EN:000'))
         self.assertFalse(self.win.card_m2.spin_speed.isEnabled())
         self.assertTrue(self.win.btn_balance_start.isEnabled())
+    def test_configurable_trip_angle(self):
+        state=STATE.replace('App:0','App:1').replace('#',',TripDeg:20.0#')
+        self.win.worker._process_received_line(state)
+        self.assertEqual(self.win.spin_trip_angle.value(),20)
+        self.win.btn_trip_angle.click()
+        self.assertEqual(self.queued(),['BAL 0','BTRIP 20.0'])
+        self.win.worker._process_received_line(state.replace('Bal:0','Bal:5'))
+        self.assertFalse(self.win.btn_trip_angle.isEnabled())
     def test_stop_discards_queued_speed(self):
         self.win.worker.send_cmd('M2 20')
         self.win.on_motor_speed_change(2, 12)

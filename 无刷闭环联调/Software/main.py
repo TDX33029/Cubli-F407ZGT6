@@ -316,7 +316,7 @@ class SerialWorker(QThread):
                     raise ValueError('invalid flags')
                 if 'Enc' in fields and not re.fullmatch('[01]{3}', fields['Enc']):
                     raise ValueError('invalid encoder mask')
-                for key in ('VLimit', 'SLimit'):
+                for key in ('VLimit', 'SLimit', 'TripDeg', 'PoseTilt'):
                     if key in fields:
                         fields[key] = float(fields[key])
                         if not math.isfinite(fields[key]):
@@ -2693,6 +2693,7 @@ class MainWindow(QMainWindow):
             state.get('App') == 1 and state.get('BMode', 1) != 4 and state.get('Bal', 0) in (0, 4) and
             bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 0)) and bool(state.get('AxesOK', 0)) and bool(state.get('DirOK', 0)) and all(needed))
         self.card_self_test.btn_run_test.setEnabled(connected and not self.self_test_running and state.get('App', 0) == 0)
+        self.btn_trip_angle.setEnabled(connected and not self.self_test_running and state.get('Bal', 0) in (0, 4))
 
     def _create_mode_panel(self):
         self.mode_group = QGroupBox("运行模式与平衡控制")
@@ -2781,6 +2782,12 @@ class MainWindow(QMainWindow):
         btn_dir_one = QPushButton("只确认当前边沿方向")
         btn_dir_one.clicked.connect(self.action_send_edge_direction)
         layout.addWidget(btn_dir_one, 21, 1)
+        self.spin_trip_angle = NoWheelDoubleSpinBox()
+        self.spin_trip_angle.setRange(10,25);self.spin_trip_angle.setValue(20);self.spin_trip_angle.setSuffix(' °')
+        layout.addWidget(QLabel('姿态停机角度'),22,0);layout.addWidget(self.spin_trip_angle,22,1)
+        self.btn_trip_angle = QPushButton('设置停机角度（先失能）')
+        self.btn_trip_angle.clicked.connect(self.action_set_trip_angle)
+        layout.addWidget(self.btn_trip_angle,23,0,1,2)
         self.mode_group.setEnabled(False)
         return self.mode_group
 
@@ -2797,6 +2804,10 @@ class MainWindow(QMainWindow):
         axis = self.combo_balance.currentIndex()
         if axis < 3:
             self._request_state_change(f'BAXIS{axis+1} {self.axis_combos[axis].currentIndex()+1}')
+
+    def action_set_trip_angle(self):
+        self._request_state_change('BAL 0')
+        self.worker.send_cmd(f'BTRIP {self.spin_trip_angle.value():.1f}')
 
     def action_send_edge_direction(self):
         axis = self.combo_balance.currentIndex()
@@ -2819,6 +2830,8 @@ class MainWindow(QMainWindow):
         if first_state and "VLimit" in state:
             self.spin_vq.setValue(float(state["VLimit"]))
             self.spin_vlim.setValue(float(state["SLimit"]))
+        if 'TripDeg' in state:
+            self.spin_trip_angle.setValue(float(state['TripDeg']))
         if first_state or self.sync_axes:
             for axis, combo in enumerate(self.axis_combos, 1):
                 if f'Axis{axis}' in state:
