@@ -1,0 +1,66 @@
+{
+  "name": "M1 edge49deg first verified5s free balance",
+  "session_date": "2026-10-14",
+  "source_commit": "2d20eaa8ff8d1da65ff6378fb9cd9f2bacfe2825",
+  "firmware_hex": "无刷闭环联调\\Cubli-ST\\MDK-ARM\\CubeMX-edge-impulse120\\CubeMX.hex",
+  "firmware_sha256": "d15c18e956b614fe08c43fa59a55ebf94184aca4a0ea3eabdba0d67af61862c4",
+  "hardware": {
+    "supply_volts": 12,
+    "motor": "M4/user = M1/firmware,2804/220KV",
+    "encoder_type": "I2C MT6701",
+    "encoder_map": 3,
+    "pole_pairs": 7,
+    "encoder_direction": 1,
+    "body_axis": "Y",
+    "body_axis_command": 2,
+    "body_direction": -1
+  },
+  "reference": {
+    "source": "Exploratory candidate from confirmed hands-off B-to-A coast; angular deceleration changes near49deg; friction and fusion dynamics not fully identified",
+    "source_pose": {
+      "Pit": -1.3,
+      "Rol": 49
+    },
+    "gravity": [
+      -0.7545153250127524,
+      -0.022687333572781358,
+      0.6558901655126855
+    ],
+    "neutral_verified": false
+  },
+  "runtime_parameters": {
+    "APP": 1,
+    "BMODE": 1,
+    "LQR1": [
+      80,
+      5,
+      -0.045,
+      0
+    ],
+    "U": 6,
+    "BU": 6,
+    "L": 330,
+    "host_wheel_limit_rad_s": 300,
+    "BTRIP": 60,
+    "BCAP": 10,
+    "BSTART_seconds": 8,
+    "ZERO1": 0,
+    "wheel_feedback_delay_ms": 500,
+    "wheel_feedback_ramp_ms": 1000
+  },
+  "verified": {
+    "duration_seconds": 5.015,
+    "hands_off": true,
+    "fixture_contact": false,
+    "cable_support": false,
+    "metrics_source": "edge_stability_ref49_kw045_5s_metrics.json"
+  },
+  "restoration_requirements": [
+    "Boot leaves all motors disabled; TEST1 and stationary CAL_IMU required after reset/power loss",
+    "Explicitly confirm BAXIS1=2 and BDIR1=-1 before restoring BREF",
+    "Keep physical fixture during commissioning;PG6 on means release immediately",
+    "End of diagnostic script restores U2.5/L15;apply this profile limits explicitly for reproduction"
+  ],
+  "scope": "Finite5second single-edge result only;not long-duration or three-axis balance verification",
+  "reproduction_command": "python diagnostics/serial_edge_trial.py --direction -1 --tag NEW_UNIQUE_TAG --run-seconds 5 --voltage 6 --kp 80 --kd 5 --kw -0.045 --speed-bound 300 --wheel-limit 330 --tilt-bound 60 --trip-angle 60 --wide-window --wait-seconds 60 --reference-json diagnostics/2026-10-14/edge_candidate_reference49.json --preserve-fall --brake-wheel"
+}

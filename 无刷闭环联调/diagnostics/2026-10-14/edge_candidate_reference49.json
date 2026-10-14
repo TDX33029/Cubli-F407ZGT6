@@ -1,0 +1,13 @@
+{
+  "source": "Exploratory candidate from confirmed hands-off B-to-A coast; angular deceleration changes near49deg; friction and fusion dynamics not fully identified",
+  "source_pose": {
+    "Pit": -1.3,
+    "Rol": 49
+  },
+  "gravity": [
+    -0.7545153250127524,
+    -0.022687333572781358,
+    0.6558901655126855
+  ],
+  "neutral_verified": false
+}

@@ -1,0 +1,33 @@
+{
+  "trial": "edge_stability_ref49_kw045_5s",
+  "direction": -1,
+  "reference_candidate_roll_deg": 49,
+  "gains": [
+    80,
+    5,
+    -0.045,
+    0
+  ],
+  "timed_run_completed": true,
+  "operator_free_motion_confirmation": "Operator explicitly confirmed autonomous stand, no hand support, no fixture contact and no cable support during5s",
+  "free_balance_verified": true,
+  "ranges": {
+    "Angle": {
+      "min": -0.62,
+      "max": 0.98
+    },
+    "Rate": {
+      "min": -0.064,
+      "max": 0.1
+    },
+    "V1": {
+      "min": -18.58,
+      "max": 57.99
+    },
+    "U1": {
+      "min": -0.74,
+      "max": 1.66
+    }
+  },
+  "verified_duration_s": 5.015
+}
