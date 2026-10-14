@@ -1,0 +1,14 @@
+{
+  "source": "resume_edge_candidate_pose_summary.json",
+  "source_pose": {
+    "Pit": -1.17,
+    "Rol": 43.01
+  },
+  "gravity": [
+    -0.6819837797899124,
+    -0.020418933094800456,
+    0.7310822055519709
+  ],
+  "neutral_verified": false,
+  "note": "New hand-held candidate from passive median attitude. Free-support status requires user confirmation; not the exact BZERO reference captured later."
+}

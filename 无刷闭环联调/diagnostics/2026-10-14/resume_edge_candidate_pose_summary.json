@@ -1,0 +1,95 @@
+{
+  "motor_motion_commanded": false,
+  "neutral_verified": false,
+  "samples": 123,
+  "last_state": {
+    "App": "0",
+    "Dbg": "1",
+    "Mode": "1",
+    "BMode": "1",
+    "Bal": "0",
+    "Cal": "1",
+    "IMU": "1",
+    "Aligned": "100",
+    "EN": "000",
+    "Fault": "0",
+    "Trip": "1",
+    "Tilt": "1.61",
+    "PoseTilt": "42.49",
+    "Angle": "-1.61",
+    "TripDeg": "20.0",
+    "U1": "0.00",
+    "U2": "0.00",
+    "U3": "0.00",
+    "D1": "1",
+    "D2": "1",
+    "D3": "1",
+    "Enc": "111",
+    "VLimit": "2.50",
+    "SLimit": "15.00",
+    "EncType": "0",
+    "C1": "16384",
+    "C2": "16384",
+    "C3": "16384",
+    "Map1": "3",
+    "Map2": "2",
+    "Map3": "3",
+    "PP1": "7",
+    "PP2": "7",
+    "PP3": "7",
+    "Dir1": "1",
+    "Dir2": "1",
+    "Dir3": "1",
+    "Ref": "0",
+    "Axis1": "1",
+    "Axis2": "2",
+    "Axis3": "3",
+    "AxesOK": "0",
+    "DirOK": "0",
+    "AxisMask": "0",
+    "DirMask": "0",
+    "CountMs": "0"
+  },
+  "ranges": {
+    "Pit": {
+      "median": -1.17,
+      "min": -1.28,
+      "max": -1.09
+    },
+    "Rol": {
+      "median": 43.01,
+      "min": 42.15,
+      "max": 43.8
+    },
+    "Ax": {
+      "median": -0.68,
+      "min": -0.72,
+      "max": -0.66
+    },
+    "Ay": {
+      "median": -0.02,
+      "min": -0.03,
+      "max": 0.0
+    },
+    "Az": {
+      "median": 0.74,
+      "min": 0.72,
+      "max": 0.75
+    },
+    "Gx": {
+      "median": 0.4,
+      "min": -0.4,
+      "max": 1.0
+    },
+    "Gy": {
+      "median": -0.6,
+      "min": -7.1,
+      "max": 4.1
+    },
+    "Gz": {
+      "median": 0.2,
+      "min": -1.5,
+      "max": 1.8
+    }
+  }
+}
