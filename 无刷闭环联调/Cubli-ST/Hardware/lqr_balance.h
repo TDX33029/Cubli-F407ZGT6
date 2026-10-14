@@ -32,7 +32,8 @@ typedef struct {
     int body_direction[3];
     uint8_t body_axis[3];
     uint8_t axes_confirmed_mask, directions_confirmed_mask;
-    float reference[4][3], tilt_deg, pose_tilt_deg;
+    float reference[4][3], tilt_deg, pose_tilt_deg, signed_tilt_deg;
+    uint32_t balance_since_ms;
     bool reference_valid[4];
     uint32_t capture_since_ms;
     uint32_t countdown_deadline_ms, countdown_stable_ms;

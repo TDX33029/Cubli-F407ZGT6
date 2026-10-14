@@ -316,7 +316,7 @@ class SerialWorker(QThread):
                     raise ValueError('invalid flags')
                 if 'Enc' in fields and not re.fullmatch('[01]{3}', fields['Enc']):
                     raise ValueError('invalid encoder mask')
-                for key in ('VLimit', 'SLimit', 'TripDeg', 'PoseTilt'):
+                for key in ('VLimit', 'SLimit', 'TripDeg', 'PoseTilt', 'Angle'):
                     if key in fields:
                         fields[key] = float(fields[key])
                         if not math.isfinite(fields[key]):
@@ -2864,6 +2864,8 @@ class MainWindow(QMainWindow):
             f"Uq {state['U1']:+.2f} / {state['U2']:+.2f} / {state['U3']:+.2f} V | 故障 {state['Fault']} | 停机码 {state['Trip']}")
         if state['Bal'] == 5:
             self.lbl_balance.setText(self.lbl_balance.text() + f"\n剩余 {float(state.get('CountMs', 0))/1000:.1f} 秒；PG5闪烁")
+        if state.get('BMode') != 4 and state.get('Bal') != 7 and 'Angle' in state:
+            self.lbl_balance.setText(self.lbl_balance.text() + f"\n有符号倾角 {state['Angle']:+.2f}° | 姿态停机阈值 {float(state.get('TripDeg',20)):.1f}°")
         if state.get('AxesOK') == 0 or state.get('DirOK') == 0:
             self.lbl_balance.setText(self.lbl_balance.text() + '\n需确认轮轴映射 BAXIS 与机架方向 BDIR')
         if state.get('Ref') == 0:

@@ -1,0 +1,33 @@
+{
+  "session_date": "2026-10-14",
+  "deployed_image": "无刷闭环联调/Cubli-ST/MDK-ARM/CubeMX-edge-trip20/CubeMX.hex",
+  "new_image": "无刷闭环联调/Cubli-ST/MDK-ARM/CubeMX-edge-handover/CubeMX.hex",
+  "new_image_deployed": false,
+  "deployment_blocker": "USB CH340 and ST-LINK absent; flashing did not start. Only Bluetooth COM3/COM4 detected.",
+  "last_verified_device_state": "EN=000, Fault=0, Trip=1, Bal=0, TripDeg=20.0, Cal=1, Aligned=100; later disconnected so no current readback",
+  "validation": [
+    "Production control/UART regression passed",
+    "Upper computer 18 tests passed",
+    "I2C and QUAD ARMCC: 38 inputs each, zero errors/warnings",
+    "Actual 20-degree fall triggering and free balancing are not verified"
+  ],
+  "sha256": {
+    "无刷闭环联调/Cubli-ST/Core/Src/main.c": "6ff79b6c79d3c9a619fd0e3bd19babb8ade2c5120db3c5f5223d61059841eb8e",
+    "无刷闭环联调/Cubli-ST/Hardware/lqr_balance.c": "496e8371cc6ea6eab510c7202ebecc94de1eeaf138b18bf0004a74cf86fbe36a",
+    "无刷闭环联调/Cubli-ST/Hardware/lqr_balance.h": "e90637e1b71073352483443c818f6cd522c0d83cb1bd23259b066c4a4eb4714c",
+    "无刷闭环联调/Software/main.py": "dc125a40c970572337d783cad824c330e1b2dfd3a634abb637424d73b6a17792",
+    "无刷闭环联调/tests/firmware_harness.c": "5dbc474e5cae783a7444ca2b7f1057590602167ee476e30a55036c7e66f26950",
+    "无刷闭环联调/tests/test_upper_computer.py": "e505d6970df867676438c73ad263afbb792701dc9d2597603e670ea9026d9af2",
+    "无刷闭环联调/diagnostics/serial_edge_trial.py": "6918b7037e85c2faa08e4e8d54ba1eaeb1fdc124ac26d1729b8685687ff002d3",
+    "无刷闭环联调/Cubli-ST/MDK-ARM/CubeMX-edge-trip20/CubeMX.hex": "f3de558cf0ec3c41bfefc63bfcd350ec9dc0c51042db2956c3971af15b186d2f",
+    "无刷闭环联调/Cubli-ST/MDK-ARM/CubeMX-edge-trip20/build_config.json": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b",
+    "无刷闭环联调/Cubli-ST/MDK-ARM/CubeMX-edge-handover/CubeMX.hex": "ac37386984ef1794e44c43449655fcb75817199674fe930ab34578f0f285bf95",
+    "无刷闭环联调/Cubli-ST/MDK-ARM/CubeMX-edge-handover/build_config.json": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b",
+    "无刷闭环联调/Cubli-ST/MDK-ARM/CubeMX-edge-handover-quad/CubeMX.hex": "d14b7593df075f677fabefeb75899e33f0cb09c80e31b634fa02a3001f3b4263",
+    "无刷闭环联调/Cubli-ST/MDK-ARM/CubeMX-edge-handover-quad/build_config.json": "7b495494b5cf84e90e8378e229dbea5efda8a51ccfa4c384f2aa43df514ee37d",
+    "无刷闭环联调/diagnostics/2026-10-14/wheel_geometry_estimate.json": "ca1a6405eacbcbb55e61ef29b02951ec09e89a90fc432233b384cf0c13f79cf4",
+    "无刷闭环联调/diagnostics/2026-10-14/motor_pulse_identification.json": "59a0009a467e32862480694d98e2edd5dba5273a91d96758778a9c141c42ff7d",
+    "无刷闭环联调/diagnostics/2026-10-14/edge_saved_reference.json": "d81315347c570d57a1a3dfc36e42b8825d5913d2526cd45ef471d70053007cb3",
+    "无刷闭环联调/diagnostics/2026-10-14/edge_trip20_fall_verification_summary.json": "2cb3388a5a2df36d372b83a2bb50eff5b332aef73f677d42e448a772f80bc882"
+  }
+}

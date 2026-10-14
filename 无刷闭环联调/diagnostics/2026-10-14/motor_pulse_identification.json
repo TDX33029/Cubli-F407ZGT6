@@ -1,0 +1,8 @@
+{
+  "samples": 38,
+  "voltage_acceleration_gain_rad_s2_per_V": 130.97259809029188,
+  "speed_drag_per_s": 0.6122565036149945,
+  "coulomb_deceleration_rad_s2": 24.551208498953173,
+  "outer_ring_torque_per_V_Nm_V": 0.006224760591693487,
+  "note": "Short pulse regression with filtered encoder speed; approximate, uses outer ring only; fixture carries body torque."
+}

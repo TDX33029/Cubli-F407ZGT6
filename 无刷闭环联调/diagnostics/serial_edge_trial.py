@@ -81,7 +81,9 @@ try:
     phase='wait_pose_and_countdown';wait('FAST 1');wait('FREQ 1');wait('BSTART 8',.15)
     watch=True;last_rx=time.monotonic();deadline=time.monotonic()+a.wait_seconds
     previous=None
-    while time.monotonic()<deadline:
+    while True:
+        if run_started is None and time.monotonic()>=deadline:
+            result='pose/countdown_timeout';break
         pump(.05)
         if state.get('Bal')!=previous:
             previous=state.get('Bal');print('State',previous,'CountMs',state.get('CountMs'),'Tilt',state.get('Tilt'),flush=True)
@@ -89,7 +91,6 @@ try:
             cmd('FREQ?');freq_queried=True
         if run_started is not None and time.monotonic()-run_started>=a.run_seconds:
             result='bounded_run_completed';break
-    else:result='pose/countdown_timeout'
 except BaseException as e:
     if result=='incomplete':result='stopped_by_guard'
     record('error',repr(e));print(repr(e),flush=True)

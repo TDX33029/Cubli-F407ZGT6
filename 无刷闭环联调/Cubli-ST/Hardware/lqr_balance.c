@@ -43,6 +43,7 @@ static void cross3(const float *a, const float *b, float *r) {
 }
 static void clear_output(void) {
     int i;
+    cubli_bal.balance_since_ms=0;
     set_motor_enable(0, 0);
     for(i=0;i<3;i++) {
         cubli_bal.control_u[i]=cubli_bal.wheel_int[i]=0;
@@ -186,11 +187,14 @@ void LQR_Balance_Loop(void) {
     bool active=cubli_bal.state==BAL_STATE_STANDBY || cubli_bal.state==BAL_STATE_BALANCING ||
                 cubli_bal.state==BAL_STATE_COUNTDOWN || cubli_bal.state==BAL_STATE_WAIT_POSE;
     if(cubli_bal.state==BAL_STATE_PROBE) {
-        float probe_err[3];
+        float probe_err[3];int axis=cubli_bal.body_axis[m];
         if(!cubli_bal.attitude.valid || HAL_GetTick()-cubli_bal.attitude.last_sample_ms>30 ||
            dt<=0 || dt>0.03f || Control_Aborted() || norm3(cubli_bal.attitude.gyro_rad)>2) {LQR_Trip();return;}
         cross3(g,cubli_bal.probe_start_gravity,probe_err);
-        if(atan2f(norm3(probe_err),dot3(g,cubli_bal.probe_start_gravity))>10*DEG_TO_RAD) {LQR_Trip();return;}
+        cubli_bal.signed_tilt_deg=atan2f(probe_err[axis],dot3(g,cubli_bal.probe_start_gravity)-g[axis]*cubli_bal.probe_start_gravity[axis])*RAD_TO_DEG;
+        cubli_bal.tilt_deg=fabsf(cubli_bal.signed_tilt_deg);
+        cubli_bal.pose_tilt_deg=atan2f(norm3(probe_err),dot3(g,cubli_bal.probe_start_gravity))*RAD_TO_DEG;
+        if(cubli_bal.pose_tilt_deg>10) {LQR_Trip();return;}
         return;
     }
     if(!cubli_bal.attitude.valid) {if(active) LQR_Trip();return;}
@@ -203,6 +207,7 @@ void LQR_Balance_Loop(void) {
         if(!cubli_bal.attitude.valid || ms-cubli_bal.attitude.last_sample_ms>30 ||
            dt<=0 || dt>0.03f || Control_Aborted()) {LQR_Trip();return;}
         cubli_bal.tilt_deg=full_tilt*RAD_TO_DEG;
+        cubli_bal.signed_tilt_deg=(atan2f(err[axis],dot3(g,ref)-g[axis]*ref[axis])-cubli_bal.gains[m].theta_0)*RAD_TO_DEG;
         if(cubli_bal.state==BAL_STATE_WAIT_POSE) {
             if(!within || norm3(cubli_bal.attitude.gyro_rad)>0.6f) {cubli_bal.capture_since_ms=0;return;}
             if(!cubli_bal.capture_since_ms) cubli_bal.capture_since_ms=ms;
@@ -240,6 +245,7 @@ void LQR_Balance_Loop(void) {
         float denom=dot3(g,ref)-g[axis]*ref[axis];
         if(1-ref[axis]*ref[axis]<0.05f || 1-g[axis]*g[axis]<0.05f) {if(active) LQR_Trip();return;}
         err[axis]=atan2f(err[axis],denom)-cubli_bal.gains[m].theta_0;
+        cubli_bal.signed_tilt_deg=err[axis]*RAD_TO_DEG;
         tilt=fabsf(err[axis]);
     } else {
         float s=norm3(err);
@@ -263,6 +269,7 @@ void LQR_Balance_Loop(void) {
         for(i=first;i<=last;i++) set_motor_enable(i+1,1);
         if(Control_Aborted()) {LQR_Trip();return;}
         cubli_bal.state=BAL_STATE_BALANCING;
+        cubli_bal.balance_since_ms=HAL_GetTick();
     }
     rate_yaw=dot3(cubli_bal.attitude.gyro_rad,ref);
     first=m<3?m:0; last=m<3?m:2;
@@ -271,12 +278,16 @@ void LQR_Balance_Loop(void) {
         int axis=cubli_bal.body_axis[i];
         float rate=cubli_bal.attitude.gyro_rad[axis];
         float limit=fminf(p->max_u,voltage_limit),u,body;
+        /* Body PD acts immediately. Hand support temporarily removes body
+           motion from the wheel feedback path; introduce that path gradually
+           after 500ms, reaching its configured gain at 1500ms. */
+        float wheel_weight=_constrain(((float)(HAL_GetTick()-cubli_bal.balance_since_ms)-500.0f)/1000.0f,0,1);
         if(!sensor_valid[i] || !motor_aligned[i] || fabsf(shaft_velocity[i])>velocity_limit) {LQR_Trip();return;}
         if(m==3) rate-=rate_yaw*ref[axis];
         body=p->K_theta*err[axis]+p->K_dtheta*rate;
         if(m==3) body+=cubli_bal.K_yaw_damping*rate_yaw*ref[axis];
-        u=cubli_bal.body_direction[i]*body-p->K_w*shaft_velocity[i]-p->K_i*cubli_bal.wheel_int[i];
-        if(fabsf(u)<limit) cubli_bal.wheel_int[i]=_constrain(cubli_bal.wheel_int[i]+shaft_velocity[i]*dt,-50,50);
+        u=cubli_bal.body_direction[i]*body-wheel_weight*(p->K_w*shaft_velocity[i]+p->K_i*cubli_bal.wheel_int[i]);
+        if(wheel_weight>=1 && fabsf(u)<limit) cubli_bal.wheel_int[i]=_constrain(cubli_bal.wheel_int[i]+shaft_velocity[i]*dt,-50,50);
         if(!isfinite(u)) {LQR_Trip();return;}
         cubli_bal.control_u[i]=_constrain(u,-limit,limit);
     }

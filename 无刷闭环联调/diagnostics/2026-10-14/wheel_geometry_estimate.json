@@ -1,0 +1,23 @@
+{
+  "outer_ring": {
+    "density_kg_m3": 7930.0,
+    "outer_radius_m": 0.033,
+    "inner_radius_m": 0.0255,
+    "thickness_m": 0.005,
+    "mass_kg": 0.05465252024863401,
+    "inertia_kg_m2": 4.752719792121835e-05
+  },
+  "three_outer_rings_mass_kg": 0.16395756074590204,
+  "motor_kv_rpm_per_v": 220,
+  "bus_domain_ke_V_per_rad_s": 0.043405893570516905,
+  "note": "Outer ring only; hub, rotor and exact assembly mass not measured. KV bus-domain conversion is not directly the phase-q BEMF coefficient.",
+  "center_of_mass_model": {
+    "assumptions": "Three equal wheel assemblies centered on faces 2(-X),3(Y),6(-Z), selected edge parallel Y at +X/-Z; all remaining mass at geometric center. This is a model, not a measured neutral reference.",
+    "wheel_mass_fraction_to_neutral_angle_deg": {
+      "0.6666666666666666": 57.52880770915151,
+      "0.75": 59.03624346792648,
+      "1.0": 63.43494882292201
+    },
+    "limitation": "Board mass, motor positions, inner hubs, frame and cable forces can change this substantially; do not directly program these model angles as verified balance zero."
+  }
+}

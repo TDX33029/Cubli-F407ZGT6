@@ -12,5 +12,6 @@
     -0.02303630818760623,
     0.7322297153463507
   ],
-  "note": "Reference held by user before PG6; stored to avoid replacing it with a fixture endpoint on reboot."
+  "note": "Candidate hand-held pose before PG6, not a verified center-of-mass neutral point; do not replace it with a fixture endpoint merely because calibration is stationary.",
+  "neutral_verified": false
 }

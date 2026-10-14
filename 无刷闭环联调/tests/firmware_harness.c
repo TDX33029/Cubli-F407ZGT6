@@ -149,6 +149,18 @@ int main(void) {
  fake_us+=1000;fake_ms++;gravity(0,0,1);LQR_Motor_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_DISABLED&&voltage[0].q==0);
  command("BPROBE -0.75 80");LQR_Motor_Loop();assert(voltage[0].q<0);
  advance();gravity(-sinf(.3f),0,cosf(.3f));LQR_Balance_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_FALL_PROTECT);
+ /* A held body with a spinning wheel must not receive the full wheel term
+    immediately at handover; it must reach the configured term smoothly. */
+ setup();command("APP 1");command("BAXIS1 2");command("BDIR1 -1");command("LQR1 0 0 -0.03 0");
+ cubli_bal.attitude.is_calibrated=true;gravity(0,0,1);command("BZERO");command("BAL 1");
+ for(i=0;i<22;i++){advance();gravity(0,0,1);LQR_Balance_Loop();}
+ assert(cubli_bal.state==BAL_STATE_BALANCING);u=cubli_bal.control_u[0];
+ for(i=0;i<400;i++) {
+  advance();gravity(0,0,1);shaft_velocity[0]=10;LQR_Balance_Loop();
+  assert(fabsf(cubli_bal.control_u[0]-u)<.0021f);u=cubli_bal.control_u[0];
+  if(fake_ms-cubli_bal.balance_since_ms<500) assert(fabsf(u)<.0001f);
+ }
+ assert(fabsf(u-.3f)<.0001f);
  setup();command("EN1 1");fake_ms+=1501;main_alive_ms=fake_ms;Control_SafetyTick();assert(safety_trip==2&&!m1_enabled);
  setup();command("EN1 1");mock_gpio.IDR&=~GPIO_PIN_9;Control_SafetyTick();assert(safety_trip==3&&!m1_enabled);
  setup();command("EN1 1");fake_us+=6000;fake_ms+=6;Control_Heartbeat();Control_SafetyTick();assert(safety_trip==8&&!m1_enabled);

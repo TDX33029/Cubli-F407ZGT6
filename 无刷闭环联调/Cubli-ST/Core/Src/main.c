@@ -529,6 +529,7 @@ static void Control_FastTelemetry(void) {
     }
     if(app_mode && cubli_bal.mode!=BAL_MODE_CORNER) {
         report_float("Tilt",cubli_bal.tilt_deg,2);
+        report_float("Angle",cubli_bal.signed_tilt_deg,2);
         report_float("Rate",cubli_bal.attitude.gyro_rad[cubli_bal.body_axis[cubli_bal.mode]],3);
         report_int("Bal",cubli_bal.state);
         if(cubli_bal.state==BAL_STATE_PROBE) {
@@ -582,6 +583,7 @@ void Control_Status(void) {
     report_int("Trip",safety_trip);
     report_float("Tilt",cubli_bal.tilt_deg,2);
     report_float("PoseTilt",cubli_bal.pose_tilt_deg,2);
+    report_float("Angle",cubli_bal.signed_tilt_deg,2);
     report_float("TripDeg",cubli_bal.max_angle_trip*RAD_TO_DEG,1);
     report_float("U1",voltage[0].q,2);
     report_float("U2",voltage[1].q,2);
