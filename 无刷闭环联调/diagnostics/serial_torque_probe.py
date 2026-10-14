@@ -3,19 +3,23 @@ import argparse,json,time,statistics
 from pathlib import Path
 import serial
 p=argparse.ArgumentParser();p.add_argument('--tag',required=True)
-p.add_argument('--single-voltage',type=float);p.add_argument('--duration-ms',type=int,default=80);a=p.parse_args()
+p.add_argument('--single-voltage',type=float);p.add_argument('--duration-ms',type=int,default=80)
+p.add_argument('--baseline-angle',type=float,help='Expected signed STATE angle at the stationary fixture endpoint')
+p.add_argument('--pose-tolerance',type=float,default=1)
+p.add_argument('--observe-seconds',type=float,default=.35);a=p.parse_args()
+if not (0<a.pose_tolerance<=2 and .35<=a.observe_seconds<=2):raise SystemExit('Fixture observation bounds exceeded')
 if a.single_voltage is not None and not (0<abs(a.single_voltage)<=6 and 20<=a.duration_ms<=(80 if abs(a.single_voltage)>3 else 120)):raise SystemExit('MCU probe bounds exceeded')
 plan=[(a.single_voltage,a.duration_ms)] if a.single_voltage is not None else [(sign*level,duration) for level,duration in [(1,80),(1.5,80),(2,60),(2.5,50)] for sign in (1,-1)]
 folder=Path(__file__).resolve().parent/'2026-10-14'
 log=(folder/(a.tag+'.jsonl')).open('x',encoding='utf-8')
-rows=[];frames=[];buf=bytearray();phase='connect';start=time.monotonic();ping=0;state={};guard=False
+rows=[];frames=[];buf=bytearray();phase='connect';start=time.monotonic();ping=0;state={};state_revision=0;guard=False
 s=serial.Serial(port=None,baudrate=115200,timeout=.005,write_timeout=.3);s.dtr=False;s.rts=False;s.port='COM9'
 summary={'pulses':[],'result':'incomplete'}
 def record(kind,data):
     r={'t':time.monotonic()-start,'phase':phase,'kind':kind,'data':data};rows.append(r);log.write(json.dumps(r)+'\n');log.flush()
 def cmd(c):s.write((c+'\r\n').encode());record('tx',c)
 def pump(duration):
-    global buf,ping,state
+    global buf,ping,state,state_revision
     end=time.monotonic()+duration
     while time.monotonic()<end:
         if time.monotonic()>=ping:cmd('PING');ping=time.monotonic()+.25
@@ -27,7 +31,7 @@ def pump(duration):
             if line.startswith('ERR') and phase!='finish' and line!='ERR SAFETY_TRIP:1':raise RuntimeError(line)
             if not (line.startswith(('$STATE,','$FAST,')) and line.endswith('#')):continue
             d=dict(x.split(':',1) for x in line.split(',',1)[1][:-1].split(','));frames.append((time.monotonic()-start,phase,d))
-            if 'App' in d:state=d
+            if 'App' in d:state=d;state_revision+=1
             if guard and (int(d.get('Fault',0)) or int(d.get('Trip',0)) or d.get('Bal')=='4' or ('EN' in d and d['EN'][1:]!='00')):raise RuntimeError('Torque probe protection: '+line)
 def wait(c,t=.1):cmd(c);pump(t)
 try:
@@ -41,12 +45,22 @@ try:
         if abs(float(latest['V1']))>2:raise RuntimeError('Wheel has not stopped')
         wait('EN1 0');wait('APP 1');wait('BMODE 1');phase=f'baseline_{level}_{sign}';pump(.4)
         baseline=[float(d['Rate']) for t,p,d in frames if p==phase and 'Rate' in d]
-        phase=f'pulse_{level}_{sign}';guard=True;cmd(f'BPROBE {sign*level} {duration}');pump(.35);guard=False
+        if a.baseline_angle is not None:
+            previous=state_revision;cmd('STATE?');deadline=time.monotonic()+1
+            while time.monotonic()<deadline:
+                pump(.02)
+                if state_revision>previous:break
+            else:raise RuntimeError('Fresh endpoint state not received')
+            latest=next(d for t,p,d in reversed(frames) if 'Rate' in d)
+            if state.get('EN')!='000' or abs(float(state['Angle'])-a.baseline_angle)>a.pose_tolerance or abs(float(latest['Rate']))>.1 or abs(float(latest['V1']))>2:
+                raise RuntimeError('Endpoint moved or is not stationary; refuse pulse')
+        baseline_state=dict(state)
+        phase=f'pulse_{level}_{sign}';guard=True;cmd(f'BPROBE {sign*level} {duration}');pump(a.observe_seconds);guard=False
         active=[d for t,p,d in frames if p==phase and d.get('Bal')=='7' and 'T' in d]
         if len(active)<2:raise RuntimeError('Insufficient active probe samples')
         if state.get('EN')!='000' or state.get('Bal')!='0':raise RuntimeError('MCU did not end probe/disarm')
         rates=[float(d['Rate']) for d in active]
-        d={'voltage':sign*level,'duration_ms':duration,'samples':len(active),'baseline_rate':statistics.mean(baseline) if baseline else None,
+        d={'voltage':sign*level,'duration_ms':duration,'samples':len(active),'baseline_rate':statistics.mean(baseline) if baseline else None,'baseline_state':baseline_state,
            'rates':rates,'speed_peak':max(abs(float(d['V1'])) for d in active),
            'wx':[float(d['Wx']) for d in active],'wy':[float(d['Wy']) for d in active],'wz':[float(d['Wz']) for d in active]}
         summary['pulses'].append(d);print(json.dumps(d),flush=True)
