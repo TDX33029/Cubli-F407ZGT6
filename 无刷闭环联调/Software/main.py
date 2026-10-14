@@ -1563,6 +1563,7 @@ class MainWindow(QMainWindow):
         self.edge_profile_pending = False
         self.edge_profile_ack = False
         self.edge_profile_generation = 0
+        self.profile_kind = 'edge'
         self.last_balance_reason = 0
         self.startup_auto_edge = False
         self.startup_edge_phase = 0
@@ -2742,30 +2743,44 @@ class MainWindow(QMainWindow):
         elif not idle:common.append('先停止当前控制，保持电机失能')
         if self.expected_state:common.append('等待设备确认上一条操作')
         if state.get('Fault',0):common.append('先排除驱动故障')
-        if 'Auto' not in state:common.append('需要支持自动单边的固件')
+        if 'Auto' not in state:common.append('需要支持自动平衡的固件')
         load_blockers = common.copy()
         if not self.active_motors[0]:load_blockers.append('先点击“M1硬件自检”')
         if not state.get('Cal'):load_blockers.append('先点击“静止校准IMU”')
         if not state.get('IMU'):load_blockers.append('等待IMU恢复有效数据')
+        corner_load_blockers = common.copy()
+        if not all(self.active_motors):corner_load_blockers.append('先完成三轴硬件自检')
+        if not state.get('CornerStart'):corner_load_blockers.append('固件需支持顶点倒计时（请更新）')
+        if not state.get('Cal'):corner_load_blockers.append('先点击“静止校准IMU”')
+        if not state.get('IMU'):corner_load_blockers.append('等待IMU恢复有效数据')
         start_blockers = common.copy()
-        if not all(needed):start_blockers.append('先完成当前边沿电机自检')
+        if not all(needed):start_blockers.append('先完成当前模式电机自检')
         if not state.get('Cal'):start_blockers.append('先点击“静止校准IMU”')
         if not state.get('IMU'):start_blockers.append('等待IMU恢复有效数据')
-        if state.get('App')!=1 or state.get('BMode',4)>=4 or not all(state.get(k) for k in ('Ref','AxesOK','DirOK')):
-            start_blockers.append('先加载已验证M1配置，恢复边沿、方向和参考')
+        if state.get('App')!=1 or state.get('BMode',4)>4 or not all(state.get(k) for k in ('Ref','AxesOK','DirOK')):
+            start_blockers.append('先加载已验证单点配置' if state.get('BMode')==4 else '先加载已验证M1配置，恢复边沿、方向和参考')
+        if state.get('BMode')==4 and not state.get('CornerStart'):
+            start_blockers.append('固件需支持顶点倒计时（请更新）')
         if float(state.get('SLimit',0))<=float(state.get('FullSpeed',250)):
             start_blockers.append('速度上限需高于满速阈值，可加载已验证配置恢复')
         self.btn_auto_edge.setEnabled(connected and not self.self_test_running and
             (bool(state.get('Auto')) or not start_blockers))
-        self.btn_auto_edge.setText('停止自动单边并失能' if state.get('Auto') else '启动自动单边（无固定时长）')
+        corner = state.get('BMode') == 4
+        self.btn_auto_edge.setText(('停止自动单点并失能' if corner else '停止自动单边并失能') if state.get('Auto') else
+                                   ('启动自动单点（无固定时长）' if corner else '启动自动单边（无固定时长）'))
         self.btn_edge_profile.setEnabled(not load_blockers)
+        self.btn_corner_profile.setEnabled(not corner_load_blockers)
         self.btn_edge_m1_test.setEnabled(connected and idle and not self.self_test_running and not self.expected_state)
         self.btn_edge_imu_cal.setEnabled(connected and idle and not self.self_test_running and not self.expected_state and bool(state.get('IMU')))
-        load_hint = load_blockers[0] if load_blockers else '可加载已验证M1配置（保持失能）'
-        start_hint = '自动已启用，按钮用于停止' if state.get('Auto') else (start_blockers[0] if start_blockers else '准备完成，可启动自动单边检测')
+        load_hint = (corner_load_blockers[0] if corner_load_blockers else '可加载已验证单点配置（保持失能）') if corner \
+            else (load_blockers[0] if load_blockers else '可加载已验证M1配置（保持失能）')
+        start_hint = '自动已启用，按钮用于停止' if state.get('Auto') else (start_blockers[0] if start_blockers else
+                     ('准备完成，可启动自动单点检测' if corner else '准备完成，可启动自动单边检测'))
         self.lbl_edge_setup.setText(f'配置准备：{load_hint}\n自动启动：{start_hint}')
         self.btn_edge_profile.setToolTip('；'.join(load_blockers) if load_blockers else '恢复当前安装的49°参考和已验证参数，电机保持失能')
-        self.btn_auto_edge.setToolTip('；'.join(start_blockers) if start_blockers and not state.get('Auto') else 'PG6亮即松手；超过20°或持续满速3秒后失能等待下次入位')
+        self.btn_corner_profile.setToolTip('；'.join(corner_load_blockers) if corner_load_blockers else '恢复当前安装的顶点参考（23.44°/50°）和已验证参数，电机保持失能')
+        self.btn_auto_edge.setToolTip('；'.join(start_blockers) if start_blockers and not state.get('Auto') else
+            ('PG6亮即松手；超过20°或持续满速3秒后失能等待下次入位（单点三轴）' if corner else 'PG6亮即松手；超过20°或持续满速3秒后失能等待下次入位'))
         self.btn_full_speed.setEnabled(connected and idle and not self.self_test_running and 'Auto' in state)
 
     def _create_mode_panel(self):
@@ -2861,7 +2876,7 @@ class MainWindow(QMainWindow):
         self.btn_trip_angle = QPushButton('设置停机角度（先失能）')
         self.btn_trip_angle.clicked.connect(self.action_set_trip_angle)
         layout.addWidget(self.btn_trip_angle,23,0,1,2)
-        self.auto_edge_group = QGroupBox('单边平衡检测与自动运行')
+        self.auto_edge_group = QGroupBox('单边/单点平衡检测与自动运行')
         outer.insertWidget(1,self.auto_edge_group)
         auto_layout = QGridLayout(self.auto_edge_group)
         self.lbl_edge_detect = QLabel('单边检测：等待设备状态')
@@ -2881,7 +2896,11 @@ class MainWindow(QMainWindow):
         self.btn_edge_profile = QPushButton('加载已验证 M1 配置（失能）')
         self.btn_edge_profile.setToolTip('M1已对齐且IMU已静止校准后可加载。49°参考仅适用于当前安装与支撑棱；参数80/5/-0.045/0，6V。')
         self.btn_edge_profile.clicked.connect(self.action_load_edge_profile)
-        auto_layout.addWidget(self.btn_edge_profile,3,0,1,2)
+        auto_layout.addWidget(self.btn_edge_profile,3,0)
+        self.btn_corner_profile = QPushButton('加载已验证单点配置（失能）')
+        self.btn_corner_profile.setToolTip('三轴自检完成且IMU静止校准后可加载。参考姿态仅适用于当前安装的顶点支撑角；参数80/5/-0.030/0，BYAW 3，6V。')
+        self.btn_corner_profile.clicked.connect(self.action_load_corner_profile)
+        auto_layout.addWidget(self.btn_corner_profile,3,1)
         self.spin_full_speed = NoWheelDoubleSpinBox()
         self.spin_full_speed.setRange(10,350);self.spin_full_speed.setValue(250);self.spin_full_speed.setSuffix(' rad/s')
         auto_layout.addWidget(QLabel('满速保护（持续3秒）'),4,0);auto_layout.addWidget(self.spin_full_speed,4,1)
@@ -2892,7 +2911,7 @@ class MainWindow(QMainWindow):
         self.btn_auto_edge.setToolTip('±3°、低角速度、飞轮低于5rad/s持续1秒后倒计时8秒。PG6亮即松手。超过20°或满速持续3秒后失能等待下次入位。急停/断连/硬故障退出自动模式。')
         self.btn_auto_edge.clicked.connect(self.action_toggle_auto_edge)
         auto_layout.addWidget(self.btn_auto_edge,6,0,1,2)
-        for button in (self.btn_auto_edge,self.btn_edge_profile,self.btn_full_speed,self.btn_edge_m1_test,self.btn_edge_imu_cal):button.setEnabled(False)
+        for button in (self.btn_auto_edge,self.btn_edge_profile,self.btn_corner_profile,self.btn_full_speed,self.btn_edge_m1_test,self.btn_edge_imu_cal):button.setEnabled(False)
         self.mode_group.setEnabled(False)
         return self.mode_group
 
@@ -2933,6 +2952,7 @@ class MainWindow(QMainWindow):
     def action_load_edge_profile(self):
         if not self.btn_edge_profile.isEnabled():return
         self._request_state_change('BAL 0')
+        self.profile_kind = 'edge'
         self.edge_profile_pending = True;self.edge_profile_ack = False
         self.edge_profile_generation += 1;generation = self.edge_profile_generation
         for command in ('APP 1','BMODE 1','BAXIS1 2','BDIR1 -1','U 6','L 330','BU 6',
@@ -2942,10 +2962,24 @@ class MainWindow(QMainWindow):
         self.set_motor_controls_locked(True)
         QTimer.singleShot(5000, lambda: self._edge_profile_timeout(generation))
 
+    def action_load_corner_profile(self):
+        if not self.btn_corner_profile.isEnabled():return
+        self._request_state_change('BAL 0')
+        self.profile_kind = 'corner'
+        self.edge_profile_pending = True;self.edge_profile_ack = False
+        self.edge_profile_generation += 1;generation = self.edge_profile_generation
+        for command in ('APP 1','BMODE 4','BAXIS 2 3 1','BDIR -1 -1 -1','U 6','L 330','BU 6',
+                        'LQR1 80 5 -0.030 0','LQR2 80 5 -0.030 0','LQR3 80 5 -0.030 0','BYAW 3',
+                        'BTRIP 20','BFULL 250','BCAP 2',
+                        'BREF -0.7028287890572913 0.3977869310324257 0.5897433770480731','STATE?'):
+            self.worker.send_cmd(command)
+        self.set_motor_controls_locked(True)
+        QTimer.singleShot(5000, lambda: self._edge_profile_timeout(generation))
+
     def _edge_profile_timeout(self, generation):
         if self.edge_profile_pending and self.edge_profile_generation == generation:
             self._cancel_motion();self.worker.send_cmd('STOP')
-            self.status_bar.showMessage('单边配置未确认完成，已停止；请检查设备返回的错误')
+            self.status_bar.showMessage('已验证配置未确认完成，已停止；请检查设备返回的错误')
 
     def _startup_load_edge(self):
         if not self.startup_auto_edge:return
@@ -2988,13 +3022,20 @@ class MainWindow(QMainWindow):
         first_state = self.device_state is None
         previous_state = self.device_state or {}
         self.device_state = state
-        if self.edge_profile_pending and self.edge_profile_ack and all(state.get(k) == v for k,v in
-                {'App':1,'BMode':1,'Axis1':2,'D1':-1,'Ref':1,'EN':'000','TripDeg':20.0,'FullSpeed':250.0,'VLimit':6.0,'SLimit':330.0}.items()):
-            self.edge_profile_pending = False
-            self.spin_vq.setValue(6);self.spin_vlim.setValue(330)
-            self.combo_gain_axis.setCurrentIndex(0)
-            for spin,value in zip(self.balance_spins,(80,5,-.045,0)):spin.setValue(value)
-            self.status_bar.showMessage('M1单边配置已回读确认，电机失能；可启动自动单边检测')
+        if self.edge_profile_pending and self.edge_profile_ack:
+            expected = ({'App':1,'BMode':1,'Axis1':2,'D1':-1,'Ref':1,'EN':'000','TripDeg':20.0,'FullSpeed':250.0,'VLimit':6.0,'SLimit':330.0}
+                        if self.profile_kind == 'edge' else
+                        {'App':1,'BMode':4,'Axis1':2,'Axis2':3,'Axis3':1,'D1':-1,'D2':-1,'D3':-1,
+                         'AxisMask':7,'DirMask':7,'Ref':1,'EN':'000','TripDeg':20.0,'FullSpeed':250.0,'VLimit':6.0,'SLimit':330.0})
+            if all(state.get(k) == v for k,v in expected.items()):
+                self.edge_profile_pending = False
+                self.spin_vq.setValue(6);self.spin_vlim.setValue(330)
+                self.combo_gain_axis.setCurrentIndex(0)
+                gains = (80,5,-.045,0) if self.profile_kind == 'edge' else (80,5,-.030,0)
+                for spin,value in zip(self.balance_spins,gains):spin.setValue(value)
+                self.status_bar.showMessage('M1单边配置已回读确认，电机失能；可启动自动单边检测'
+                    if self.profile_kind == 'edge' else '单点配置已回读确认，电机失能；可启动自动单点检测')
+                self.profile_kind = 'edge'
         if first_state and "VLimit" in state:
             self.spin_vq.setValue(float(state["VLimit"]))
             self.spin_vlim.setValue(float(state["SLimit"]))
@@ -3042,21 +3083,23 @@ class MainWindow(QMainWindow):
         if state.get('Ref') == 0:
             self.lbl_balance.setText(self.lbl_balance.text() + '\n当前模式尚未采集平衡姿态（BZERO）')
         reasons = {0:'无',1:'倾角超过阈值',2:'满速持续3秒',3:'立即超速',4:'机体角速度过大',5:'传感器/安全故障'}
-        if state.get('BMode',4) < 4 and 'Auto' in state:
+        if 1 <= state.get('BMode',4) <= 4 and 'Auto' in state:
             reason = state.get('BReason',0)
             detection = ('正在平衡（持续运行）' if state['Bal']==3 else
                          '入位倒计时中' if state['Bal']==5 else
                          '入位条件符合' if state.get('EdgeReady') else '等待入位/静止/飞轮停转')
+            corner = state.get('BMode') == 4
+            mode_name = '单点（三轴）' if corner else f"M{state['BMode']} 单边"
             self.lbl_edge_detect.setText(
-                f"M{state['BMode']} 单边检测 | {'自动已启用' if state['Auto'] else '自动未启用'}\n"
+                f"{mode_name}检测 | {'自动已启用' if state['Auto'] else '自动未启用'}\n"
                 f"{detection} | 偏角 {float(state.get('Angle',0)):+.2f}°\n"
                 f"机体 {float(state.get('Rate',0)):+.3f} rad/s | 飞轮 {float(state.get('Wheel',0)):+.1f} rad/s\n"
                 f"满速 {float(state.get('FullSpeed',250)):.0f} rad/s，持续 {state.get('FullMs',0)/1000:.1f}/3.0秒\n"
                 f"保护：{reasons.get(reason,'未知')} | 重试冷却 {state.get('RetryMs',0)/1000:.1f}秒")
             if reason and reason != self.last_balance_reason:
-                self.append_log(f"[单边保护] {reasons.get(reason,'未知')}；{'失能等待下次入位' if state['Auto'] else '自动已退出，需重新启动'}")
+                self.append_log(f"[{'单点' if corner else '单边'}保护] {reasons.get(reason,'未知')}；{'失能等待下次入位' if state['Auto'] else '自动已退出，需重新启动'}")
             self.last_balance_reason = reason
-        else:self.lbl_edge_detect.setText('单边自动检测仅适用于边沿模式，并需要支持BAUTO的固件')
+        else:self.lbl_edge_detect.setText('单边/单点自动检测需要支持BAUTO的固件，并需先选择对应模式')
         if state.get('EncType') == 1:
             self.lbl_balance.setText(self.lbl_balance.text() + f"\nF4正交 CPR={state.get('C1', '?')}/{state.get('C2', '?')}/{state.get('C3', '?')}，计数器状态不能判断模块在线")
         self.set_motor_controls_locked(bool(self.expected_state) or self.self_test_running or bool(state['Trip']))

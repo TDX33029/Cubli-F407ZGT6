@@ -15,6 +15,8 @@ app = ui.QApplication.instance() or ui.QApplication([])
 STATE = '$STATE,App:0,Dbg:2,Mode:0,BMode:1,Bal:0,Cal:1,IMU:1,Aligned:111,EN:010,Fault:0,Trip:0,Tilt:0.12,U1:0.00,U2:0.25,U3:0.00#'
 AUTO_STATE = STATE.replace('App:0','App:1').replace('EN:010','EN:000').replace('Aligned:111','Aligned:100').replace('#',
     ',Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:1,Wheel:0.0,Rate:0.0,Angle:0.1,PoseTilt:0.1,TripDeg:20.0,VLimit:6.0,SLimit:330.0,Ref:1,AxesOK:1,DirOK:1,Axis1:2,D1:-1#')
+CORNER_AUTO_STATE = AUTO_STATE.replace('BMode:1','BMode:4').replace('Aligned:100','Aligned:111').replace(
+    'Axis1:2,D1:-1#','Axis1:2,Axis2:3,Axis3:1,D1:-1,D2:-1,D3:-1,AxisMask:7,DirMask:7,CornerStart:1#')
 class UpperTests(unittest.TestCase):
     def setUp(self):
         self.win = ui.MainWindow()
@@ -118,6 +120,58 @@ class UpperTests(unittest.TestCase):
             self.assertFalse(self.win.btn_auto_edge.isEnabled())
         self.win.worker._process_received_line(STATE)
         self.assertFalse(self.win.btn_auto_edge.isEnabled()) # Older firmware lacks Auto.
+    def test_auto_corner_start_stop_and_detect_label(self):
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.assertTrue(self.win.btn_auto_edge.isEnabled())
+        self.assertIn('单点',self.win.btn_auto_edge.text())
+        self.win.btn_auto_edge.click()
+        self.assertEqual(self.queued(),['BAUTO 1'])
+        running=CORNER_AUTO_STATE.replace('Auto:0','Auto:1').replace('Bal:0','Bal:3').replace('EdgeReady:1','EdgeReady:0')
+        self.win.worker._process_received_line(running)
+        self.assertIn('单点（三轴）检测',self.win.lbl_edge_detect.text())
+        self.assertIn('正在平衡',self.win.lbl_edge_detect.text())
+        self.assertIn('停止自动单点',self.win.btn_auto_edge.text())
+        self.win.btn_auto_edge.click()
+        self.assertEqual(self.queued(),['BAUTO 0'])
+
+    def test_auto_corner_requires_firmware_capability_three_axes_and_limits(self):
+        for bad in (CORNER_AUTO_STATE.replace('CornerStart:1','CornerStart:0'),
+                    CORNER_AUTO_STATE.replace('Aligned:111','Aligned:110'),
+                    CORNER_AUTO_STATE.replace('Ref:1','Ref:0'),
+                    CORNER_AUTO_STATE.replace('AxesOK:1','AxesOK:0'),
+                    CORNER_AUTO_STATE.replace('SLimit:330.0','SLimit:250.0')):
+            self.win.worker._process_received_line(bad)
+            self.assertFalse(self.win.btn_auto_edge.isEnabled())
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.assertTrue(self.win.btn_auto_edge.isEnabled())
+
+    def test_corner_profile_loads_only_after_three_axis_self_test(self):
+        self.win.worker._process_received_line(CORNER_AUTO_STATE.replace('Aligned:111','Aligned:011'))
+        self.assertFalse(self.win.btn_corner_profile.isEnabled())
+        self.assertIn('三轴硬件自检',self.win.lbl_edge_setup.text())
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.assertTrue(self.win.btn_corner_profile.isEnabled())
+
+    def test_corner_profile_waits_for_ack_and_fresh_matching_state(self):
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.win.btn_corner_profile.click()
+        self.assertTrue(self.win.edge_profile_pending)
+        queued=self.queued()
+        for command in ('BMODE 4','BAXIS 2 3 1','BDIR -1 -1 -1','U 6','L 330','BYAW 3','BTRIP 20','BFULL 250','BCAP 2',
+                        'LQR1 80 5 -0.030 0','LQR2 80 5 -0.030 0','LQR3 80 5 -0.030 0',
+                        'BREF -0.7028287890572913 0.3977869310324257 0.5897433770480731'):
+            self.assertIn(command,queued)
+        self.assertNotIn('BAUTO 1',queued)
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.assertTrue(self.win.edge_profile_pending)
+        self.assertFalse(self.win.btn_auto_edge.isEnabled())
+        self.win.worker._process_received_line('OK BREF')
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.assertFalse(self.win.edge_profile_pending)
+        self.assertTrue(self.win.btn_auto_edge.isEnabled())
+        self.assertAlmostEqual(self.win.balance_spins[2].value(),-.030)
+        self.assertEqual(self.win.combo_balance.currentIndex(),3)
+
     def test_edge_profile_waits_for_ack_and_fresh_matching_state(self):
         self.win.worker._process_received_line(AUTO_STATE)
         self.win.btn_edge_profile.click()

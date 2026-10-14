@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / 'diagnostics/serial_corner_trial.py'
+AUTO_SCRIPT = Path(__file__).resolve().parents[1] / 'diagnostics/serial_corner_auto.py'
 
 
 class Device:
@@ -83,7 +84,8 @@ class Device:
         active = self.state['Bal'] == '3'
         data = dict(Bal=self.state['Bal'], EN=self.state['EN'], Pit='23.56', Rol='46.79',
                     Gx='100' if active and self.fault == 'gyro' else '.5', Gy='-.4', Gz='.2',
-                    S1='0', S2='101' if active and self.fault == 'M2_speed' else '0', S3='0')
+                    S1='0', S2='101' if active and self.fault == 'M2_speed' else
+                    ('400' if active and self.fault == 'wheel_guard' else '0'), S3='0')
         if active and self.fault == 'nan':
             data['S3']='nan'
         if self.fast:
@@ -182,6 +184,138 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertNotIn('BAL 1', device.commands)
         self.assertIn('yaw tuning requires updated firmware', result['error'])
+
+
+class AutoDevice(Device):
+    """Corner device with BAUTO: entry, balancing segments, angle retry and hard faults."""
+
+    def __init__(self, fault=None):
+        super().__init__(fault)
+        self.auto_at = None
+        self.cycle_start = None
+        self.segment = 0
+
+    def write(self, raw):
+        command = raw.decode().strip()
+        parts = command.split()
+        if parts[0] in ('STOP', 'APP', 'BMODE', 'BAL'):
+            self.cycle_start = None
+            self.auto_at = None
+            self.state['Auto'] = '0'
+        if parts[0] == 'BAUTO':
+            self.commands.append(command)
+            if parts[1] == '1':
+                self.state.update(Auto='1', Bal='6', EN='000', BReason='0')
+                self.auto_at = None if self.fault == 'no_entry' else self.now + .5
+            else:
+                self.state.update(Auto='0', Bal='0', EN='000')
+                self.auto_at = None
+            return len(raw)
+        if parts[0] == 'BFULL':
+            self.state['FullSpeed'] = str(float(parts[1]))
+        return super().write(raw)
+
+    def read(self, count):
+        self.now += .02
+        if 'Auto' in self.state and self.state['Auto'] == '1':
+            self.state.setdefault('FullSpeed', '250.0')
+            self.state.setdefault('Wheel', '0')
+            self.state.setdefault('Rate', '0.001')
+            if self.auto_at is not None and self.now >= self.auto_at:
+                self.auto_at = None
+                self.cycle_start = self.now
+            if self.cycle_start is not None:
+                elapsed = self.now - self.cycle_start
+                cycle = elapsed % 3.0
+                if cycle < .3:
+                    self.state.update(Bal='6', EN='000')
+                elif cycle < .8:
+                    self.state.update(Bal='5', EN='000')
+                else:
+                    if self.state['Bal'] != '3':
+                        self.segment += 1
+                    self.state.update(Bal='3', EN='111')
+                    if cycle > 1.8 and self.segment >= 1 and self.fault != 'keep_balancing':
+                        if self.fault == 'fall_protect':
+                            self.state.update(Bal='4', EN='000', BReason='5')
+                        else:
+                            self.state.update(Bal='6', EN='000', BReason='1', RetryMs='500')
+                if cycle >= 2.7:
+                    self.state.update(BReason='0', RetryMs='0')
+        return super().read(count)
+
+
+class CornerAutoTests(unittest.TestCase):
+    def run_auto(self, fault=None, prepare=False, minutes=None, wait=30):
+        device = AutoDevice(fault)
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            argv = [str(AUTO_SCRIPT), '--tag', 'sim', '--output-dir', directory,
+                    '--body-axes', '2', '3', '1', '--directions', '-1', '-1', '-1',
+                    '--wait-seconds', str(wait)] + (['--prepare-only'] if prepare else [])
+            if minutes is not None:
+                argv += ['--duration-minutes', str(minutes)]
+            code = 0
+            with patch.object(sys, 'argv', argv), patch('serial.Serial', return_value=device), \
+                    patch('time.monotonic', side_effect=lambda: device.now), \
+                    patch.object(sys, 'path', [str(AUTO_SCRIPT.parent), *sys.path]), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                try:
+                    runpy.run_path(str(AUTO_SCRIPT), run_name='__main__')
+                except SystemExit as error:
+                    code = error.code
+            result = json.loads((folder / 'sim_summary.json').read_text())
+        self.assertFalse(device.is_open)
+        self.assertEqual(device.state['EN'], '000')
+        self.assertGreaterEqual(device.commands.count('STOP'), 2)
+        return device, result, code
+
+    def test_prepare_never_arms_auto(self):
+        device, result, code = self.run_auto(prepare=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(result['result'], 'prepared_disabled')
+        self.assertFalse(any(c.startswith('BAUTO 1') for c in device.commands))
+
+    def test_auto_arm_config_then_balancing_attempts(self):
+        device, result, code = self.run_auto(minutes=.2)
+        self.assertEqual(code, 0)
+        self.assertEqual(result['result'], 'timed_run_completed')
+        self.assertIn('BAUTO 1 8', device.commands)
+        self.assertIn('L 330', device.commands)
+        self.assertIn('BFULL 250', device.commands)
+        self.assertIn('BREF ' + ' '.join(f'{v:.9f}' for v in
+                      [-0.7028287890572913, 0.3977869310324257, 0.5897433770480731]), device.commands)
+        self.assertGreaterEqual(result['auto_attempts'], 1)
+        self.assertGreaterEqual(result['balance_seconds_total'], 0.9)
+        self.assertIn(result['attempts'][0]['end_reason'], (0, 1))
+        self.assertLessEqual(result['attempts'][0]['max_tilt'], 28)
+
+    def test_angle_retry_reenters_without_manual_restart(self):
+        device, result, code = self.run_auto(minutes=.3)
+        self.assertEqual(code, 0)
+        self.assertGreaterEqual(result['auto_attempts'], 2)
+        self.assertEqual(device.commands.count('BAUTO 1 8'), 1)
+
+    def test_hard_fault_exits_automatic_mode(self):
+        _, result, code = self.run_auto(fault='fall_protect', minutes=.5)
+        self.assertEqual(code, 2)
+        self.assertIn('protection', result['error'])
+
+    def test_wheel_backstop_above_firmware_overspeed(self):
+        _, result, code = self.run_auto(fault='wheel_guard', minutes=.5)
+        self.assertEqual(code, 2)
+        self.assertIn('wheel speed backstop', result['error'])
+
+    def test_entry_timeout_when_pose_never_ready(self):
+        _, result, code = self.run_auto(fault='no_entry', wait=30)
+        self.assertEqual(code, 2)
+        self.assertIn('entry not achieved', result['error'])
+
+    def test_uncalibrated_device_never_arms_auto(self):
+        device, result, code = self.run_auto(fault='uncalibrated')
+        self.assertEqual(code, 2)
+        self.assertFalse(any(c.startswith('BAUTO 1') for c in device.commands))
+        self.assertIn('calibration', result['error'])
 
 
 if __name__ == '__main__':
