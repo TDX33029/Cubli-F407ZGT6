@@ -183,6 +183,47 @@ static void setup_corner_auto(void) {
  command("BAUTO 1 3");
  assert(cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled&&!m2_enabled&&!m3_enabled);
 }
+static void test_corner_trim(void) {
+ int i;
+ float err[3];
+ /* BTRIM is disarm-only and range-checked; default 2.0 V/(rad*s). */
+ setup();
+ assert(cubli_bal.K_tilt_trim==2.0f);
+ command("BTRIM 3");assert(cubli_bal.K_tilt_trim==3.0f);
+ command("BTRIM 11");command("BTRIM -1");command("BTRIM");assert(cubli_bal.K_tilt_trim==3.0f);
+ command("BTRIM 2");assert(cubli_bal.K_tilt_trim==2.0f);
+ /* Corner: a held 2deg tilt accumulates the integral and the trim term appears in u. */
+ setup_corner_auto();
+ for(i=0;i<3;i++) {cubli_bal.corner_gains[i].K_theta=0;cubli_bal.corner_gains[i].K_dtheta=0;
+                   cubli_bal.corner_gains[i].K_w=0;cubli_bal.corner_gains[i].K_i=0;}
+ corner_auto_ticks(210,0,0,0,0);assert(cubli_bal.state==BAL_STATE_COUNTDOWN);
+ corner_auto_ticks(910,0,0,0,0);assert(cubli_bal.state==BAL_STATE_BALANCING);
+ corner_auto_ticks(320,0,0,0,0); /* finish the wheel-weight ramp at zero tilt */
+ assert(cubli_bal.tilt_int[0]==0&&cubli_bal.tilt_int[1]==0&&cubli_bal.tilt_int[2]==0);
+ corner_auto_ticks(200,2*DEG_TO_RAD,0,0,0);
+ advance();corner_gravity(2*DEG_TO_RAD);cross3(cubli_bal.attitude.gravity,cubli_bal.reference[3],err);
+ for(i=0;i<3;i++) {
+  int axis=cubli_bal.body_axis[i];
+  /* One second at 2deg: integral within the error magnitude; u carries -K_tilt_trim*integral. */
+  assert(fabsf(cubli_bal.tilt_int[i])<=.045f&&signbit(cubli_bal.tilt_int[i])==signbit(err[axis]));
+  assert(fabsf(cubli_bal.control_u[i]+2.0f*cubli_bal.tilt_int[i])<.001f);
+ }
+ /* Clamped at +/-2 rad*s; anti-windup freezes once u saturates. */
+ cubli_bal.tilt_int[0]=1.99f;cubli_bal.tilt_int[1]=-1.99f;cubli_bal.tilt_int[2]=1.99f;
+ corner_auto_ticks(400,6*DEG_TO_RAD,0,0,0);
+ for(i=0;i<3;i++) assert(fabsf(cubli_bal.tilt_int[i])<=2.0001f);
+ assert(fabsf(cubli_bal.tilt_int[2])==2.0f); /* M3 axis carries the positive error at +6deg */
+ /* Disarm clears the trim. */
+ command("STOP");
+ assert(cubli_bal.tilt_int[0]==0&&cubli_bal.tilt_int[1]==0&&cubli_bal.tilt_int[2]==0);
+ /* Edge mode never accumulates the corner trim. */
+ setup();command("APP 1");command("BAXIS1 2");command("BDIR1 -1");command("L 330");
+ cubli_bal.attitude.is_calibrated=true;gravity(0,0,1);command("BZERO");command("BFULL 250");
+ command("BAUTO 1 3");auto_ticks(850,2*DEG_TO_RAD,0);
+ assert(cubli_bal.state==BAL_STATE_BALANCING);
+ auto_ticks(600,2*DEG_TO_RAD,0);
+ assert(cubli_bal.tilt_int[0]==0&&cubli_bal.tilt_int[1]==0&&cubli_bal.tilt_int[2]==0);
+}
 static void test_corner_auto(void) {
  /* Arming needs all three axes, sensors, directions and a reference. */
  setup_corner_auto();
@@ -235,6 +276,7 @@ int main(void) {
  test_auto_edge();
  test_corner_countdown();
  test_corner_auto();
+ test_corner_trim();
  setup();command("DBG 2");command("EN1 1");command("EN2 1");command("EN3 1");assert(m1_enabled&&m2_enabled&&m3_enabled);
  command("M1 20");command("M2 -30");command("M3 40");assert(target_m1==20&&target_m2==-30&&target_m3==40);
  command("M 180 -180 0");assert(target_m1==180&&target_m2==-180&&target_m3==0);

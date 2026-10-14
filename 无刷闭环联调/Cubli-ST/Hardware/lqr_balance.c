@@ -54,7 +54,7 @@ static void clear_output(void) {
     cubli_bal.full_speed_mask=0;
     set_motor_enable(0, 0);
     for(i=0;i<3;i++) {
-        cubli_bal.control_u[i]=cubli_bal.wheel_int[i]=0;
+        cubli_bal.control_u[i]=cubli_bal.wheel_int[i]=cubli_bal.tilt_int[i]=0;
         voltage[i].q=voltage[i].d=0;
         stall_since[i]=0;
     }
@@ -84,6 +84,7 @@ void LQR_Balance_Init(void) {
     cubli_bal.capture_angle=10*DEG_TO_RAD;
     cubli_bal.full_speed_limit=250;
     cubli_bal.K_yaw_damping=3.0f;
+    cubli_bal.K_tilt_trim=2.0f;
     for(i=0;i<3;i++) {
         LQR_Gains_t g={32.0f,2.4f,0.08f,0.008f,0,5};
         cubli_bal.gains[i]=cubli_bal.corner_gains[i]=g;
@@ -368,7 +369,14 @@ void LQR_Balance_Loop(void) {
         body=p->K_theta*err[axis]+p->K_dtheta*rate;
         if(m==3) body+=cubli_bal.K_yaw_damping*rate_yaw*ref[axis];
         u=cubli_bal.body_direction[i]*body-wheel_weight*(p->K_w*shaft_velocity[i]+p->K_i*cubli_bal.wheel_int[i]);
-        if(wheel_weight>=1 && fabsf(u)<limit) cubli_bal.wheel_int[i]=_constrain(cubli_bal.wheel_int[i]+shaft_velocity[i]*dt,-50,50);
+        /* Corner trim: slowly shift the held pose towards the true COM-neutral
+           angle so the wheels stop accumulating speed. Clamped and frozen while
+           the output saturates, like the wheel integral. */
+        if(m==3) u-=wheel_weight*cubli_bal.K_tilt_trim*cubli_bal.tilt_int[i];
+        if(wheel_weight>=1 && fabsf(u)<limit) {
+            cubli_bal.wheel_int[i]=_constrain(cubli_bal.wheel_int[i]+shaft_velocity[i]*dt,-50,50);
+            if(m==3) cubli_bal.tilt_int[i]=_constrain(cubli_bal.tilt_int[i]+err[axis]*dt,-2,2);
+        }
         if(!isfinite(u)) {LQR_Trip();return;}
         cubli_bal.control_u[i]=_constrain(u,-limit,limit);
     }
@@ -416,3 +424,4 @@ void LQR_SetZeroAngle(uint8_t idx,float deg) {LQR_GetGains(idx)->theta_0=deg*DEG
 void LQR_SetMaxVoltage(float v) {
     int i; for(i=0;i<3;i++) cubli_bal.gains[i].max_u=cubli_bal.corner_gains[i].max_u=v;
 }
+void LQR_SetTiltTrim(float k) {cubli_bal.K_tilt_trim=k;}

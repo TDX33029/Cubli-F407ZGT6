@@ -29,6 +29,10 @@ typedef struct {
     float K_yaw_damping;
     Attitude_t attitude;
     float wheel_int[3], control_u[3];
+    /* Corner only: integral of the tilt error (angle*s, clamped). Lets the cube
+       settle at its own center-of-mass neutral pose so the wheels stop charging;
+       zero effect while K_tilt_trim is 0 or in edge modes. */
+    float tilt_int[3], K_tilt_trim;
     /* M1/M2/M3 axes must be IMU body X/Y/Z; signs describe mechanical installation,
        independently of encoder sensor_direction. */
     int body_direction[3];
@@ -77,4 +81,5 @@ LQR_Gains_t *LQR_GetGains(uint8_t idx);
 void LQR_SetGains(uint8_t idx, float kp, float kd, float kw, float ki);
 void LQR_SetZeroAngle(uint8_t idx, float angle_deg);
 void LQR_SetMaxVoltage(float max_v);
+void LQR_SetTiltTrim(float k); /* corner tilt-error integral gain, 0..10 V/(rad*s) */
 #endif
