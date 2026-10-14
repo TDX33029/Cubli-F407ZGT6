@@ -1,0 +1,18 @@
+{
+  "samples": 300,
+  "gyro_std_dps": [
+    0.17659324108871288,
+    0.2987525159305021,
+    8.483620548696752
+  ],
+  "principal_axis_xyz": [
+    0.0020774795624230245,
+    -0.02477630545332299,
+    0.9996908616001008
+  ],
+  "variance_fraction": 0.9989465598518872,
+  "candidate_body_axis": "Z",
+  "candidate_axis_command": 3,
+  "axis_accepted": true,
+  "body_torque_direction_verified": false
+}

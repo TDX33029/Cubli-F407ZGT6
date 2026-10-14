@@ -1,0 +1,63 @@
+{
+  "port": "COM7",
+  "supply_v": 12,
+  "motion_test": "sequential, U=2.5V, targets +/-5rad/s",
+  "body_direction_verified": false,
+  "steady_window_s": 0.6,
+  "axes": [
+    {
+      "motor": 1,
+      "target": 5,
+      "samples": 13,
+      "mean": 5.08,
+      "min": 4.8,
+      "max": 5.36,
+      "std": 0.182
+    },
+    {
+      "motor": 2,
+      "target": 5,
+      "samples": 13,
+      "mean": 4.986,
+      "min": 4.7,
+      "max": 5.42,
+      "std": 0.23
+    },
+    {
+      "motor": 3,
+      "target": 5,
+      "samples": 12,
+      "mean": 5.065,
+      "min": 4.81,
+      "max": 5.24,
+      "std": 0.117
+    },
+    {
+      "motor": 1,
+      "target": -5,
+      "samples": 13,
+      "mean": -5.055,
+      "min": -5.33,
+      "max": -4.64,
+      "std": 0.219
+    },
+    {
+      "motor": 2,
+      "target": -5,
+      "samples": 12,
+      "mean": -5.082,
+      "min": -5.41,
+      "max": -4.71,
+      "std": 0.221
+    },
+    {
+      "motor": 3,
+      "target": -5,
+      "samples": 13,
+      "mean": -4.998,
+      "min": -5.28,
+      "max": -4.78,
+      "std": 0.146
+    }
+  ]
+}

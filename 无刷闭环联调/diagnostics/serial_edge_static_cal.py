@@ -2,9 +2,9 @@
 import argparse,json,time
 from pathlib import Path
 import serial
-p=argparse.ArgumentParser();p.add_argument('--tag',required=True);a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--tag',required=True);p.add_argument('--port',default='COM9');a=p.parse_args()
 rows=[];buf=bytearray();ping=0;start=time.monotonic()
-s=serial.Serial(port=None,baudrate=115200,timeout=.01,write_timeout=.3);s.dtr=False;s.rts=False;s.port='COM9'
+s=serial.Serial(port=None,baudrate=115200,timeout=.01,write_timeout=.3);s.dtr=False;s.rts=False;s.port=a.port
 def cmd(c):s.write((c+'\r\n').encode());rows.append({'t':time.monotonic()-start,'kind':'tx','data':c})
 def pump(t):
     global buf,ping
