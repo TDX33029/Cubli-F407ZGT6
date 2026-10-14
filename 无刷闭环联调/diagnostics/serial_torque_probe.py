@@ -5,11 +5,14 @@ import serial
 p=argparse.ArgumentParser();p.add_argument('--tag',required=True)
 p.add_argument('--port',default='COM9')
 p.add_argument('--axis',type=int,choices=(1,2,3),default=1)
-p.add_argument('--body-axis',type=int,choices=(1,2,3),required=True,help='Passively measured IMU axis: X=1, Y=2, Z=3')
+p.add_argument('--body-axis',type=int,choices=(1,2,3),help='Measured IMU axis X=1/Y=2/Z=3; required for M2/M3, legacy M1 defaults to Y')
 p.add_argument('--single-voltage',type=float);p.add_argument('--duration-ms',type=int,default=80)
 p.add_argument('--baseline-angle',type=float,help='Expected signed STATE angle at the stationary fixture endpoint')
 p.add_argument('--pose-tolerance',type=float,default=1)
 p.add_argument('--observe-seconds',type=float,default=.35);a=p.parse_args()
+if a.body_axis is None:
+    if a.axis!=1:p.error('--body-axis is required for M2/M3')
+    a.body_axis=2
 if not (0<a.pose_tolerance<=2 and .35<=a.observe_seconds<=2):raise SystemExit('Fixture observation bounds exceeded')
 if a.single_voltage is not None and not (0<abs(a.single_voltage)<=6 and 20<=a.duration_ms<=120):raise SystemExit('MCU probe bounds exceeded')
 plan=[(a.single_voltage,a.duration_ms)] if a.single_voltage is not None else [(sign*level,duration) for level,duration in [(1,80),(1.5,80),(2,60),(2.5,50)] for sign in (1,-1)]
