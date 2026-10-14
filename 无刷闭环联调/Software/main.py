@@ -126,6 +126,12 @@ class NoWheelDoubleSpinBox(QDoubleSpinBox):
         event.ignore()
 
 
+class NoWheelComboBox(QComboBox):
+    """Keep dropdown selections unchanged while scrolling the control panel."""
+    def wheelEvent(self, event):
+        event.ignore()
+
+
 # =========================================================================
 # 串口后台通信工作线程 (QThread)
 # =========================================================================
@@ -1791,7 +1797,7 @@ class MainWindow(QMainWindow):
 
         # 连接链路选择: 有线串口 或 WiFi(TCP) 无线 (ESP32)
         layout.addWidget(QLabel("链路:"))
-        self.combo_link = QComboBox()
+        self.combo_link = NoWheelComboBox()
         self.combo_link.addItem("串口", "serial")
         self.combo_link.addItem("WiFi(TCP)", "wifi")
         self.combo_link.setMinimumWidth(90)
@@ -1809,7 +1815,7 @@ class MainWindow(QMainWindow):
         # 串口选择
         self.lbl_port = QLabel("串口:")
         layout.addWidget(self.lbl_port)
-        self.combo_ports = QComboBox()
+        self.combo_ports = NoWheelComboBox()
         self.combo_ports.setMinimumWidth(130)
         layout.addWidget(self.combo_ports)
 
@@ -1822,7 +1828,7 @@ class MainWindow(QMainWindow):
         # 波特率选择
         self.lbl_baud = QLabel("波特率:")
         layout.addWidget(self.lbl_baud)
-        self.combo_baud = QComboBox()
+        self.combo_baud = NoWheelComboBox()
         for baud in [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600]:
             self.combo_baud.addItem(str(baud), baud)
         self.combo_baud.setCurrentText("115200")
@@ -2161,7 +2167,7 @@ class MainWindow(QMainWindow):
         pid_row.setHorizontalSpacing(5)
         pid_row.setVerticalSpacing(6)
 
-        self.combo_pid_motor = QComboBox()
+        self.combo_pid_motor = NoWheelComboBox()
         self.combo_pid_motor.addItems(["全部电机", "M1 (TIM1)", "M2 (TIM3)", "M3 (TIM4)"])
         self.combo_pid_motor.setFixedHeight(24)
         self.combo_pid_motor.setStyleSheet("font-size: 11px; font-weight: bold; padding: 1px 4px;")
@@ -2595,6 +2601,10 @@ class MainWindow(QMainWindow):
         """)
         self.lbl_status_led.setText("已连接")
         connection_detail = port if "(WiFi)" in port else f"{port} · {baud} bps"
+        if '(WiFi)' not in port:
+            port_index = self.combo_ports.findData(port)
+            if port_index >= 0:self.combo_ports.setCurrentIndex(port_index)
+            self.combo_baud.setCurrentText(str(baud))
         self.lbl_status_led.setToolTip(connection_detail)
         self.lbl_status_led.setStyleSheet("color: #15803d; font-weight: bold; margin-left: 4px;")
         self.status_bar.showMessage(f"链路已连接: {connection_detail}。控制保持锁定，请先执行硬件自检。")
@@ -2702,7 +2712,7 @@ class MainWindow(QMainWindow):
         self.cl_group.setVisible(state.get("App", 0) == 0)
         self.card_self_test.setVisible(state.get("App", 0) == 0)
         self.balance_config.setVisible(state.get("App", 0) == 1)
-        self.auto_edge_group.setVisible(state.get("App", 0) == 1)
+        self.auto_edge_group.setVisible(True)
         self.btn_set_vq.setEnabled(not locked)
         self.btn_set_vlim.setEnabled(not locked)
         self.btn_stop_all.setEnabled(True)
@@ -2718,15 +2728,39 @@ class MainWindow(QMainWindow):
             bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 0)) and bool(state.get('AxesOK', 0)) and bool(state.get('DirOK', 0)) and all(needed))
         self.card_self_test.btn_run_test.setEnabled(connected and not self.self_test_running and state.get('App', 0) == 0)
         self.btn_trip_angle.setEnabled(connected and not self.self_test_running and state.get('Bal', 0) in (0, 4))
-        auto_capable = 'Auto' in state and state.get('BMode', 4) < 4
         idle = state.get('Bal', 0) in (0, 4) and state.get('EN') == '000' and not self.edge_profile_pending
-        ready = (state.get('App') == 1 and bool(state.get('Cal')) and bool(state.get('IMU')) and
-                 bool(state.get('Ref')) and bool(state.get('AxesOK')) and bool(state.get('DirOK')) and all(needed))
-        self.btn_auto_edge.setEnabled(connected and not self.self_test_running and not self.expected_state and
-            auto_capable and (bool(state.get('Auto')) or (idle and ready and float(state.get('SLimit', 0)) > float(state.get('FullSpeed', 250)))))
+        common = []
+        if not connected:common.append('先连接上位机并等待设备状态')
+        if self.self_test_running:common.append('M1硬件自检进行中，请等待')
+        if self.edge_profile_pending:common.append('配置正在加载，等待设备回读')
+        if state.get('Bal') == 1:common.append('IMU正在校准，请保持机体静止')
+        elif not idle:common.append('先停止当前控制，保持电机失能')
+        if self.expected_state:common.append('等待设备确认上一条操作')
+        if state.get('Fault',0):common.append('先排除驱动故障')
+        if 'Auto' not in state:common.append('需要支持自动单边的固件')
+        load_blockers = common.copy()
+        if not self.active_motors[0]:load_blockers.append('先点击“M1硬件自检”')
+        if not state.get('Cal'):load_blockers.append('先点击“静止校准IMU”')
+        if not state.get('IMU'):load_blockers.append('等待IMU恢复有效数据')
+        start_blockers = common.copy()
+        if not all(needed):start_blockers.append('先完成当前边沿电机自检')
+        if not state.get('Cal'):start_blockers.append('先点击“静止校准IMU”')
+        if not state.get('IMU'):start_blockers.append('等待IMU恢复有效数据')
+        if state.get('App')!=1 or state.get('BMode',4)>=4 or not all(state.get(k) for k in ('Ref','AxesOK','DirOK')):
+            start_blockers.append('先加载已验证M1配置，恢复边沿、方向和参考')
+        if float(state.get('SLimit',0))<=float(state.get('FullSpeed',250)):
+            start_blockers.append('速度上限需高于满速阈值，可加载已验证配置恢复')
+        self.btn_auto_edge.setEnabled(connected and not self.self_test_running and
+            (bool(state.get('Auto')) or not start_blockers))
         self.btn_auto_edge.setText('停止自动单边并失能' if state.get('Auto') else '启动自动单边（无固定时长）')
-        self.btn_edge_profile.setEnabled(connected and idle and not self.self_test_running and 'Auto' in state and
-            bool(state.get('Cal')) and bool(state.get('IMU')) and self.active_motors[0])
+        self.btn_edge_profile.setEnabled(not load_blockers)
+        self.btn_edge_m1_test.setEnabled(connected and idle and not self.self_test_running and not self.expected_state)
+        self.btn_edge_imu_cal.setEnabled(connected and idle and not self.self_test_running and not self.expected_state and bool(state.get('IMU')))
+        load_hint = load_blockers[0] if load_blockers else '可加载已验证M1配置（保持失能）'
+        start_hint = '自动已启用，按钮用于停止' if state.get('Auto') else (start_blockers[0] if start_blockers else '准备完成，可启动自动单边检测')
+        self.lbl_edge_setup.setText(f'配置准备：{load_hint}\n自动启动：{start_hint}')
+        self.btn_edge_profile.setToolTip('；'.join(load_blockers) if load_blockers else '恢复当前安装的49°参考和已验证参数，电机保持失能')
+        self.btn_auto_edge.setToolTip('；'.join(start_blockers) if start_blockers and not state.get('Auto') else 'PG6亮即松手；超过20°或持续满速3秒后失能等待下次入位')
         self.btn_full_speed.setEnabled(connected and idle and not self.self_test_running and 'Auto' in state)
 
     def _create_mode_panel(self):
@@ -2734,11 +2768,11 @@ class MainWindow(QMainWindow):
         outer = QVBoxLayout(self.mode_group)
         layout = QGridLayout()
         outer.addLayout(layout)
-        self.combo_app = QComboBox()
+        self.combo_app = NoWheelComboBox()
         self.combo_app.addItems(["调试模式（三电机独立）", "工作模式（平衡）"])
         self.combo_app.activated.connect(lambda i: self._request_state_change(f"APP {i}", {'App': i}))
         layout.addWidget(self.combo_app, 0, 0, 1, 2)
-        self.combo_debug = QComboBox()
+        self.combo_debug = NoWheelComboBox()
         self.combo_debug.addItems(["自检/对齐 M1", "自检/对齐 M2", "自检/对齐 M3"])
         self.combo_debug.activated.connect(lambda i: self._request_state_change(f"DBG {i+1}", {'Dbg': i+1}))
         layout.addWidget(self.combo_debug, 1, 0, 1, 2)
@@ -2749,7 +2783,7 @@ class MainWindow(QMainWindow):
         outer.addWidget(self.balance_config)
         layout = QGridLayout(self.balance_config)
         layout.setContentsMargins(0, 0, 0, 0)
-        self.combo_balance = QComboBox()
+        self.combo_balance = NoWheelComboBox()
         self.combo_balance.addItems(["边沿 M1", "边沿 M2", "边沿 M3", "顶点（三轴）"])
         self.combo_balance.activated.connect(lambda i: self._request_state_change(f"BMODE {i+1}", {'BMode': i+1}))
         layout.addWidget(self.combo_balance, 2, 0, 1, 2)
@@ -2769,7 +2803,7 @@ class MainWindow(QMainWindow):
         self.lbl_balance = QLabel("未连接，电机失能")
         self.lbl_balance.setWordWrap(True)
         layout.addWidget(self.lbl_balance, 5, 0, 1, 2)
-        self.combo_gain_axis = QComboBox()
+        self.combo_gain_axis = NoWheelComboBox()
         self.combo_gain_axis.addItems(["平衡参数 M1", "平衡参数 M2", "平衡参数 M3"])
         layout.addWidget(self.combo_gain_axis, 6, 0, 1, 2)
         self.balance_spins = []
@@ -2789,7 +2823,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(btn_read, 11, 1)
         self.axis_combos = []
         for axis in range(3):
-            combo = QComboBox()
+            combo = NoWheelComboBox()
             combo.addItems([f'M{axis+1}轮轴 → IMU X', f'M{axis+1}轮轴 → IMU Y', f'M{axis+1}轮轴 → IMU Z'])
             combo.setCurrentIndex(axis)
             self.axis_combos.append(combo)
@@ -2799,7 +2833,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(btn_axes, 15, 0, 1, 2)
         self.direction_combos = []
         for axis in range(3):
-            combo = QComboBox()
+            combo = NoWheelComboBox()
             combo.addItems([f"M{axis+1} 机架方向 +1", f"M{axis+1} 机架方向 -1"])
             self.direction_combos.append(combo)
             layout.addWidget(combo, 16+axis, 0, 1, 2)
@@ -2828,21 +2862,32 @@ class MainWindow(QMainWindow):
         self.lbl_edge_detect = QLabel('单边检测：等待设备状态')
         self.lbl_edge_detect.setWordWrap(True)
         auto_layout.addWidget(self.lbl_edge_detect,0,0,1,2)
+        self.lbl_edge_setup = QLabel('先连接设备，再完成M1自检与静止校准')
+        self.lbl_edge_setup.setWordWrap(True)
+        self.lbl_edge_setup.setStyleSheet('color: #b45309;')
+        auto_layout.addWidget(self.lbl_edge_setup,1,0,1,2)
+        self.btn_edge_m1_test = QPushButton('M1硬件自检')
+        self.btn_edge_m1_test.setToolTip('仅检测M1，电机会短时转动；完成后保持失能')
+        self.btn_edge_m1_test.clicked.connect(self.action_prepare_edge_m1_test)
+        self.btn_edge_imu_cal = QPushButton('静止校准IMU')
+        self.btn_edge_imu_cal.setToolTip('机体静止后点击，校准期间保持不动；电机保持失能')
+        self.btn_edge_imu_cal.clicked.connect(self.action_prepare_edge_imu_cal)
+        auto_layout.addWidget(self.btn_edge_m1_test,2,0);auto_layout.addWidget(self.btn_edge_imu_cal,2,1)
         self.btn_edge_profile = QPushButton('加载已验证 M1 配置（失能）')
         self.btn_edge_profile.setToolTip('M1已对齐且IMU已静止校准后可加载。49°参考仅适用于当前安装与支撑棱；参数80/5/-0.045/0，6V。')
         self.btn_edge_profile.clicked.connect(self.action_load_edge_profile)
-        auto_layout.addWidget(self.btn_edge_profile,1,0,1,2)
+        auto_layout.addWidget(self.btn_edge_profile,3,0,1,2)
         self.spin_full_speed = NoWheelDoubleSpinBox()
         self.spin_full_speed.setRange(10,350);self.spin_full_speed.setValue(250);self.spin_full_speed.setSuffix(' rad/s')
-        auto_layout.addWidget(QLabel('满速保护（持续3秒）'),2,0);auto_layout.addWidget(self.spin_full_speed,2,1)
+        auto_layout.addWidget(QLabel('满速保护（持续3秒）'),4,0);auto_layout.addWidget(self.spin_full_speed,4,1)
         self.btn_full_speed = QPushButton('设置满速阈值（先失能）')
         self.btn_full_speed.clicked.connect(self.action_set_full_speed)
-        auto_layout.addWidget(self.btn_full_speed,3,0,1,2)
+        auto_layout.addWidget(self.btn_full_speed,5,0,1,2)
         self.btn_auto_edge = QPushButton('启动自动单边（无固定时长）')
         self.btn_auto_edge.setToolTip('±3°、低角速度、飞轮低于5rad/s持续1秒后倒计时8秒。PG6亮即松手。超过20°或满速持续3秒后失能等待下次入位。急停/断连/硬故障退出自动模式。')
         self.btn_auto_edge.clicked.connect(self.action_toggle_auto_edge)
-        auto_layout.addWidget(self.btn_auto_edge,4,0,1,2)
-        for button in (self.btn_auto_edge,self.btn_edge_profile,self.btn_full_speed):button.setEnabled(False)
+        auto_layout.addWidget(self.btn_auto_edge,6,0,1,2)
+        for button in (self.btn_auto_edge,self.btn_edge_profile,self.btn_full_speed,self.btn_edge_m1_test,self.btn_edge_imu_cal):button.setEnabled(False)
         self.mode_group.setEnabled(False)
         return self.mode_group
 
@@ -2857,6 +2902,21 @@ class MainWindow(QMainWindow):
             self._request_state_change('BAUTO 0', {'Auto': 0})
         elif self.btn_auto_edge.isEnabled():
             self._request_state_change('BAUTO 1', {'Auto': 1})
+
+    def action_prepare_edge_m1_test(self):
+        if not self.btn_edge_m1_test.isEnabled():return
+        self._request_state_change('APP 0')
+        self.combo_debug.setCurrentIndex(0)
+        self.self_test_running = True
+        self.card_self_test.set_testing_state()
+        self.set_motor_controls_locked(True)
+        self.worker.send_cmd('DBG 1')
+        self.worker.send_cmd('TEST 1')
+        self.status_bar.showMessage('仅执行M1硬件自检，电机会短时转动；完成后保持失能')
+
+    def action_prepare_edge_imu_cal(self):
+        if self.btn_edge_imu_cal.isEnabled():
+            self._request_state_change('CAL_IMU',{'Cal':1})
 
     def action_set_full_speed(self):
         if self.spin_full_speed.value() >= float((self.device_state or {}).get('SLimit', 0)):

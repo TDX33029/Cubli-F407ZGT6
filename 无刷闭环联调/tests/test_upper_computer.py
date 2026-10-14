@@ -6,6 +6,8 @@ import socket
 import threading
 import time
 import unittest
+from PyQt5.QtCore import QPoint, QPointF, Qt
+from PyQt5.QtGui import QWheelEvent
 spec = importlib.util.spec_from_file_location('cubli_ui', Path(__file__).resolve().parents[1]/'Software/main.py')
 ui = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ui)
@@ -29,6 +31,53 @@ class UpperTests(unittest.TestCase):
         self.assertTrue(self.win.card_m3.spin_speed.isEnabled())
         self.assertTrue(self.win.card_m2.chk_enable.isChecked())
         self.assertFalse(self.win.sync_group.isEnabled())
+    def test_all_dropdowns_ignore_wheel_including_when_focused(self):
+        combos=self.win.findChildren(ui.QComboBox)
+        self.assertGreaterEqual(len(combos),10)
+        for combo in combos:
+            self.assertIsInstance(combo,ui.NoWheelComboBox)
+            if combo.count()<2:combo.addItem('测试候选')
+            combo.setCurrentIndex(0)
+            combo.setFocus()
+            self.win.worker.clear_pending()
+            for delta in (120,-120,360):
+                event=QWheelEvent(QPointF(5,5),QPointF(5,5),QPoint(0,0),QPoint(0,delta),Qt.NoButton,Qt.NoModifier,Qt.ScrollUpdate,False)
+                app.sendEvent(combo,event)
+                self.assertEqual(combo.currentIndex(),0)
+                self.assertEqual(self.queued(),[])
+        self.win.combo_app.setCurrentIndex(1)
+        self.win.combo_app.activated.emit(1)
+        self.assertEqual(self.queued(),['APP 1'])
+    def test_edge_preparation_available_from_boot_without_mode_switch(self):
+        initial=AUTO_STATE.replace('App:1','App:0').replace('Cal:1','Cal:0').replace('Aligned:100','Aligned:000').replace('Ref:1','Ref:0').replace('AxesOK:1','AxesOK:0').replace('DirOK:1','DirOK:0')
+        self.win.worker._process_received_line(initial)
+        self.assertFalse(self.win.auto_edge_group.isHidden())
+        self.assertTrue(self.win.btn_edge_m1_test.isEnabled())
+        self.assertTrue(self.win.btn_edge_imu_cal.isEnabled())
+        self.assertFalse(self.win.btn_edge_profile.isEnabled())
+        self.assertFalse(self.win.btn_auto_edge.isEnabled())
+        self.assertIn('M1硬件自检',self.win.lbl_edge_setup.text())
+        self.win.btn_edge_m1_test.click()
+        self.assertEqual(self.queued(),['APP 0','DBG 1','TEST 1'])
+        self.assertTrue(self.win.self_test_running)
+        self.assertNotIn('TEST 2',self.queued())
+    def test_connected_port_is_reflected_without_selection_commands(self):
+        self.win.combo_ports.addItem('测试串口','COM_TEST')
+        self.win.on_serial_connected('COM_TEST',115200)
+        self.assertEqual(self.win.combo_ports.currentData(),'COM_TEST')
+        self.assertEqual(self.queued(),['APP 0','STATE?'])
+    def test_calibration_then_profile_unlocks_with_visible_reason(self):
+        initial=AUTO_STATE.replace('Cal:1','Cal:0').replace('Ref:1','Ref:0')
+        self.win.worker._process_received_line(initial)
+        self.assertIn('静止校准',self.win.lbl_edge_setup.text())
+        self.win.btn_edge_imu_cal.click()
+        self.assertEqual(self.queued(),['CAL_IMU'])
+        self.win.worker._process_received_line(initial.replace('Cal:0','Cal:1'))
+        self.assertTrue(self.win.btn_edge_profile.isEnabled())
+        self.assertFalse(self.win.btn_auto_edge.isEnabled())
+        self.assertIn('加载已验证',self.win.lbl_edge_setup.text())
+        self.win.worker._process_received_line(AUTO_STATE)
+        self.assertTrue(self.win.btn_auto_edge.isEnabled())
     def test_independent_unlock_and_batch_changed_axes(self):
         self.win.worker._process_received_line(STATE.replace('Aligned:111','Aligned:101'))
         self.assertTrue(self.win.card_m1.spin_speed.isEnabled())
