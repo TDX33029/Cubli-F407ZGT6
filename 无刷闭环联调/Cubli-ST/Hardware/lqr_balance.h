@@ -68,6 +68,7 @@ bool LQR_AxesConfirmed(void);
 bool LQR_DirectionsConfirmed(void);
 void LQR_ConfirmAxis(uint8_t motor, uint8_t axis);
 void LQR_ConfirmDirection(uint8_t motor, int sign);
+void LQR_InvalidateMotorCalibration(uint8_t motor);
 void LQR_Balance_SetMode(BalanceMode_e mode);
 void LQR_Balance_StartCalib(void); /* calibration NEVER arms motors */
 bool LQR_CaptureReference(void);

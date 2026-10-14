@@ -1,0 +1,12 @@
+{
+  "gravity": [
+    -0.690155028576341,
+    0.4046664023405636,
+    0.5999426133785922
+  ],
+  "pitch_deg": 23.87022388661995,
+  "roll_deg": 49,
+  "source": "Exploratory projection of M1 49deg and M3 34deg edge references onto the current -X/+Y/+Z corner; battery position may invalidate older M1 reference.",
+  "neutral_verified": false,
+  "corner_balance_verified": false
+}

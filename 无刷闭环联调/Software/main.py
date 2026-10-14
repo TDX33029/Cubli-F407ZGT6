@@ -366,7 +366,7 @@ class SerialWorker(QThread):
                         fields[key] = int(fields[key])
                         if fields[key] not in (-1, 1):
                             raise ValueError('invalid installation direction')
-                for key, upper in (('Auto', 1), ('EdgeReady', 1), ('BReason', 5), ('FullMs', 3000), ('RetryMs', 1000)):
+                for key, upper in (('Auto', 1), ('EdgeReady', 1), ('CornerStart', 1), ('BReason', 5), ('FullMs', 3000), ('RetryMs', 1000)):
                     if key in fields:
                         fields[key] = int(fields[key])
                         if not 0 <= fields[key] <= upper:
@@ -2724,8 +2724,13 @@ class MainWindow(QMainWindow):
         self.btn_balance_start.setEnabled(connected and not self.self_test_running and not self.expected_state and not self.edge_profile_pending and
             state.get('App') == 1 and state.get('Bal', 0) in (0, 4) and bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 1)) and bool(state.get('AxesOK', 1)) and bool(state.get('DirOK', 1)) and all(needed))
         self.btn_balance_countdown.setEnabled(connected and not self.self_test_running and not self.expected_state and not self.edge_profile_pending and
-            state.get('App') == 1 and state.get('BMode', 1) != 4 and state.get('Bal', 0) in (0, 4) and
+            state.get('App') == 1 and (state.get('BMode', 1) != 4 or state.get('CornerStart') == 1) and state.get('Bal', 0) in (0, 4) and
             bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 0)) and bool(state.get('AxesOK', 0)) and bool(state.get('DirOK', 0)) and all(needed))
+        self.btn_balance_countdown.setText('等待入位，8秒倒计时后启动（单点）' if state.get('BMode') == 4 else '等待入位，8秒倒计时后启动（边沿）')
+        self.btn_balance_countdown.setToolTip('单点需三轴对齐、映射与方向确认，并采集参考；PG5倒计时，PG6亮即松手。离位取消倒计时。'
+            if state.get('BMode') == 4 and state.get('CornerStart') == 1 else
+            ('当前固件不支持单点灯光倒计时，请更新固件' if state.get('BMode') == 4 else
+             '先采集目标姿态；入位后PG5倒计时，离位取消；PG6亮即松手。'))
         self.card_self_test.btn_run_test.setEnabled(connected and not self.self_test_running and state.get('App', 0) == 0)
         self.btn_trip_angle.setEnabled(connected and not self.self_test_running and state.get('Bal', 0) in (0, 4))
         idle = state.get('Bal', 0) in (0, 4) and state.get('EN') == '000' and not self.edge_profile_pending

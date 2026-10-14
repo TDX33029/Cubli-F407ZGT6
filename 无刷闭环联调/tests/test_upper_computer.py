@@ -267,6 +267,17 @@ class UpperTests(unittest.TestCase):
         self.assertFalse(self.win.btn_balance_start.isEnabled())
         self.win.worker._process_received_line(state.replace('Aligned:110','Aligned:111'))
         self.assertTrue(self.win.btn_balance_start.isEnabled())
+    def test_corner_countdown_requires_firmware_capability_and_all_axes(self):
+        state=AUTO_STATE.replace('BMode:1','BMode:4').replace('Aligned:100','Aligned:111')
+        self.win.worker._process_received_line(state)
+        self.assertFalse(self.win.btn_balance_countdown.isEnabled())
+        self.win.worker._process_received_line(state.replace('#',',CornerStart:1#'))
+        self.assertTrue(self.win.btn_balance_countdown.isEnabled())
+        self.assertIn('单点',self.win.btn_balance_countdown.text())
+        self.win.btn_balance_countdown.click()
+        self.assertEqual(self.queued(),['BSTART 8'])
+        self.win.worker._process_received_line(state.replace('Aligned:111','Aligned:110').replace('#',',CornerStart:1#'))
+        self.assertFalse(self.win.btn_balance_countdown.isEnabled())
     def test_balance_gain_readback(self):
         self.win.combo_gain_axis.setCurrentIndex(2)
         self.win.worker._process_received_line('OK LQR3: P=29.000, D=2.300, W=-0.0200, I=0.0010')

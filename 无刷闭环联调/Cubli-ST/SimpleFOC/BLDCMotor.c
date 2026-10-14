@@ -1,5 +1,6 @@
 
 #include "MyProject.h"
+#include "lqr_balance.h"
 
 extern void set_motor_enable(uint8_t motor, uint8_t en);
 extern uint8_t Control_Aborted(void);
@@ -141,6 +142,7 @@ uint8_t Motor_alignSensor(int motor)
 {
     int i; float start,finish,forward,reverse,pp_est,align_v,mean=0,lo=0,hi=0;
     if(motor<0 || motor>2) return 1;
+    LQR_InvalidateMotorCalibration((uint8_t)motor);
     motor_aligned[motor]=0;motor_mapping_valid[motor]=0;motor_test_travel_deg[motor]=0;
     if(!detect_motor_encoder(motor)) return 1;
     align_v=fminf(voltage_sensor_align,voltage_limit);

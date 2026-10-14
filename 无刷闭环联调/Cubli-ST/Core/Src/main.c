@@ -283,7 +283,7 @@ int main(void)
                 reported_trip=safety_trip;
                 if(fast_mask && cur_tick-last_fast_tick>=((app_mode && cubli_bal.state!=BAL_STATE_PROBE)?20U:10U)) {
                     last_fast_tick=cur_tick;
-                    if(USART_TxFree()>160) Control_FastTelemetry();
+                    if(USART_TxFree()>(app_mode && cubli_bal.mode==BAL_MODE_CORNER?280:160)) Control_FastTelemetry();
                 }
 #if !ENC_USE_HW_QUAD
                 /* Observe one disabled wheel per millisecond even while another
@@ -530,15 +530,20 @@ static void Control_FastTelemetry(void) {
         key[1]=(char)('1'+i);key[0]='R';report_float(key,shaft_velocity_sp[i],2);
         key[0]='V';report_float(key,shaft_velocity[i],2);key[0]='U';report_float(key,voltage[i].q,2);
     }
-    if(app_mode && cubli_bal.mode!=BAL_MODE_CORNER) {
+    if(app_mode) {
         report_float("Tilt",cubli_bal.tilt_deg,2);
         report_float("Angle",cubli_bal.signed_tilt_deg,2);
-        report_float("Rate",cubli_bal.attitude.gyro_rad[cubli_bal.body_axis[cubli_bal.mode]],3);
+        float *w=cubli_bal.attitude.gyro_rad;
+        report_float("Rate",cubli_bal.mode<3?w[cubli_bal.body_axis[cubli_bal.mode]]:sqrtf(w[0]*w[0]+w[1]*w[1]+w[2]*w[2]),3);
         report_int("Bal",cubli_bal.state);
-        if(cubli_bal.state==BAL_STATE_PROBE) {
+        if(cubli_bal.state==BAL_STATE_PROBE || cubli_bal.mode==BAL_MODE_CORNER) {
             report_float("Wx",cubli_bal.attitude.gyro_rad[0],3);
             report_float("Wy",cubli_bal.attitude.gyro_rad[1],3);
             report_float("Wz",cubli_bal.attitude.gyro_rad[2],3);
+        }
+        if(cubli_bal.mode==BAL_MODE_CORNER) {
+            report_float("Pit",cubli_bal.attitude.pitch_deg,2);
+            report_float("Rol",cubli_bal.attitude.roll_deg,2);
         }
     }
     UART_WriteText("#\r\n");
@@ -595,7 +600,10 @@ void Control_Status(void) {
     report_int("RetryMs",LQR_AutoRetryRemainingMs());
     report_int("EdgeReady",LQR_AutoPoseReady());
     report_float("Wheel",cubli_bal.mode<3?shaft_velocity[cubli_bal.mode]:0,2);
-    report_float("Rate",cubli_bal.mode<3?cubli_bal.attitude.gyro_rad[cubli_bal.body_axis[cubli_bal.mode]]:0,3);
+    report_float("Rate",cubli_bal.mode<3?cubli_bal.attitude.gyro_rad[cubli_bal.body_axis[cubli_bal.mode]]:
+                 sqrtf(cubli_bal.attitude.gyro_rad[0]*cubli_bal.attitude.gyro_rad[0]+
+                       cubli_bal.attitude.gyro_rad[1]*cubli_bal.attitude.gyro_rad[1]+
+                       cubli_bal.attitude.gyro_rad[2]*cubli_bal.attitude.gyro_rad[2]),3);
     report_float("U1",voltage[0].q,2);
     report_float("U2",voltage[1].q,2);
     report_float("U3",voltage[2].q,2);
@@ -620,7 +628,7 @@ void Control_Status(void) {
     report_int("Axis1",cubli_bal.body_axis[0]+1);report_int("Axis2",cubli_bal.body_axis[1]+1);report_int("Axis3",cubli_bal.body_axis[2]+1);
     report_int("AxesOK",LQR_AxesConfirmed());report_int("DirOK",LQR_DirectionsConfirmed());
     report_int("AxisMask",cubli_bal.axes_confirmed_mask);report_int("DirMask",cubli_bal.directions_confirmed_mask);
-    report_int("CountMs",LQR_CountdownRemainingMs());UART_WriteText("#\r\n");
+    report_int("CountMs",LQR_CountdownRemainingMs());report_int("CornerStart",1);UART_WriteText("#\r\n");
 }
 /* Exact tokens, finite numbers, and argument counts; no prefix/atoi fallthrough. */
 void commander_run(void) {
@@ -671,7 +679,7 @@ void commander_run(void) {
     } else if(!strcmp(name,"BSTART") && n==1 && v[0]>=3 && v[0]<=15 && v[0]==(int)v[0]) {
         Control_Stop();
         if(!app_mode || !imu_online || !control_reset_latch() || !LQR_StartCountdown((uint8_t)v[0])) {
-            printf("ERR BSTART (edge ALIGN/CAL_IMU/BAXIS/BDIR/BZERO required)\r\n");return;
+            printf("ERR BSTART (ALIGN/CAL_IMU/BAXIS/BDIR/BZERO required)\r\n");return;
         }
         printf("OK BSTART\r\n");
     } else if(!strcmp(name,"BPROBE") && n==2 && fabsf(v[0])<=6 && v[1]>=20 && v[1]<=120 && v[1]==(int)v[1]) {
@@ -686,11 +694,14 @@ void commander_run(void) {
         cubli_bal.max_angle_trip=v[0]*DEG_TO_RAD;printf("OK BTRIP\r\n");
     } else if(!strcmp(name,"BREF") && n==3) {
         float norm=sqrtf(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);int m=(int)cubli_bal.mode;
-        if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled || m>2 || !LQR_AxesConfirmed() || !LQR_DirectionsConfirmed() ||
+        if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled || m>3 || !LQR_AxesConfirmed() || !LQR_DirectionsConfirmed() ||
            !cubli_bal.attitude.is_calibrated || norm<0.9f || norm>1.1f ||
-           fabsf(v[cubli_bal.body_axis[m]])/norm>0.25f) {printf("ERR BREF (normalized saved edge reference required)\r\n");return;}
+           (m<3 && fabsf(v[cubli_bal.body_axis[m]])/norm>0.25f)) {printf("ERR BREF (normalized saved reference required)\r\n");return;}
         for(i=0;i<3;i++) cubli_bal.reference[m][i]=v[i]/norm;
-        cubli_bal.reference_valid[m]=true;cubli_bal.gains[m].theta_0=0;printf("OK BREF\r\n");
+        cubli_bal.reference_valid[m]=true;
+        if(m<3) cubli_bal.gains[m].theta_0=0;
+        else for(i=0;i<3;i++) cubli_bal.corner_gains[i].theta_0=0;
+        printf("OK BREF\r\n");
     } else if(!strcmp(name,"BMODE") && n==1 && v[0]>=1 && v[0]<=4 && v[0]==(int)v[0]) {
         Control_Stop(); LQR_Balance_SetMode((BalanceMode_e)((int)v[0]-1)); printf("OK BMODE:%d\r\n",(int)v[0]);
     } else if(!strcmp(name,"CAL_IMU") && n==0) {

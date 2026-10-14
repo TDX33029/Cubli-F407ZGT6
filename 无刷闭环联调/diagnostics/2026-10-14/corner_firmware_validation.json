@@ -1,0 +1,12 @@
+{
+  "encoder": "i2c",
+  "input_files": 38,
+  "compile_errors": 0,
+  "compile_warnings": 0,
+  "upper_tests": 34,
+  "corner_diagnostic_tests": 8,
+  "firmware_harness": "passed",
+  "uart_harness": "passed",
+  "hex_sha256": "0da81d5bbf06329f1d5a777dad21c8a01c1a034e0442a6fde8e69b4f47dbeca0",
+  "flashed": false
+}

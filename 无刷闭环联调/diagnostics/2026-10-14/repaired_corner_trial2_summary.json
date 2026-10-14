@@ -1,0 +1,38 @@
+{
+  "utc_started": "2026-10-14T16:40:22.736935+00:00",
+  "settings": {
+    "port": "COM7",
+    "tag": "repaired_corner_trial2",
+    "seconds": 3.0,
+    "voltage": 3.5,
+    "wheel_bound": 100.0,
+    "kp": 80,
+    "kd": 5,
+    "kw": [
+      -0.045,
+      -0.045,
+      -0.03
+    ],
+    "body_axes": [
+      2,
+      3,
+      1
+    ],
+    "directions": [
+      -1,
+      -1,
+      -1
+    ],
+    "expected_pose": "\u65e0\u5237\u95ed\u73af\u8054\u8c03\\diagnostics\\2026-10-14\\repaired_corner_hand_pose_still_summary.json",
+    "prepare_only": false,
+    "output_dir": "D:\\Document\\tempPrj\\Cubli-F407ZGT6\\\u65e0\u5237\u95ed\u73af\u8054\u8c03\\diagnostics\\2026-10-14"
+  },
+  "result": "stopped",
+  "reference": null,
+  "hands_off_verified": false,
+  "cable_free_verified": false,
+  "active_samples": 0,
+  "error": "SerialException(\"could not open port 'COM7': FileNotFoundError(2, '\u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002', None, 2)\")",
+  "last_state": {},
+  "frequency": []
+}

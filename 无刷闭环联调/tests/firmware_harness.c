@@ -115,10 +115,40 @@ static void test_auto_edge(void) {
  setup();mock_tx_free=899;uart_bytes=0;Control_Status();assert(!uart_bytes);
  mock_tx_free=1023;Control_Status();assert(uart_bytes>0&&uart_bytes<900);
 }
+static void corner_ticks(int count) {
+ int i;
+ for(i=0;i<count;i++) {
+  advance();gravity(-.683937788f,.460044825f,.566204788f);LQR_Balance_Loop();
+ }
+}
+static void test_corner_countdown(void) {
+ int i;
+ setup();command("APP 1");command("BAXIS 2 3 1");command("BDIR -1 -1 -1");command("BMODE 4");
+ cubli_bal.attitude.is_calibrated=true;gravity(-.683937788f,.460044825f,.566204788f);
+ cubli_bal.gains[0].theta_0=.7f;
+ for(i=0;i<3;i++) cubli_bal.corner_gains[i].theta_0=.1f;
+ command("BREF -0.683937788 0.460044825 0.566204788");
+ assert(cubli_bal.reference_valid[3]&&cubli_bal.gains[0].theta_0==.7f);
+ for(i=0;i<3;i++) assert(cubli_bal.corner_gains[i].theta_0==0);
+ motor_aligned[2]=0;command("BSTART 3");assert(cubli_bal.state==BAL_STATE_DISABLED&&!m1_enabled&&!m2_enabled&&!m3_enabled);
+ motor_aligned[2]=1;encoder_ok=0;command("BSTART 3");assert(cubli_bal.state==BAL_STATE_DISABLED&&!m1_enabled);
+ encoder_ok=1;cubli_bal.directions_confirmed_mask=6;command("BSTART 3");assert(cubli_bal.state==BAL_STATE_DISABLED);
+ cubli_bal.directions_confirmed_mask=7;command("BSTART 3");corner_ticks(30);
+ assert(cubli_bal.state==BAL_STATE_COUNTDOWN&&!m1_enabled&&!m2_enabled&&!m3_enabled);
+ advance();gravity(1,0,0);LQR_Balance_Loop();assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
+ corner_ticks(650);assert(cubli_bal.state==BAL_STATE_BALANCING&&m1_enabled&&m2_enabled&&m3_enabled);
+ cubli_bal.attitude.gyro_rad[0]=.1f;cubli_bal.attitude.gyro_rad[1]=.2f;cubli_bal.attitude.gyro_rad[2]=.2f;
+ fast_mask=7;for(i=0;i<3;i++) {shaft_velocity[i]=-600;voltage[i].q=-12;}
+ uart_bytes=0;Control_FastTelemetry();assert(uart_bytes>100&&uart_bytes<280);
+ command("BREF -.577 .577 .577");assert(cubli_bal.reference_valid[3]&&fabsf(cubli_bal.reference[3][0]+.683937788f)<.0001f); /* Active BREF rejected. */
+ advance();gravity(1,0,0);LQR_Balance_Loop();assert(cubli_bal.state==BAL_STATE_FALL_PROTECT&&!m1_enabled&&!m2_enabled&&!m3_enabled);
+ command("BAUTO 1 3");assert(!cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_DISABLED&&!m1_enabled);
+}
 int main(void) {
  int i;float u;uint32_t saved;
  setvbuf(stdout,NULL,_IONBF,0);
  test_auto_edge();
+ test_corner_countdown();
  setup();command("DBG 2");command("EN1 1");command("EN2 1");command("EN3 1");assert(m1_enabled&&m2_enabled&&m3_enabled);
  command("M1 20");command("M2 -30");command("M3 40");assert(target_m1==20&&target_m2==-30&&target_m3==40);
  command("M 180 -180 0");assert(target_m1==180&&target_m2==-180&&target_m3==0);
@@ -261,16 +291,24 @@ int main(void) {
  assert(!safety_trip && fabsf(voltage[0].q)>4.5f);
  setup();velocityOpenloop(0,0);assert(TIM1->CCR1==TIM1->CCR2&&TIM1->CCR2==TIM1->CCR3);
  setup();diagnostic_busy=1;model_on=1;memset(motor_mapping_valid,0,3);memset(motor_aligned,0,3);
+ cubli_bal.axes_confirmed_mask=cubli_bal.directions_confirmed_mask=7;
+ memset(cubli_bal.reference_valid,1,sizeof(cubli_bal.reference_valid));
  assert(Motor_alignSensor(0)==0 && motor_sensor_map[0]==2 && sensor_direction[0]==1);
+ assert(cubli_bal.directions_confirmed_mask==6&&!cubli_bal.reference_valid[0]&&!cubli_bal.reference_valid[3]&&cubli_bal.reference_valid[1]&&cubli_bal.reference_valid[2]);
  assert(Motor_alignSensor(1)==0 && motor_sensor_map[1]==0 && sensor_direction[1]==-1);
+ assert(cubli_bal.directions_confirmed_mask==4&&!cubli_bal.reference_valid[1]&&cubli_bal.reference_valid[2]);
  assert(Motor_alignSensor(2)==0 && motor_sensor_map[2]==1 && sensor_direction[2]==1);
+ assert(!cubli_bal.directions_confirmed_mask&&!cubli_bal.reference_valid[2]&&cubli_bal.axes_confirmed_mask==7);
  assert(!m1_enabled&&!m2_enabled&&!m3_enabled);
  /* A different M2 pole count must fail alignment rather than silently pass. */
  setup();diagnostic_busy=1;model_on=1;memset(motor_mapping_valid,0,3);memset(motor_aligned,0,3);true_pp[1]=14;
  assert(Motor_alignSensor(1)!=0&&!motor_aligned[1]&&!m2_enabled);
  diagnostic_busy=0;command("PP2 14");assert(motor_pole_pairs[1]==14&&!motor_aligned[1]);
  diagnostic_busy=1;assert(Motor_alignSensor(1)==0&&motor_aligned[1]);true_pp[1]=7;
- setup();diagnostic_busy=1;model_on=0;assert(Motor_alignSensor(1)!=0&&!motor_aligned[1]&&!m2_enabled);
+ setup();diagnostic_busy=1;model_on=0;cubli_bal.directions_confirmed_mask=7;
+ memset(cubli_bal.reference_valid,1,sizeof(cubli_bal.reference_valid));
+ assert(Motor_alignSensor(1)!=0&&!motor_aligned[1]&&!m2_enabled);
+ assert(cubli_bal.directions_confirmed_mask==5&&!cubli_bal.reference_valid[1]&&!cubli_bal.reference_valid[3]&&cubli_bal.reference_valid[0]&&cubli_bal.reference_valid[2]);
  puts("PASS: three-axis control, 50ms ramp, saturation, encoder freshness, balance latch, signed mapping and per-axis pole-pair sweep");
  return 0;
 }
