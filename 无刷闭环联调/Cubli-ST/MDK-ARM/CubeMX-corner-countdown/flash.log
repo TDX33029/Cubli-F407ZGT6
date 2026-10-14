@@ -1,5 +1,5 @@
       -------------------------------------------------------------------
-                       STM32CubeProgrammer v2.21.0                  
+                       STM32CubeProgrammer v2.21.0
       -------------------------------------------------------------------
 
 ST-LINK SN  : 190A071F7116303030303032
@@ -24,7 +24,7 @@ Opening and parsing file: corner-countdown.hex
 
 Memory Programming ...
   File          : corner-countdown.hex
-  Size          : 47.90 KB 
+  Size          : 47.90 KB
   Address       : 0x08000000
 
 

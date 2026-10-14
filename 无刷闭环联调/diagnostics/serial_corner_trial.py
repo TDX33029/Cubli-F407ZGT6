@@ -33,6 +33,7 @@ parser.add_argument('--wheel-bound', type=float, default=100)
 parser.add_argument('--kp', type=float, default=80)
 parser.add_argument('--kd', type=float, default=5)
 parser.add_argument('--kw', type=float, nargs=3, default=[-.045, -.045, -.030])
+parser.add_argument('--yaw-damping', type=float, help='Independent corner yaw damping, 0..10; updated firmware required')
 parser.add_argument('--body-axes', type=int, nargs=3, choices=(1, 2, 3), required=True)
 parser.add_argument('--directions', type=int, nargs=3, choices=(-1, 1), required=True)
 parser.add_argument('--expected-pose', type=Path, required=True, help='Disabled passive pose summary JSON')
@@ -44,6 +45,8 @@ if not (0 < args.seconds <= 5 and 0 < args.voltage <= 6 and 30 <= args.wheel_bou
         and 0 <= args.kp <= 120 and 0 <= args.kd <= 10 and all(abs(v) <= .1 for v in args.kw)
         and sorted(args.body_axes) == [1, 2, 3]):
     parser.error('Corner diagnostic bounds exceeded')
+if args.yaw_damping is not None and not 0 <= args.yaw_damping <= 10:
+    parser.error('Yaw damping must be 0..10')
 expected = json.loads(args.expected_pose.read_text(encoding='utf-8'))
 expected_g = gravity({key: expected['ranges'][key]['median'] for key in ('Pit', 'Rol')})
 if min(abs(v) for v in expected_g) < .25:
@@ -200,6 +203,11 @@ try:
         command(text)
     for i, kw in enumerate(args.kw, 1):
         command(f'LQR{i} {args.kp} {args.kd} {kw} 0')
+    if args.yaw_damping is not None:
+        if state.get('YawTune') != '1':
+            raise RuntimeError('Independent yaw tuning requires updated firmware')
+        command(f'BYAW {args.yaw_damping}')
+        confirm(lambda d: abs(float(d.get('YawD', -1)) - args.yaw_damping) < .011, 'Yaw damping')
     confirm(lambda d: d.get('BMode') == '4' and d.get('AxisMask') == '7' and d.get('DirMask') == '7'
             and all(d.get(f'Axis{i}') == str(args.body_axes[i-1])
                     and d.get(f'D{i}') == str(args.directions[i-1]) for i in (1, 2, 3))

@@ -125,6 +125,10 @@ static void test_corner_countdown(void) {
  int i;
  setup();command("APP 1");command("BAXIS 2 3 1");command("BDIR -1 -1 -1");command("BMODE 4");
  cubli_bal.attitude.is_calibrated=true;gravity(-.683937788f,.460044825f,.566204788f);
+ assert(cubli_bal.K_yaw_damping==3);
+ command("BYAW 2.5");assert(cubli_bal.K_yaw_damping==2.5f);
+ command("BYAW 11");command("BYAW -1");command("BYAW nan");assert(cubli_bal.K_yaw_damping==2.5f);
+ command("BYAW 3");
  cubli_bal.gains[0].theta_0=.7f;
  for(i=0;i<3;i++) cubli_bal.corner_gains[i].theta_0=.1f;
  command("BREF -0.683937788 0.460044825 0.566204788");
@@ -137,6 +141,14 @@ static void test_corner_countdown(void) {
  assert(cubli_bal.state==BAL_STATE_COUNTDOWN&&!m1_enabled&&!m2_enabled&&!m3_enabled);
  advance();gravity(1,0,0);LQR_Balance_Loop();assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
  corner_ticks(650);assert(cubli_bal.state==BAL_STATE_BALANCING&&m1_enabled&&m2_enabled&&m3_enabled);
+ command("BYAW 8");assert(cubli_bal.K_yaw_damping==3);
+ for(i=0;i<3;i++) {
+  cubli_bal.corner_gains[i].K_theta=cubli_bal.corner_gains[i].K_dtheta=0;
+  cubli_bal.corner_gains[i].K_w=cubli_bal.corner_gains[i].K_i=0;
+  cubli_bal.attitude.gyro_rad[i]=.2f*cubli_bal.reference[3][i];
+ }
+ corner_ticks(1);
+ for(i=0;i<3;i++) assert(fabsf(cubli_bal.control_u[i]+.6f*cubli_bal.reference[3][cubli_bal.body_axis[i]])<.001f);
  cubli_bal.attitude.gyro_rad[0]=.1f;cubli_bal.attitude.gyro_rad[1]=.2f;cubli_bal.attitude.gyro_rad[2]=.2f;
  fast_mask=7;for(i=0;i<3;i++) {shaft_velocity[i]=-600;voltage[i].q=-12;}
  uart_bytes=0;Control_FastTelemetry();assert(uart_bytes>100&&uart_bytes<280);

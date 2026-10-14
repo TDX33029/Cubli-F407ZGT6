@@ -329,7 +329,7 @@ class SerialWorker(QThread):
                     raise ValueError('invalid flags')
                 if 'Enc' in fields and not re.fullmatch('[01]{3}', fields['Enc']):
                     raise ValueError('invalid encoder mask')
-                for key in ('VLimit', 'SLimit', 'TripDeg', 'PoseTilt', 'Angle', 'FullSpeed', 'Wheel', 'Rate'):
+                for key in ('VLimit', 'SLimit', 'TripDeg', 'PoseTilt', 'Angle', 'FullSpeed', 'Wheel', 'Rate', 'YawD'):
                     if key in fields:
                         fields[key] = float(fields[key])
                         if not math.isfinite(fields[key]):
@@ -366,7 +366,7 @@ class SerialWorker(QThread):
                         fields[key] = int(fields[key])
                         if fields[key] not in (-1, 1):
                             raise ValueError('invalid installation direction')
-                for key, upper in (('Auto', 1), ('EdgeReady', 1), ('CornerStart', 1), ('BReason', 5), ('FullMs', 3000), ('RetryMs', 1000)):
+                for key, upper in (('Auto', 1), ('EdgeReady', 1), ('CornerStart', 1), ('YawTune', 1), ('BReason', 5), ('FullMs', 3000), ('RetryMs', 1000)):
                     if key in fields:
                         fields[key] = int(fields[key])
                         if not 0 <= fields[key] <= upper:

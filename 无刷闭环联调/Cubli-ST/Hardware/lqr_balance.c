@@ -83,7 +83,7 @@ void LQR_Balance_Init(void) {
     cubli_bal.max_angle_trip=20*DEG_TO_RAD;
     cubli_bal.capture_angle=10*DEG_TO_RAD;
     cubli_bal.full_speed_limit=250;
-    cubli_bal.K_yaw_damping=0.3f;
+    cubli_bal.K_yaw_damping=3.0f;
     for(i=0;i<3;i++) {
         LQR_Gains_t g={32.0f,2.4f,0.08f,0.008f,0,5};
         cubli_bal.gains[i]=cubli_bal.corner_gains[i]=g;

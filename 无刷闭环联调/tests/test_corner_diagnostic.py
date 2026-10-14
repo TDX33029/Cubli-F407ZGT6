@@ -28,6 +28,7 @@ class Device:
                           AxisMask='0', DirMask='0', Ref='0', VLimit='5', SLimit='180', TripDeg='20.0')
         if fault != 'legacy':
             self.state['CornerStart'] = '1'
+            self.state.update(YawTune='1', YawD='3.00')
 
     def open(self):
         self.is_open = True
@@ -60,6 +61,8 @@ class Device:
             self.state[{'U': 'VLimit', 'L': 'SLimit', 'BTRIP': 'TripDeg'}[name]] = str(float(parts[1]))
         elif name in ('BZERO', 'BREF'):
             self.state['Ref'] = '1'
+        elif name == 'BYAW':
+            self.state['YawD'] = parts[1]
         elif name == 'FAST':
             self.fast = parts[1] == '7'
         elif name == 'BSTART':
@@ -89,7 +92,7 @@ class Device:
 
 
 class CornerDiagnosticTests(unittest.TestCase):
-    def run_trial(self, fault=None, prepare=False, saved=False):
+    def run_trial(self, fault=None, prepare=False, saved=False, yaw=None):
         device = Device(fault)
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
@@ -100,6 +103,8 @@ class CornerDiagnosticTests(unittest.TestCase):
                     '--directions', '-1', '-1', '-1'] + (['--prepare-only'] if prepare else [])
             if saved:
                 argv += ['--reference-gravity', '-.668', '.4', '.627']
+            if yaw is not None:
+                argv += ['--yaw-damping', str(yaw)]
             code = 0
             with patch.object(sys, 'argv', argv), patch('serial.Serial', return_value=device), \
                     patch('time.monotonic', side_effect=lambda: device.now), contextlib.redirect_stdout(io.StringIO()):
@@ -159,6 +164,16 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertNotIn('BAL 1', device.commands)
         self.assertIn('requires updated firmware', result['error'])
+    def test_independent_yaw_is_applied_and_read_back_before_arming(self):
+        device, result, code = self.run_trial(yaw=2)
+        self.assertEqual(code, 0)
+        self.assertIn('BYAW 2.0', device.commands)
+        self.assertLess(device.commands.index('BYAW 2.0'), device.commands.index('BSTART 8'))
+    def test_legacy_refuses_unavailable_yaw_setting(self):
+        device, result, code = self.run_trial(fault='legacy', yaw=2)
+        self.assertEqual(code, 2)
+        self.assertNotIn('BAL 1', device.commands)
+        self.assertIn('yaw tuning requires updated firmware', result['error'])
 
 
 if __name__ == '__main__':
