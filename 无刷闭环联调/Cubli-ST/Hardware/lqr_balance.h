@@ -10,6 +10,8 @@ typedef enum { BAL_STATE_DISABLED, BAL_STATE_CALIBRATING, BAL_STATE_STANDBY,
                BAL_STATE_WAIT_POSE, BAL_STATE_PROBE } BalanceState_e;
 typedef enum { BAL_MODE_EDGE_M1, BAL_MODE_EDGE_M2, BAL_MODE_EDGE_M3,
                BAL_MODE_CORNER } BalanceMode_e;
+typedef enum { BAL_STOP_NONE, BAL_STOP_ANGLE, BAL_STOP_FULL_SPEED,
+               BAL_STOP_OVERSPEED, BAL_STOP_BODY_RATE, BAL_STOP_FAULT } BalanceStop_e;
 /* Voltage-domain state feedback; gains require identification on the real plant. */
 typedef struct {
     float K_theta, K_dtheta, K_w, K_i, theta_0, max_u;
@@ -41,6 +43,11 @@ typedef struct {
     uint32_t probe_deadline_us;
     float probe_voltage, probe_wheel_limit, probe_start_gravity[3];
     float max_angle_trip, capture_angle;
+    bool auto_enabled;
+    BalanceStop_e stop_reason;
+    float full_speed_limit;
+    uint8_t full_speed_mask;
+    uint32_t full_speed_since_ms[3], auto_retry_deadline_ms;
     uint32_t last_update_us, calib_samples;
     float gyro_calib_sum[3];
 } Cubli_Balance_t;
@@ -51,6 +58,10 @@ void LQR_Balance_Loop(void);       /* 200Hz state feedback only */
 void LQR_Motor_Loop(void);         /* fast encoder commutation in main loop */
 void LQR_Balance_Enable(bool enable);
 bool LQR_StartCountdown(uint8_t seconds);
+bool LQR_StartAuto(uint8_t seconds);
+bool LQR_AutoPoseReady(void);
+uint32_t LQR_AutoRetryRemainingMs(void);
+uint32_t LQR_FullSpeedElapsedMs(void);
 bool LQR_StartProbe(float voltage_v, uint16_t duration_ms);
 uint32_t LQR_CountdownRemainingMs(void);
 bool LQR_AxesConfirmed(void);

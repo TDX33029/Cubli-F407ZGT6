@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-14",
+  "new_image": "Cubli-ST/MDK-ARM/CubeMX-edge-auto/CubeMX.hex",
+  "new_image_deployed": false,
+  "last_deployed_image": "Cubli-ST/MDK-ARM/CubeMX-edge-impulse120/CubeMX.hex",
+  "behavior": {
+    "automatic_edge_only": true,
+    "entry_angle_deg": 3,
+    "entry_body_rate_rad_s": 0.2,
+    "entry_wheel_rad_s": 5,
+    "entry_stable_ms": 1000,
+    "countdown_seconds": 8,
+    "angle_trip_deg": 20,
+    "full_speed_rad_s": 250,
+    "full_speed_duration_ms": 3000,
+    "retry_cooldown_ms": 1000,
+    "hard_speed_rad_s": 330,
+    "run_deadline": null
+  },
+  "validation": [
+    "Production controller/UART regression passed, including60s no deadline, repeated angle/fullspeed restart, timing resets and HAL tick wrap",
+    "UI28tests passed, including profile ACK/fresh-state confirmation and emergency-stop cancellation of deferred startup",
+    "I2C/QUAD ARMCC38inputs each,0errors/0warnings",
+    "UI preview generated and visually inspected"
+  ],
+  "hardware_verification": "Pending flash and deployment; original5s profile preserved at3546f32",
+  "sha256": {
+    "Cubli-ST/Core/Src/main.c": "43c94f3c5349f15b5a876ac7d5e1dd22dee75133332ffcc97b41e74bac515934",
+    "Cubli-ST/Hardware/lqr_balance.c": "67caa48151524556fc37f4fd83a1ece8c6bf7b134c3d40eb14cb3e78ae1cda8c",
+    "Cubli-ST/Hardware/lqr_balance.h": "b58b38884ec0950a82b17626ab41bf63f83a2333adba2cd0dc1e306f90d344f8",
+    "Software/main.py": "5d89edfd8dbd24c9e91a6bd35771b1c45f475b006b4e4cf439b024151eb1c0f0",
+    "tests/firmware_harness.c": "c3f8ec1997f37e78949ce5413603a046454844e24d96f3ab8c59685b200c399e",
+    "tests/test_upper_computer.py": "9a4178f42a0285e8ad3855f64bbb79d0bba14f20a76fe49be34138d6f139e2b6",
+    "Cubli-ST/MDK-ARM/CubeMX-edge-auto/CubeMX.hex": "69eece089d77b56013f499f27aa3717efba8f9668b1e8c9a49a1f4bebdcf9704",
+    "Cubli-ST/MDK-ARM/CubeMX-edge-auto/build_config.json": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b",
+    "Cubli-ST/MDK-ARM/CubeMX-edge-auto-quad/CubeMX.hex": "d144ea299e2af8462783af2885d78a0f7885aaafc19da5be6665d959fcd86a43",
+    "Cubli-ST/MDK-ARM/CubeMX-edge-auto-quad/build_config.json": "7b495494b5cf84e90e8378e229dbea5efda8a51ccfa4c384f2aa43df514ee37d"
+  }
+}

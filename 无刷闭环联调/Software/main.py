@@ -24,6 +24,9 @@ import math
 import re
 import socket
 import select
+import argparse
+import json
+from pathlib import Path
 from collections import deque
 
 import serial
@@ -197,13 +200,17 @@ class SerialWorker(QThread):
             self.disconnect_port()
             self.clear_pending()
             self.ser = serial.Serial(
-                port=port_name,
+                port=None,
                 baudrate=baud_rate,
                 bytesize=serial.EIGHTBITS,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
                 timeout=0.1, write_timeout=0.3
             )
+            self.ser.dtr = False
+            self.ser.rts = False
+            self.ser.port = port_name
+            self.ser.open()
             self.is_running = True
             if not self.isRunning():
                 self.start()
@@ -316,7 +323,7 @@ class SerialWorker(QThread):
                     raise ValueError('invalid flags')
                 if 'Enc' in fields and not re.fullmatch('[01]{3}', fields['Enc']):
                     raise ValueError('invalid encoder mask')
-                for key in ('VLimit', 'SLimit', 'TripDeg', 'PoseTilt', 'Angle'):
+                for key in ('VLimit', 'SLimit', 'TripDeg', 'PoseTilt', 'Angle', 'FullSpeed', 'Wheel', 'Rate'):
                     if key in fields:
                         fields[key] = float(fields[key])
                         if not math.isfinite(fields[key]):
@@ -353,6 +360,11 @@ class SerialWorker(QThread):
                         fields[key] = int(fields[key])
                         if fields[key] not in (-1, 1):
                             raise ValueError('invalid installation direction')
+                for key, upper in (('Auto', 1), ('EdgeReady', 1), ('BReason', 5), ('FullMs', 3000), ('RetryMs', 1000)):
+                    if key in fields:
+                        fields[key] = int(fields[key])
+                        if not 0 <= fields[key] <= upper:
+                            raise ValueError('invalid automatic edge state')
                 if re.fullmatch('[01]{3}', fields['EN']) and re.fullmatch('[01]{3}', fields['Aligned']):
                     self.sig_state.emit(fields)
             except (ValueError, KeyError):
@@ -1542,6 +1554,12 @@ class MainWindow(QMainWindow):
         self.self_test_running = False
         self.device_state = None
         self.expected_state = {}
+        self.edge_profile_pending = False
+        self.edge_profile_ack = False
+        self.edge_profile_generation = 0
+        self.last_balance_reason = 0
+        self.startup_auto_edge = False
+        self.startup_edge_phase = 0
         self.sync_directions = False
         self.sync_axes = False
         self.speed_mode = 0
@@ -2606,7 +2624,9 @@ class MainWindow(QMainWindow):
         self.history_ay.clear()
         self.history_az.clear()
 
+        startup_requested = self.startup_auto_edge
         self._cancel_motion()
+        self.startup_auto_edge = startup_requested
         self.worker.send_cmd("APP 0")
         self.worker.send_cmd("STATE?")
 
@@ -2650,6 +2670,9 @@ class MainWindow(QMainWindow):
     # 硬件自检与安全互锁机制
     # =====================================================================
     def _cancel_motion(self):
+        self.startup_auto_edge = False
+        self.edge_profile_pending = False
+        self.edge_profile_ack = False
         self.debounce_timer.stop()
         self.pending_flag = False
         self.pending_speed = [0.0, 0.0, 0.0]
@@ -2679,6 +2702,7 @@ class MainWindow(QMainWindow):
         self.cl_group.setVisible(state.get("App", 0) == 0)
         self.card_self_test.setVisible(state.get("App", 0) == 0)
         self.balance_config.setVisible(state.get("App", 0) == 1)
+        self.auto_edge_group.setVisible(state.get("App", 0) == 1)
         self.btn_set_vq.setEnabled(not locked)
         self.btn_set_vlim.setEnabled(not locked)
         self.btn_stop_all.setEnabled(True)
@@ -2687,13 +2711,23 @@ class MainWindow(QMainWindow):
         self.combo_app.setEnabled(connected and not self.self_test_running)
         self.combo_debug.setEnabled(connected and not self.self_test_running and state.get('App', 0) == 0)
         needed = self.active_motors if state.get('BMode') == 4 else (self.active_motors[state.get('BMode', 1)-1],)
-        self.btn_balance_start.setEnabled(connected and not self.self_test_running and not self.expected_state and
+        self.btn_balance_start.setEnabled(connected and not self.self_test_running and not self.expected_state and not self.edge_profile_pending and
             state.get('App') == 1 and state.get('Bal', 0) in (0, 4) and bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 1)) and bool(state.get('AxesOK', 1)) and bool(state.get('DirOK', 1)) and all(needed))
-        self.btn_balance_countdown.setEnabled(connected and not self.self_test_running and not self.expected_state and
+        self.btn_balance_countdown.setEnabled(connected and not self.self_test_running and not self.expected_state and not self.edge_profile_pending and
             state.get('App') == 1 and state.get('BMode', 1) != 4 and state.get('Bal', 0) in (0, 4) and
             bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 0)) and bool(state.get('AxesOK', 0)) and bool(state.get('DirOK', 0)) and all(needed))
         self.card_self_test.btn_run_test.setEnabled(connected and not self.self_test_running and state.get('App', 0) == 0)
         self.btn_trip_angle.setEnabled(connected and not self.self_test_running and state.get('Bal', 0) in (0, 4))
+        auto_capable = 'Auto' in state and state.get('BMode', 4) < 4
+        idle = state.get('Bal', 0) in (0, 4) and state.get('EN') == '000' and not self.edge_profile_pending
+        ready = (state.get('App') == 1 and bool(state.get('Cal')) and bool(state.get('IMU')) and
+                 bool(state.get('Ref')) and bool(state.get('AxesOK')) and bool(state.get('DirOK')) and all(needed))
+        self.btn_auto_edge.setEnabled(connected and not self.self_test_running and not self.expected_state and
+            auto_capable and (bool(state.get('Auto')) or (idle and ready and float(state.get('SLimit', 0)) > float(state.get('FullSpeed', 250)))))
+        self.btn_auto_edge.setText('停止自动单边并失能' if state.get('Auto') else '启动自动单边（无固定时长）')
+        self.btn_edge_profile.setEnabled(connected and idle and not self.self_test_running and 'Auto' in state and
+            bool(state.get('Cal')) and bool(state.get('IMU')) and self.active_motors[0])
+        self.btn_full_speed.setEnabled(connected and idle and not self.self_test_running and 'Auto' in state)
 
     def _create_mode_panel(self):
         self.mode_group = QGroupBox("运行模式与平衡控制")
@@ -2788,6 +2822,27 @@ class MainWindow(QMainWindow):
         self.btn_trip_angle = QPushButton('设置停机角度（先失能）')
         self.btn_trip_angle.clicked.connect(self.action_set_trip_angle)
         layout.addWidget(self.btn_trip_angle,23,0,1,2)
+        self.auto_edge_group = QGroupBox('单边平衡检测与自动运行')
+        outer.insertWidget(1,self.auto_edge_group)
+        auto_layout = QGridLayout(self.auto_edge_group)
+        self.lbl_edge_detect = QLabel('单边检测：等待设备状态')
+        self.lbl_edge_detect.setWordWrap(True)
+        auto_layout.addWidget(self.lbl_edge_detect,0,0,1,2)
+        self.btn_edge_profile = QPushButton('加载已验证 M1 配置（失能）')
+        self.btn_edge_profile.setToolTip('M1已对齐且IMU已静止校准后可加载。49°参考仅适用于当前安装与支撑棱；参数80/5/-0.045/0，6V。')
+        self.btn_edge_profile.clicked.connect(self.action_load_edge_profile)
+        auto_layout.addWidget(self.btn_edge_profile,1,0,1,2)
+        self.spin_full_speed = NoWheelDoubleSpinBox()
+        self.spin_full_speed.setRange(10,350);self.spin_full_speed.setValue(250);self.spin_full_speed.setSuffix(' rad/s')
+        auto_layout.addWidget(QLabel('满速保护（持续3秒）'),2,0);auto_layout.addWidget(self.spin_full_speed,2,1)
+        self.btn_full_speed = QPushButton('设置满速阈值（先失能）')
+        self.btn_full_speed.clicked.connect(self.action_set_full_speed)
+        auto_layout.addWidget(self.btn_full_speed,3,0,1,2)
+        self.btn_auto_edge = QPushButton('启动自动单边（无固定时长）')
+        self.btn_auto_edge.setToolTip('±3°、低角速度、飞轮低于5rad/s持续1秒后倒计时8秒。PG6亮即松手。超过20°或满速持续3秒后失能等待下次入位。急停/断连/硬故障退出自动模式。')
+        self.btn_auto_edge.clicked.connect(self.action_toggle_auto_edge)
+        auto_layout.addWidget(self.btn_auto_edge,4,0,1,2)
+        for button in (self.btn_auto_edge,self.btn_edge_profile,self.btn_full_speed):button.setEnabled(False)
         self.mode_group.setEnabled(False)
         return self.mode_group
 
@@ -2795,6 +2850,46 @@ class MainWindow(QMainWindow):
         self._request_state_change("BAL 0")
         values = ' '.join(f'{spin.value():.4f}' for spin in self.balance_spins)
         self.worker.send_cmd(f"LQR{self.combo_gain_axis.currentIndex()+1} {values}")
+
+    def action_toggle_auto_edge(self):
+        state = self.device_state or {}
+        if state.get('Auto'):
+            self._request_state_change('BAUTO 0', {'Auto': 0})
+        elif self.btn_auto_edge.isEnabled():
+            self._request_state_change('BAUTO 1', {'Auto': 1})
+
+    def action_set_full_speed(self):
+        if self.spin_full_speed.value() >= float((self.device_state or {}).get('SLimit', 0)):
+            self.status_bar.showMessage('速度上限必须大于满速保护阈值；可先加载已验证配置')
+            return
+        self._request_state_change('BAL 0')
+        self.worker.send_cmd(f'BFULL {self.spin_full_speed.value():.1f}')
+
+    def action_load_edge_profile(self):
+        if not self.btn_edge_profile.isEnabled():return
+        self._request_state_change('BAL 0')
+        self.edge_profile_pending = True;self.edge_profile_ack = False
+        self.edge_profile_generation += 1;generation = self.edge_profile_generation
+        for command in ('APP 1','BMODE 1','BAXIS1 2','BDIR1 -1','U 6','L 330','BU 6',
+                        'LQR1 80 5 -0.045 0','BTRIP 20','BFULL 250','BCAP 10',
+                        'BREF -0.754515325 -0.022687334 0.655890166','STATE?'):
+            self.worker.send_cmd(command)
+        self.set_motor_controls_locked(True)
+        QTimer.singleShot(5000, lambda: self._edge_profile_timeout(generation))
+
+    def _edge_profile_timeout(self, generation):
+        if self.edge_profile_pending and self.edge_profile_generation == generation:
+            self._cancel_motion();self.worker.send_cmd('STOP')
+            self.status_bar.showMessage('单边配置未确认完成，已停止；请检查设备返回的错误')
+
+    def _startup_load_edge(self):
+        if not self.startup_auto_edge:return
+        self.action_load_edge_profile()
+        self.startup_auto_edge = self.edge_profile_pending
+
+    def _startup_arm_edge(self):
+        if self.startup_auto_edge and self.btn_auto_edge.isEnabled():
+            self.action_toggle_auto_edge()
 
     def action_send_axes(self):
         axes = ' '.join(str(c.currentIndex()+1) for c in self.axis_combos)
@@ -2826,12 +2921,22 @@ class MainWindow(QMainWindow):
 
     def on_state_received(self, state):
         first_state = self.device_state is None
+        previous_state = self.device_state or {}
         self.device_state = state
+        if self.edge_profile_pending and self.edge_profile_ack and all(state.get(k) == v for k,v in
+                {'App':1,'BMode':1,'Axis1':2,'D1':-1,'Ref':1,'EN':'000','TripDeg':20.0,'FullSpeed':250.0,'VLimit':6.0,'SLimit':330.0}.items()):
+            self.edge_profile_pending = False
+            self.spin_vq.setValue(6);self.spin_vlim.setValue(330)
+            self.combo_gain_axis.setCurrentIndex(0)
+            for spin,value in zip(self.balance_spins,(80,5,-.045,0)):spin.setValue(value)
+            self.status_bar.showMessage('M1单边配置已回读确认，电机失能；可启动自动单边检测')
         if first_state and "VLimit" in state:
             self.spin_vq.setValue(float(state["VLimit"]))
             self.spin_vlim.setValue(float(state["SLimit"]))
-        if 'TripDeg' in state:
+        if 'TripDeg' in state and previous_state.get('TripDeg') != state['TripDeg']:
             self.spin_trip_angle.setValue(float(state['TripDeg']))
+        if 'FullSpeed' in state and previous_state.get('FullSpeed') != state['FullSpeed']:
+            self.spin_full_speed.setValue(float(state['FullSpeed']))
         if first_state or self.sync_axes:
             for axis, combo in enumerate(self.axis_combos, 1):
                 if f'Axis{axis}' in state:
@@ -2860,6 +2965,7 @@ class MainWindow(QMainWindow):
         for card, en in zip((self.card_m1, self.card_m2, self.card_m3), state['EN']):
             card.set_enable_state(en == '1')
         names = {0: '已失能', 1: 'IMU静止校准中', 2: '等待3°接管窗口', 3: '平衡运行', 4: '跌倒/传感器保护，需手动重启', 5: '倒计时：靠近目标并扶稳，PG8常亮才可接管', 6: '等待扶到目标±10°内，电机失能', 7: '定时短力矩探测，结束自动失能'}
+        if state.get('Auto') and state['Bal'] == 6:names[6] = '自动等待入位：±3°稳定1秒，飞轮需低于5rad/s'
         self.lbl_balance.setText(f"{names.get(state['Bal'], '未知状态')} | 倾斜 {state['Tilt']:.2f}°\n"
             f"Uq {state['U1']:+.2f} / {state['U2']:+.2f} / {state['U3']:+.2f} V | 故障 {state['Fault']} | 停机码 {state['Trip']}")
         if state['Bal'] == 5:
@@ -2870,9 +2976,33 @@ class MainWindow(QMainWindow):
             self.lbl_balance.setText(self.lbl_balance.text() + '\n需确认轮轴映射 BAXIS 与机架方向 BDIR')
         if state.get('Ref') == 0:
             self.lbl_balance.setText(self.lbl_balance.text() + '\n当前模式尚未采集平衡姿态（BZERO）')
+        reasons = {0:'无',1:'倾角超过阈值',2:'满速持续3秒',3:'立即超速',4:'机体角速度过大',5:'传感器/安全故障'}
+        if state.get('BMode',4) < 4 and 'Auto' in state:
+            reason = state.get('BReason',0)
+            self.lbl_edge_detect.setText(
+                f"M{state['BMode']} 单边检测 | {'自动已启用' if state['Auto'] else '自动未启用'}\n"
+                f"{'入位条件符合' if state.get('EdgeReady') else '等待入位/静止/飞轮停转'} | 偏角 {float(state.get('Angle',0)):+.2f}°\n"
+                f"机体 {float(state.get('Rate',0)):+.3f} rad/s | 飞轮 {float(state.get('Wheel',0)):+.1f} rad/s\n"
+                f"满速 {float(state.get('FullSpeed',250)):.0f} rad/s，持续 {state.get('FullMs',0)/1000:.1f}/3.0秒\n"
+                f"保护：{reasons.get(reason,'未知')} | 重试冷却 {state.get('RetryMs',0)/1000:.1f}秒")
+            if reason and reason != self.last_balance_reason:
+                self.append_log(f"[单边保护] {reasons.get(reason,'未知')}；{'失能等待下次入位' if state['Auto'] else '自动已退出，需重新启动'}")
+            self.last_balance_reason = reason
+        else:self.lbl_edge_detect.setText('单边自动检测仅适用于边沿模式，并需要支持BAUTO的固件')
         if state.get('EncType') == 1:
             self.lbl_balance.setText(self.lbl_balance.text() + f"\nF4正交 CPR={state.get('C1', '?')}/{state.get('C2', '?')}/{state.get('C3', '?')}，计数器状态不能判断模块在线")
         self.set_motor_controls_locked(bool(self.expected_state) or self.self_test_running or bool(state['Trip']))
+        if self.startup_auto_edge:
+            if self.startup_edge_phase == 0:
+                if self.btn_edge_profile.isEnabled():
+                    self.startup_edge_phase = 1
+                    QTimer.singleShot(0,self._startup_load_edge)
+                else:
+                    self.startup_auto_edge = False
+                    self.status_bar.showMessage('自动启动未执行：先完成M1自检、IMU校准并确认固件支持自动单边')
+            elif self.startup_edge_phase == 1 and not self.edge_profile_pending and self.edge_profile_ack:
+                self.startup_edge_phase = 2
+                QTimer.singleShot(0,self._startup_arm_edge)
 
     def action_start_self_test(self):
         """用户点击开始自检按钮"""
@@ -3244,6 +3374,10 @@ class MainWindow(QMainWindow):
     # 日志输出管理
     # =====================================================================
     def on_log_rx(self, line):
+        if self.edge_profile_pending:
+            if line == 'OK BREF':self.edge_profile_ack = True
+            elif line.startswith('ERR') and line != 'ERR SAFETY_TRIP:1':
+                self._cancel_motion();self.worker.send_cmd('STOP')
         if line.startswith("OK BAXIS"):
             self.sync_axes = True
         if line == "OK BDIR":
@@ -3270,6 +3404,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         """平稳释放资源"""
+        self._cancel_motion()
         self.plot_timer.stop()
         self.port_scan_timer.stop()
         self.debounce_timer.stop()
@@ -3283,12 +3418,18 @@ class MainWindow(QMainWindow):
 # 程序入口
 # =========================================================================
 def main():
+    parser = argparse.ArgumentParser(description='Cubli调试与单边平衡上位机')
+    parser.add_argument('--port',help='启动后连接的串口，如COM9')
+    parser.add_argument('--auto-m1',action='store_true',help='连接后加载已验证M1配置并启用自动检测，要求已完成对齐和IMU校准')
+    parser.add_argument('--state-json',type=Path,help='可选实时状态记录文件')
+    args,qt_args = parser.parse_known_args()
+    if args.auto_m1 and not args.port:parser.error('--auto-m1 requires --port')
     if hasattr(Qt, 'AA_EnableHighDpiScaling'):
         QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
         QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
-    app = QApplication(sys.argv)
+    app = QApplication([sys.argv[0]]+qt_args)
     app.setStyle("Fusion")
 
     palette = QPalette()
@@ -3307,7 +3448,17 @@ def main():
     app.setPalette(palette)
 
     win = MainWindow()
+    if args.state_json:
+        def record_state(state):
+            tmp = args.state_json.with_suffix('.tmp')
+            try:
+                tmp.write_text(json.dumps({'recorded_at':time.time(),'state':state},ensure_ascii=False),encoding='utf-8')
+                tmp.replace(args.state_json)
+            except OSError:pass
+        win.worker.sig_state.connect(record_state)
+    win.startup_auto_edge = args.auto_m1
     win.show()
+    if args.port:QTimer.singleShot(0,lambda:win.worker.connect_port(args.port))
     sys.exit(app.exec_())
 
 

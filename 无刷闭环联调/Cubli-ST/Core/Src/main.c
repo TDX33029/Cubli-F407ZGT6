@@ -263,7 +263,8 @@ int main(void)
                         if(remaining>1000U?(cur_tick%1000U<150U):(cur_tick%250U<125U)) on|=GPIO_PIN_5;
                     }
                     if(cubli_bal.state==BAL_STATE_BALANCING || cubli_bal.state==BAL_STATE_PROBE) on|=GPIO_PIN_6;
-                    if(cubli_bal.state==BAL_STATE_FALL_PROTECT || safety_trip>1) on|=GPIO_PIN_7;
+                    if(cubli_bal.state==BAL_STATE_FALL_PROTECT || safety_trip>1 ||
+                       (cubli_bal.auto_enabled && cubli_bal.stop_reason!=BAL_STOP_NONE)) on|=GPIO_PIN_7;
                     if(app_mode && !safety_trip && cubli_bal.state!=BAL_STATE_FALL_PROTECT &&
                        LQR_AxesConfirmed() && LQR_DirectionsConfirmed() &&
                        aligned && cubli_bal.reference_valid[m] && cur_tick-last_ping_ms<=1500U &&
@@ -343,14 +344,14 @@ int main(void)
 					/* 依据动态映射表获取每个电机对应的编码器实时机械角度 (直接读取FOC核心更新的角度，避免总线重复阻塞) */
 
 
-						if(telemetry_enabled && !fast_mask && USART_TxFree() > 512)
+                if((telemetry_enabled || fast_mask) && (tele_counter%5)==0 && cubli_bal.state!=BAL_STATE_PROBE) Control_Status();
+						if(telemetry_enabled && !fast_mask && (tele_counter%5)!=0 && USART_TxFree() > 512)
 						{
 							/* 扩展标准化遥测格式 (包含三电机目标速度、相电压、使能状态、电角度、六轴陀螺仪加速度、通道映射后MT6701角度H1/H2/H3、实测滤波转速S1/S2/S3、解算Pitch/Roll姿态角及平衡状态Bal) */
                             Control_Telemetry();
 
 						}
 
-                if((telemetry_enabled || fast_mask) && (tele_counter%5)==0 && cubli_bal.state!=BAL_STATE_PROBE) Control_Status();
 
 				/* 200ms (5次) 翻转LED指示灯: PG0对应M1, PG1对应M2, PG2对应M3 */
 				if((tele_counter % 5) == 0)
@@ -456,6 +457,8 @@ void Control_Heartbeat(void) { last_ping_ms=HAL_GetTick(); }
 uint8_t Control_Aborted(void) { return safety_trip; }
 void Control_RequestStop(uint8_t reason) {
     if(!safety_trip) safety_trip=reason;
+    cubli_bal.auto_enabled=false;
+    if(reason>1) cubli_bal.stop_reason=BAL_STOP_FAULT;
     GPIOD->BSRR=(GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2)<<16;
     TIM1->CCR1=TIM1->CCR2=TIM1->CCR3=0;
     TIM3->CCR1=TIM3->CCR2=TIM3->CCR3=0;
@@ -567,7 +570,7 @@ static void Control_Telemetry(void) {
     report_int("Bal",cubli_bal.state);UART_WriteText("#\r\n");
 }
 void Control_Status(void) {
-    if(USART_TxFree()<512) return;
+    if(USART_TxFree()<900) return;
     UART_WriteText("$STATE");
     report_int("App",app_mode);
     report_int("Dbg",debug_motor);
@@ -585,6 +588,14 @@ void Control_Status(void) {
     report_float("PoseTilt",cubli_bal.pose_tilt_deg,2);
     report_float("Angle",cubli_bal.signed_tilt_deg,2);
     report_float("TripDeg",cubli_bal.max_angle_trip*RAD_TO_DEG,1);
+    report_int("Auto",cubli_bal.auto_enabled);
+    report_int("BReason",cubli_bal.stop_reason);
+    report_float("FullSpeed",cubli_bal.full_speed_limit,1);
+    report_int("FullMs",LQR_FullSpeedElapsedMs());
+    report_int("RetryMs",LQR_AutoRetryRemainingMs());
+    report_int("EdgeReady",LQR_AutoPoseReady());
+    report_float("Wheel",cubli_bal.mode<3?shaft_velocity[cubli_bal.mode]:0,2);
+    report_float("Rate",cubli_bal.mode<3?cubli_bal.attitude.gyro_rad[cubli_bal.body_axis[cubli_bal.mode]]:0,3);
     report_float("U1",voltage[0].q,2);
     report_float("U2",voltage[1].q,2);
     report_float("U3",voltage[2].q,2);
@@ -629,7 +640,7 @@ void commander_run(void) {
         printf("APP 0=DEBUG/1=WORK; DBG 1..3; MODE 0=open/1=closed; TEST [axis]; ALIGN [axis]\r\n"
                "PP1/PP2/PP3 pairs; PP?; FREQ 1=reset, FREQ?=sample diagnostics\r\n"
                "M1/M2/M3 speed independently; EN1/EN2/EN3 0/1; ACC rad/s^2; STOP; PING (every 250ms)\r\n"
-               "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BREF gx gy gz; BAXIS1/2/3 1..3; BDIR1/2/3 +/-1; BAL 0/1; BSTART 3..15 seconds; BCAP 2..10 deg; BTRIP 10..60 deg; BPROBE volts ms\r\n"
+               "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BREF gx gy gz; BAXIS1/2/3 1..3; BDIR1/2/3 +/-1; BAL 0/1; BSTART 3..15 seconds; BAUTO 0/1 [3..15 seconds]; BFULL speed; BCAP 2..10 deg; BTRIP 10..60 deg; BPROBE volts ms\r\n"
                "LQR1/2/3 [Kp Kd Kw Ki]; ZERO1/2/3 deg (edge); BU volts; U volts; L rad/s; PID1/2/3 [P I D]; TF seconds\r\n"
                "FF[1/2/3] [coulomb_V bemf_V_per_rad_s]; STATE?\r\n"); Control_Status();
     } else if(!strcmp(name,"APP") && n==1 && (v[0]==0 || v[0]==1)) {
@@ -645,6 +656,18 @@ void commander_run(void) {
             if(cubli_bal.state!=BAL_STATE_STANDBY) {printf("ERR BAL (ALIGN, CAL_IMU, BAXIS, BDIR, BZERO required)\r\n");return;}
         }
         printf("OK BAL:%d\r\n",(int)v[0]);
+    } else if(!strcmp(name,"BAUTO") && ((n==1 && (v[0]==0 || v[0]==1)) ||
+              (n==2 && v[0]==1 && v[1]>=3 && v[1]<=15 && v[1]==(int)v[1]))) {
+        Control_Stop();
+        if(v[0]) {
+            if(!app_mode || !imu_online || !control_reset_latch() || !LQR_StartAuto(n==2?(uint8_t)v[1]:8)) {
+                printf("ERR BAUTO (edge ALIGN/CAL/AXIS/DIR/REF and L>BFULL required)\r\n");return;
+            }
+        }
+        printf("OK BAUTO:%d\r\n",(int)v[0]);
+    } else if(!strcmp(name,"BFULL") && n==1 && v[0]>=10 && v[0]<velocity_limit) {
+        if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
+        cubli_bal.full_speed_limit=v[0];printf("OK BFULL\r\n");
     } else if(!strcmp(name,"BSTART") && n==1 && v[0]>=3 && v[0]<=15 && v[0]==(int)v[0]) {
         Control_Stop();
         if(!app_mode || !imu_online || !control_reset_latch() || !LQR_StartCountdown((uint8_t)v[0])) {

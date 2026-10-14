@@ -11,6 +11,8 @@ ui = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ui)
 app = ui.QApplication.instance() or ui.QApplication([])
 STATE = '$STATE,App:0,Dbg:2,Mode:0,BMode:1,Bal:0,Cal:1,IMU:1,Aligned:111,EN:010,Fault:0,Trip:0,Tilt:0.12,U1:0.00,U2:0.25,U3:0.00#'
+AUTO_STATE = STATE.replace('App:0','App:1').replace('EN:010','EN:000').replace('Aligned:111','Aligned:100').replace('#',
+    ',Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:1,Wheel:0.0,Rate:0.0,Angle:0.1,PoseTilt:0.1,TripDeg:20.0,VLimit:6.0,SLimit:330.0,Ref:1,AxesOK:1,DirOK:1,Axis1:2,D1:-1#')
 class UpperTests(unittest.TestCase):
     def setUp(self):
         self.win = ui.MainWindow()
@@ -46,6 +48,88 @@ class UpperTests(unittest.TestCase):
         self.assertIn('PP14', self.win.card_m2.title())
         self.win.worker._process_received_line(state.replace('Ref:0','Ref:1'))
         self.assertTrue(self.win.btn_balance_start.isEnabled())
+    def test_auto_edge_start_stop_and_protection_status(self):
+        self.win.worker._process_received_line(AUTO_STATE)
+        self.assertTrue(self.win.btn_auto_edge.isEnabled())
+        self.win.btn_auto_edge.click()
+        self.assertEqual(self.queued(),['BAUTO 1'])
+        waiting=AUTO_STATE.replace('Auto:0','Auto:1').replace('Bal:0','Bal:6').replace('BReason:0','BReason:2').replace('RetryMs:0','RetryMs:500')
+        self.win.worker._process_received_line(waiting)
+        self.assertIn('满速持续3秒',self.win.lbl_edge_detect.text())
+        self.assertIn('0.5秒',self.win.lbl_edge_detect.text())
+        self.assertTrue(self.win.btn_auto_edge.isEnabled())
+        self.win.btn_auto_edge.click()
+        self.assertEqual(self.queued(),['BAUTO 0'])
+    def test_auto_edge_requires_reference_limit_and_selected_axis(self):
+        for bad in (AUTO_STATE.replace('Ref:1','Ref:0'),AUTO_STATE.replace('Aligned:100','Aligned:000'),
+                    AUTO_STATE.replace('SLimit:330.0','SLimit:180.0'),AUTO_STATE.replace('BMode:1','BMode:4')):
+            self.win.worker._process_received_line(bad)
+            self.assertFalse(self.win.btn_auto_edge.isEnabled())
+        self.win.worker._process_received_line(STATE)
+        self.assertFalse(self.win.btn_auto_edge.isEnabled()) # Older firmware lacks Auto.
+    def test_edge_profile_waits_for_ack_and_fresh_matching_state(self):
+        self.win.worker._process_received_line(AUTO_STATE)
+        self.win.btn_edge_profile.click()
+        self.assertTrue(self.win.edge_profile_pending)
+        self.assertIn('LQR1 80 5 -0.045 0',self.queued())
+        self.assertIn('BFULL 250',self.queued())
+        self.assertNotIn('BAUTO 1',self.queued())
+        self.win.worker._process_received_line(AUTO_STATE)
+        self.assertTrue(self.win.edge_profile_pending)
+        self.assertFalse(self.win.btn_auto_edge.isEnabled())
+        self.win.worker._process_received_line('OK BREF')
+        self.win.worker._process_received_line(AUTO_STATE)
+        self.assertFalse(self.win.edge_profile_pending)
+        self.assertTrue(self.win.btn_auto_edge.isEnabled())
+        self.assertAlmostEqual(self.win.balance_spins[2].value(),-.045)
+    def test_edge_profile_error_cancels_remaining_commands(self):
+        self.win.worker._process_received_line(AUTO_STATE)
+        self.win.btn_edge_profile.click()
+        self.win.worker._process_received_line('ERR BREF')
+        self.assertFalse(self.win.edge_profile_pending)
+        self.assertEqual(self.queued(),['STOP'])
+    def test_auto_fields_validation_and_user_edit_preservation(self):
+        self.win.worker._process_received_line(AUTO_STATE)
+        self.win.spin_full_speed.setValue(270)
+        self.win.spin_trip_angle.setValue(25)
+        self.win.worker._process_received_line(AUTO_STATE)
+        self.assertEqual(self.win.spin_full_speed.value(),270)
+        self.assertEqual(self.win.spin_trip_angle.value(),25)
+        before=self.win.device_state.copy()
+        for bad in (AUTO_STATE.replace('Auto:0','Auto:2'),AUTO_STATE.replace('FullMs:0','FullMs:3001'),AUTO_STATE.replace('Rate:0.0','Rate:nan')):
+            self.win.worker._process_received_line(bad)
+            self.assertEqual(self.win.device_state,before)
+    def test_emergency_stop_cancels_auto_arm(self):
+        self.win.worker._process_received_line(AUTO_STATE)
+        self.win.btn_auto_edge.click()
+        self.win.action_emergency_stop()
+        self.assertEqual(self.queued(),['STOP'])
+    def test_startup_auto_load_then_arm_after_confirmed_profile(self):
+        self.win.startup_auto_edge=True
+        self.win.worker._process_received_line(AUTO_STATE)
+        app.processEvents()
+        self.assertTrue(self.win.edge_profile_pending)
+        self.assertTrue(self.win.startup_auto_edge)
+        self.win.worker._process_received_line('OK BREF')
+        self.win.worker._process_received_line(AUTO_STATE)
+        app.processEvents()
+        self.assertEqual(self.queued(),['BAUTO 1'])
+    def test_startup_auto_cannot_override_emergency_stop(self):
+        self.win.startup_auto_edge=True
+        self.win.worker._process_received_line(AUTO_STATE)
+        app.processEvents()
+        self.win.worker._process_received_line('OK BREF')
+        self.win.worker._process_received_line(AUTO_STATE)
+        self.win.action_emergency_stop()
+        app.processEvents()
+        self.assertEqual(self.queued(),['STOP'])
+        self.assertFalse(self.win.startup_auto_edge)
+    def test_startup_auto_requires_alignment_and_calibration(self):
+        self.win.startup_auto_edge=True
+        self.win.worker._process_received_line(AUTO_STATE.replace('Cal:1','Cal:0'))
+        app.processEvents()
+        self.assertFalse(self.win.startup_auto_edge)
+        self.assertEqual(self.queued(),[])
     def test_body_axes_need_confirmation(self):
         state=STATE.replace('App:0','App:1').replace('#', ',Ref:1,AxesOK:0,DirOK:0,Axis1:1,Axis2:2,Axis3:3#')
         self.win.worker._process_received_line(state)

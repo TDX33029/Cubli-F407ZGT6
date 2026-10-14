@@ -44,6 +44,7 @@ static void cross3(const float *a, const float *b, float *r) {
 static void clear_output(void) {
     int i;
     cubli_bal.balance_since_ms=0;
+    cubli_bal.full_speed_mask=0;
     set_motor_enable(0, 0);
     for(i=0;i<3;i++) {
         cubli_bal.control_u[i]=cubli_bal.wheel_int[i]=0;
@@ -52,13 +53,29 @@ static void clear_output(void) {
     }
 }
 void LQR_Trip(void) {
+    cubli_bal.auto_enabled=false;
+    cubli_bal.stop_reason=BAL_STOP_FAULT;
     clear_output(); cubli_bal.state=BAL_STATE_FALL_PROTECT;
+}
+static void protect_balance(BalanceStop_e reason) {
+    bool retry=cubli_bal.auto_enabled && (reason==BAL_STOP_ANGLE || reason==BAL_STOP_FULL_SPEED);
+    clear_output();cubli_bal.stop_reason=reason;
+    cubli_bal.capture_since_ms=0;
+    cubli_bal.countdown_deadline_ms=cubli_bal.countdown_stable_ms=0;
+    if(retry) {
+        cubli_bal.auto_retry_deadline_ms=HAL_GetTick()+1000U;
+        cubli_bal.state=BAL_STATE_WAIT_POSE;
+    } else {
+        cubli_bal.auto_enabled=false;
+        cubli_bal.state=BAL_STATE_FALL_PROTECT;
+    }
 }
 void LQR_Balance_Init(void) {
     int i;
     memset(&cubli_bal,0,sizeof(cubli_bal));
     cubli_bal.max_angle_trip=20*DEG_TO_RAD;
     cubli_bal.capture_angle=10*DEG_TO_RAD;
+    cubli_bal.full_speed_limit=250;
     cubli_bal.K_yaw_damping=0.3f;
     for(i=0;i<3;i++) {
         LQR_Gains_t g={32.0f,2.4f,0.08f,0.008f,0,5};
@@ -73,6 +90,7 @@ void LQR_Balance_Init(void) {
 void LQR_Balance_Enable(bool enable) {
     int i,first,last;
     clear_output(); cubli_bal.state=BAL_STATE_DISABLED;
+    cubli_bal.auto_enabled=false;cubli_bal.auto_retry_deadline_ms=0;
     cubli_bal.capture_since_ms=0;
     cubli_bal.countdown_deadline_ms=cubli_bal.countdown_stable_ms=0;
     cubli_bal.countdown_seconds=0;
@@ -106,6 +124,37 @@ bool LQR_StartCountdown(uint8_t seconds) {
     cubli_bal.countdown_seconds=seconds;
     cubli_bal.state=BAL_STATE_WAIT_POSE;
     return true;
+}
+bool LQR_StartAuto(uint8_t seconds) {
+    if(cubli_bal.full_speed_limit>=velocity_limit || !LQR_StartCountdown(seconds)) return false;
+    cubli_bal.auto_enabled=true;
+    cubli_bal.max_angle_trip=20*DEG_TO_RAD;
+    cubli_bal.stop_reason=BAL_STOP_NONE;
+    return true;
+}
+uint32_t LQR_AutoRetryRemainingMs(void) {
+    int32_t left;
+    if(!cubli_bal.auto_enabled || !cubli_bal.auto_retry_deadline_ms) return 0;
+    left=(int32_t)(cubli_bal.auto_retry_deadline_ms-HAL_GetTick());
+    return left>0?(uint32_t)left:0;
+}
+bool LQR_AutoPoseReady(void) {
+    int m=(int)cubli_bal.mode;
+    return m<3 && !Control_Aborted() && !LQR_AutoRetryRemainingMs() &&
+        LQR_AxesConfirmed() && LQR_DirectionsConfirmed() && cubli_bal.reference_valid[m] &&
+        motor_aligned[m] && sensor_valid[m] && cubli_bal.attitude.is_calibrated && cubli_bal.attitude.valid &&
+        HAL_GetTick()-cubli_bal.attitude.last_sample_ms<=30U &&
+        cubli_bal.pose_tilt_deg<3 && fabsf(cubli_bal.signed_tilt_deg)<3 &&
+        norm3(cubli_bal.attitude.gyro_rad)<0.2f && fabsf(shaft_velocity[m])<5;
+}
+uint32_t LQR_FullSpeedElapsedMs(void) {
+    int i;uint32_t longest=0;
+    if(cubli_bal.state!=BAL_STATE_BALANCING) return 0;
+    for(i=0;i<3;i++) if(cubli_bal.full_speed_mask&(1U<<i)) {
+        uint32_t elapsed=HAL_GetTick()-cubli_bal.full_speed_since_ms[i];
+        if(elapsed>longest) longest=elapsed;
+    }
+    return longest>3000U?3000U:longest;
 }
 bool LQR_StartProbe(float volts,uint16_t duration_ms) {
     int i,m=(int)cubli_bal.mode;
@@ -209,10 +258,11 @@ void LQR_Balance_Loop(void) {
            dt<=0 || dt>0.03f || Control_Aborted()) {LQR_Trip();return;}
         cubli_bal.tilt_deg=full_tilt*RAD_TO_DEG;
         cubli_bal.signed_tilt_deg=(atan2f(err[axis],dot3(g,ref)-g[axis]*ref[axis])-cubli_bal.gains[m].theta_0)*RAD_TO_DEG;
+        if(cubli_bal.auto_enabled) within=LQR_AutoPoseReady();
         if(cubli_bal.state==BAL_STATE_WAIT_POSE) {
             if(!within || norm3(cubli_bal.attitude.gyro_rad)>0.6f) {cubli_bal.capture_since_ms=0;return;}
             if(!cubli_bal.capture_since_ms) cubli_bal.capture_since_ms=ms;
-            if(ms-cubli_bal.capture_since_ms>=100U) {
+            if(ms-cubli_bal.capture_since_ms>=(cubli_bal.auto_enabled?1000U:100U)) {
                 cubli_bal.state=BAL_STATE_COUNTDOWN;
                 cubli_bal.countdown_deadline_ms=ms+1000U*cubli_bal.countdown_seconds;
                 cubli_bal.countdown_stable_ms=0;
@@ -235,9 +285,15 @@ void LQR_Balance_Loop(void) {
                 return;
             }
             /* Keep the deliberately captured target; do not follow a moved pose. */
+            bool automatic=cubli_bal.auto_enabled;
+            uint8_t retry_seconds=cubli_bal.countdown_seconds;
             LQR_Balance_Enable(true);
             if(cubli_bal.state!=BAL_STATE_STANDBY) LQR_Trip();
-            else cubli_bal.capture_since_ms=ms-100U;
+            else {
+                cubli_bal.auto_enabled=automatic;
+                if(automatic) cubli_bal.countdown_seconds=retry_seconds;
+                cubli_bal.capture_since_ms=ms-100U;
+            }
         }
         return;
     }
@@ -257,13 +313,14 @@ void LQR_Balance_Loop(void) {
     if(!active) return;
     if(dt<=0 || dt>0.03f || HAL_GetTick()-cubli_bal.attitude.last_sample_ms>30 || Control_Aborted()) {LQR_Trip();return;}
     /* Protect against falls away from the selected edge axis as well. */
-    if(cubli_bal.state==BAL_STATE_BALANCING &&
-       (tilt>cubli_bal.max_angle_trip ||
-        full_tilt>cubli_bal.max_angle_trip ||
-        norm3(cubli_bal.attitude.gyro_rad)>3.0f)) {LQR_Trip();return;}
+    if(cubli_bal.state==BAL_STATE_BALANCING) {
+        if(tilt>cubli_bal.max_angle_trip || full_tilt>cubli_bal.max_angle_trip) {protect_balance(BAL_STOP_ANGLE);return;}
+        if(norm3(cubli_bal.attitude.gyro_rad)>3.0f) {protect_balance(BAL_STOP_BODY_RATE);return;}
+    }
     if(cubli_bal.state==BAL_STATE_STANDBY) {
         uint32_t now_ms=HAL_GetTick();
         if(tilt>=fminf(cubli_bal.capture_angle,3*DEG_TO_RAD) || full_tilt>=fminf(cubli_bal.capture_angle,3*DEG_TO_RAD) || norm3(cubli_bal.attitude.gyro_rad)>0.35f) {cubli_bal.capture_since_ms=0;return;}
+        if(cubli_bal.auto_enabled && !LQR_AutoPoseReady()) {cubli_bal.capture_since_ms=0;return;}
         if(!cubli_bal.capture_since_ms) {cubli_bal.capture_since_ms=now_ms;return;}
         if(now_ms-cubli_bal.capture_since_ms<100U) return;
         first=m<3?m:0; last=m<3?m:2;
@@ -271,6 +328,7 @@ void LQR_Balance_Loop(void) {
         if(Control_Aborted()) {LQR_Trip();return;}
         cubli_bal.state=BAL_STATE_BALANCING;
         cubli_bal.balance_since_ms=HAL_GetTick();
+        cubli_bal.stop_reason=BAL_STOP_NONE;cubli_bal.auto_retry_deadline_ms=0;
     }
     rate_yaw=dot3(cubli_bal.attitude.gyro_rad,ref);
     first=m<3?m:0; last=m<3?m:2;
@@ -283,7 +341,14 @@ void LQR_Balance_Loop(void) {
            motion from the wheel feedback path; introduce that path gradually
            after 500ms, reaching its configured gain at 1500ms. */
         float wheel_weight=_constrain(((float)(HAL_GetTick()-cubli_bal.balance_since_ms)-500.0f)/1000.0f,0,1);
-        if(!sensor_valid[i] || !motor_aligned[i] || fabsf(shaft_velocity[i])>velocity_limit) {LQR_Trip();return;}
+        if(!sensor_valid[i] || !motor_aligned[i]) {LQR_Trip();return;}
+        if(fabsf(shaft_velocity[i])>velocity_limit) {protect_balance(BAL_STOP_OVERSPEED);return;}
+        if(fabsf(shaft_velocity[i])>=cubli_bal.full_speed_limit) {
+            if(!(cubli_bal.full_speed_mask&(1U<<i))) {
+                cubli_bal.full_speed_mask|=(uint8_t)(1U<<i);
+                cubli_bal.full_speed_since_ms[i]=HAL_GetTick();
+            } else if(HAL_GetTick()-cubli_bal.full_speed_since_ms[i]>=3000U) {protect_balance(BAL_STOP_FULL_SPEED);return;}
+        } else cubli_bal.full_speed_mask&=(uint8_t)~(1U<<i);
         if(m==3) rate-=rate_yaw*ref[axis];
         body=p->K_theta*err[axis]+p->K_dtheta*rate;
         if(m==3) body+=cubli_bal.K_yaw_damping*rate_yaw*ref[axis];

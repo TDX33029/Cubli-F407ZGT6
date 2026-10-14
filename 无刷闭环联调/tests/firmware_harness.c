@@ -8,17 +8,19 @@ static int16_t encoder_raw[3];
 static int true_map[3]={2,0,1},true_sign[3]={1,-1,1},true_pp[3]={7,7,7};
 static float rotor[3],field_previous[3];
 static uint8_t field_seeded[3];
+static uint16_t mock_tx_free=1023;
+static unsigned uart_bytes;
 uint32_t HAL_GetTick(void) {return fake_ms;}
 uint32_t micros(void) {return fake_us;}
 void delay_ms(unsigned short ms) {fake_ms+=ms;fake_us+=ms*1000;Control_Heartbeat();}
 void delay_us(unsigned long us) {fake_us+=(uint32_t)us;fake_ms=fake_us/1000;Control_Heartbeat();}
 uint8_t USART_ReadLine(char *line) {if(!input_line)return 0;strcpy(line,input_line);input_line=NULL;return 1;}
 void USART_ClearCommands(void) {}
-uint16_t USART_TxFree(void) {return 1023;}
-void UART_WriteText(const char *text) {fputs(text,stdout);}
-void UART_WriteUInt(uint32_t value) {printf("%u",value);}
-void UART_WriteInt(int32_t value) {printf("%d",value);}
-void UART_WriteFixed(float value,uint8_t decimals) {printf("%.*f",decimals,value);}
+uint16_t USART_TxFree(void) {return mock_tx_free;}
+void UART_WriteText(const char *text) {uart_bytes+=(unsigned)strlen(text);fputs(text,stdout);}
+void UART_WriteUInt(uint32_t value) {uart_bytes+=(unsigned)printf("%u",value);}
+void UART_WriteInt(int32_t value) {uart_bytes+=(unsigned)printf("%d",value);}
+void UART_WriteFixed(float value,uint8_t decimals) {uart_bytes+=(unsigned)printf("%.*f",decimals,value);}
 uint16_t ENC_CountsPerRev(uint8_t idx) {return idx<3?16384:0;}
 static void model(void) {
     int m;
@@ -67,9 +69,56 @@ static void setup(void) {
   reset_sensor_tracking(i);updateSensor(i);encoder_diag[i].last_us=fake_us;
  }
 }
+static void auto_ticks(int count,float angle,float wheel) {
+ int j;
+ for(j=0;j<count;j++) {
+  advance();gravity(-sinf(angle),0,cosf(angle));shaft_velocity[0]=wheel;LQR_Balance_Loop();
+  assert(!m2_enabled&&!m3_enabled);
+ }
+}
+static void setup_auto(void) {
+ setup();command("APP 1");command("BAXIS1 2");command("BDIR1 -1");command("L 330");
+ cubli_bal.attitude.is_calibrated=true;gravity(0,0,1);command("BZERO");command("BFULL 250");command("BAUTO 1 3");
+ assert(cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
+}
+static void test_auto_edge(void) {
+ setup();command("APP 1");command("BAUTO 1");assert(!cubli_bal.auto_enabled&&!m1_enabled);
+ setup_auto();command("BFULL 200");assert(cubli_bal.full_speed_limit==250);
+ auto_ticks(300,4*DEG_TO_RAD,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ auto_ticks(100,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ cubli_bal.attitude.gyro_rad[1]=.21f;auto_ticks(220,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ cubli_bal.attitude.gyro_rad[1]=0;auto_ticks(220,0,6);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ auto_ticks(210,0,0);assert(cubli_bal.state==BAL_STATE_COUNTDOWN&&!m1_enabled);
+ auto_ticks(1,4*DEG_TO_RAD,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
+ auto_ticks(850,0,0);assert(cubli_bal.state==BAL_STATE_BALANCING&&m1_enabled&&cubli_bal.auto_enabled);
+ auto_ticks(12000,0,0);assert(m1_enabled); /* No elapsed-run deadline, even after60s. */
+ auto_ticks(1,19*DEG_TO_RAD,0);assert(m1_enabled);
+ auto_ticks(1,21*DEG_TO_RAD,0);assert(!m1_enabled&&cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_WAIT_POSE&&cubli_bal.stop_reason==BAL_STOP_ANGLE);
+ auto_ticks(250,0,40);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ auto_ticks(199,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ auto_ticks(2,0,0);assert(cubli_bal.state==BAL_STATE_COUNTDOWN);
+ auto_ticks(610,0,0);assert(m1_enabled&&cubli_bal.auto_enabled);
+ shaft_velocity[1]=300;auto_ticks(400,0,0);assert(m1_enabled&&!LQR_FullSpeedElapsedMs());shaft_velocity[1]=0;
+ auto_ticks(400,0,250);assert(m1_enabled&&LQR_FullSpeedElapsedMs()<2000);
+ auto_ticks(1,0,249);assert(!LQR_FullSpeedElapsedMs());
+ auto_ticks(600,0,250);assert(m1_enabled&&LQR_FullSpeedElapsedMs()==2995);
+ auto_ticks(1,0,250);assert(!m1_enabled&&cubli_bal.auto_enabled&&cubli_bal.stop_reason==BAL_STOP_FULL_SPEED);
+ auto_ticks(1100,0,0);assert(m1_enabled&&cubli_bal.auto_enabled);
+ auto_ticks(1,0,331);assert(!m1_enabled&&!cubli_bal.auto_enabled&&cubli_bal.stop_reason==BAL_STOP_OVERSPEED);
+ auto_ticks(1000,0,0);assert(cubli_bal.state==BAL_STATE_FALL_PROTECT);
+ setup_auto();auto_ticks(210,0,0);command("STOP");auto_ticks(1000,0,0);assert(!m1_enabled&&!cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_DISABLED);
+ setup_auto();command("BAUTO 0");auto_ticks(1000,0,0);assert(!cubli_bal.auto_enabled&&!m1_enabled&&cubli_bal.state==BAL_STATE_DISABLED);
+ setup_auto();fake_ms+=1501;fake_us+=1501000;main_alive_ms=fake_ms;Control_SafetyTick();gravity(0,0,1);LQR_Balance_Loop();assert(safety_trip==2&&!cubli_bal.auto_enabled&&!m1_enabled);
+ setup_auto();cubli_bal.attitude.valid=false;LQR_Balance_Loop();assert(!cubli_bal.auto_enabled&&!m1_enabled&&cubli_bal.state==BAL_STATE_FALL_PROTECT);
+ setup_auto();auto_ticks(850,0,0);fake_ms=0xffffffffU-1000U;Control_Heartbeat();gravity(0,0,1);
+ auto_ticks(601,0,250);assert(!m1_enabled&&cubli_bal.stop_reason==BAL_STOP_FULL_SPEED); /* HAL tick rollover. */
+ setup();mock_tx_free=899;uart_bytes=0;Control_Status();assert(!uart_bytes);
+ mock_tx_free=1023;Control_Status();assert(uart_bytes>0&&uart_bytes<900);
+}
 int main(void) {
  int i;float u;uint32_t saved;
  setvbuf(stdout,NULL,_IONBF,0);
+ test_auto_edge();
  setup();command("DBG 2");command("EN1 1");command("EN2 1");command("EN3 1");assert(m1_enabled&&m2_enabled&&m3_enabled);
  command("M1 20");command("M2 -30");command("M3 40");assert(target_m1==20&&target_m2==-30&&target_m3==40);
  command("M 180 -180 0");assert(target_m1==180&&target_m2==-180&&target_m3==0);
