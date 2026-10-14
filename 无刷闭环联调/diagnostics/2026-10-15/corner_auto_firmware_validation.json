@@ -23,5 +23,8 @@
     "hard_exit": "wheel above L (overspeed), body rate above 3 rad/s, sensor/heartbeat/stall faults stop and exit automatic mode",
     "profile": "LQR each 80/5/-0.030/0, BYAW 3, U=BU=6, L 330, BFULL 250, BTRIP 20, BCAP 2, reference gravity [-0.7028287890572913, 0.3977869310324257, 0.5897433770480731]"
   },
-  "flashed": false
+  "flashed": true,
+  "flash_verify": "STM32CubeProgrammer download verified successfully",
+  "post_flash_state": "App:0, BMode:1, Bal:0, Cal:0, Aligned:000, EN:000, Fault:0, CornerStart:1, YawTune:1, EncType:0(i2c)",
+  "post_flash_actions_required": "three-axis self-test (TEST 1/2/3), static IMU calibration (CAL_IMU), then load the verified corner profile before arming BAUTO"
 }
