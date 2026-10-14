@@ -44,8 +44,21 @@ parser.add_argument('--tilt-guard', type=float, default=28, help='Host backstop 
 parser.add_argument('--rate-guard', type=float, default=4.0, help='Host backstop during balancing, above the 3.0 rad/s trip')
 parser.add_argument('--kp', type=float, default=80)
 parser.add_argument('--kd', type=float, default=5)
-parser.add_argument('--kw', type=float, nargs=3, default=[-.030, -.030, -.030])
+parser.add_argument('--kw', type=float, nargs=3, default=[0.0, 0.0, 0.0],
+                    help='Wheel-speed feedback per axis, -0.5..0.5. Closed-loop model (corner_loop_model.py) and the '
+                         'recorded runs agree the slow mode is best damped at 0: -0.03 leaves only -0.25/s margin '
+                         '(8-13s hardware runs), <=-0.05 flips it into a growing oscillation (3s), and +0.03 destroyed '
+                         'body authority on hardware (1.4s fall, never use positive Kw).')
+parser.add_argument('--ki', type=float, default=0.0,
+                    help='Wheel-speed integral for all three axes, -0.5..0.5. Closed-loop analysis and the recorded '
+                         'runs show that any nonzero value (either sign) destabilizes the slow momentum mode of this '
+                         'firmware structure; keep 0 unless a new trim structure is flashed.')
 parser.add_argument('--yaw-damping', type=float, default=3)
+parser.add_argument('--tilt-trim', type=float, default=0.0,
+                    help='Corner tilt-error integral gain BTRIM, 0..10 V/(rad*s). Kept at 0: the integral can only '
+                         'move the rest pose onto the reference, it cannot stop the wheel ramp that a reference '
+                         'offset in pose space produces -- correct the reference with the settle-mean iteration '
+                         'instead. Requires firmware with TrimTune:1 when nonzero.')
 parser.add_argument('--body-axes', type=int, nargs=3, choices=(1, 2, 3), default=[2, 3, 1])
 parser.add_argument('--directions', type=int, nargs=3, choices=(-1, 1), default=[-1, -1, -1])
 parser.add_argument('--reference-gravity', type=float, nargs=3, default=list(VERIFIED_REFERENCE),
@@ -55,12 +68,13 @@ parser.add_argument('--prepare-only', action='store_true', help='Configure and v
 parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent / '2026-10-15')
 parser.add_argument('--live-state', type=Path)
 args = parser.parse_args()
-if not (3 <= args.countdown <= 15 and args.duration_minutes >= 0 and 30 <= args.wait_seconds <= 600
+if not (3 <= args.countdown <= 15 and args.duration_minutes >= 0 and 30 <= args.wait_seconds <= 1800
         and 0 < args.voltage <= 6 and 30 <= args.full_speed < args.wheel_limit <= 360
         and args.wheel_limit < args.wheel_guard <= 500
         and 20 < args.tilt_guard <= 40 and 3 <= args.rate_guard <= 6
-        and 0 <= args.kp <= 120 and 0 <= args.kd <= 10 and all(abs(v) <= .1 for v in args.kw)
-        and 0 <= args.yaw_damping <= 10 and sorted(args.body_axes) == [1, 2, 3]):
+        and 0 <= args.kp <= 120 and 0 <= args.kd <= 10 and all(-.5 <= v <= .5 for v in args.kw)
+        and -0.5 <= args.ki <= 0.5
+        and 0 <= args.yaw_damping <= 10 and 0 <= args.tilt_trim <= 10 and sorted(args.body_axes) == [1, 2, 3]):
     parser.error('Corner auto bounds exceeded')
 if args.reference_gravity is not None:
     norm = math.sqrt(sum(v * v for v in args.reference_gravity))
@@ -148,6 +162,8 @@ def close_segment_data(data):
                               math.sqrt(sum(float(data[k]) ** 2 for k in ('Gx', 'Gy', 'Gz'))) * math.pi / 180)
     for i in range(3):
         current['wheel_abs_max'][i] = max(current['wheel_abs_max'][i], abs(float(data[f'S{i+1}'])))
+        if f'T{i+1}' in data:
+            current.setdefault('trim_last', [0.0, 0.0, 0.0])[i] = float(data[f'T{i+1}'])
 
 
 def pump(duration):
@@ -246,13 +262,20 @@ def command(text, seconds=.12):
     pump(seconds)
 
 
-def confirm(predicate, label, timeout=1):
-    previous = revision
-    send('STATE?')
+def confirm(predicate, label, timeout=2):
+    # STATE? responses are silently dropped by the firmware when the TX buffer
+    # is congested (FAST telemetry), so re-query until the deadline instead of
+    # relying on a single request.
     deadline = time.monotonic() + timeout
+    next_query = 0
     while time.monotonic() < deadline:
-        pump(.02)
-        if revision > previous and predicate(state):
+        now = time.monotonic()
+        if now >= next_query:
+            send('STATE?')
+            next_query = now + .2
+        before = revision
+        pump(.05)
+        if revision > before and predicate(state):
             return
     raise RuntimeError(label + ': fresh STATE confirmation failed')
 
@@ -288,13 +311,18 @@ try:
             'Three alignments/static IMU calibration')
     if state.get('CornerStart') != '1' or state.get('YawTune') != '1':
         raise RuntimeError('Corner automatic firmware (CornerStart/YawTune) required')
+    if args.tilt_trim > 0 and state.get('TrimTune') != '1':
+        raise RuntimeError('Tilt trim requires updated firmware (TrimTune)')
     for text in ('APP 1', 'BMODE 4', 'BAXIS ' + ' '.join(map(str, args.body_axes)),
                  'BDIR ' + ' '.join(map(str, args.directions)), f'U {args.voltage}',
                  f'L {args.wheel_limit}', f'BU {args.voltage}', 'BTRIP 20', 'BCAP 2'):
         command(text)
     for i, kw in enumerate(args.kw, 1):
-        command(f'LQR{i} {args.kp} {args.kd} {kw} 0')
+        command(f'LQR{i} {args.kp} {args.kd} {kw} {args.ki}')
     command(f'BYAW {args.yaw_damping}')
+    if args.tilt_trim > 0 and state.get('TrimTune') != '1':
+        raise RuntimeError('Tilt trim requires updated firmware (TrimTune)')
+    command(f'BTRIM {args.tilt_trim}')
     command(f'BFULL {args.full_speed}')
     confirm(lambda d: d.get('BMode') == '4' and d.get('AxisMask') == '7' and d.get('DirMask') == '7'
             and all(d.get(f'Axis{i}') == str(args.body_axes[i - 1])
@@ -303,6 +331,7 @@ try:
             and abs(float(d.get('SLimit', 0)) - args.wheel_limit) < .11
             and abs(float(d.get('FullSpeed', 0)) - args.full_speed) < .11
             and abs(float(d.get('YawD', 0)) - args.yaw_damping) < .011
+            and (args.tilt_trim <= 0 or abs(float(d.get('BTrim', -1)) - args.tilt_trim) < .11)
             and d.get('TripDeg') == '20.0' and d.get('EN') == '000', 'Corner automatic configuration')
     phase = 'capture_reference'
     if args.reference_gravity is not None:
@@ -326,9 +355,11 @@ try:
         summary['result'] = 'prepared_disabled'
     else:
         phase = 'arm_auto'
-        command('FAST 7')
+        # Arm with FAST off so the STATE confirmation is reliable, then enable
+        # the corner FAST stream for the run itself.
         command(f'BAUTO 1 {args.countdown}')
         confirm(lambda d: d.get('Auto') == '1' and d.get('Bal') == '6' and d.get('EN') == '000', 'Corner BAUTO')
+        command('FAST 7')
         watch = True
         last_tele = time.monotonic()
         first_entry_deadline = time.monotonic() + args.wait_seconds

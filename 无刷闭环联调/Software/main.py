@@ -329,7 +329,8 @@ class SerialWorker(QThread):
                     raise ValueError('invalid flags')
                 if 'Enc' in fields and not re.fullmatch('[01]{3}', fields['Enc']):
                     raise ValueError('invalid encoder mask')
-                for key in ('VLimit', 'SLimit', 'TripDeg', 'PoseTilt', 'Angle', 'FullSpeed', 'Wheel', 'Rate', 'YawD'):
+                for key in ('VLimit', 'SLimit', 'TripDeg', 'PoseTilt', 'Angle', 'FullSpeed', 'Wheel', 'Rate', 'YawD',
+                            'Trim1', 'Trim2', 'Trim3', 'BTrim'):
                     if key in fields:
                         fields[key] = float(fields[key])
                         if not math.isfinite(fields[key]):
@@ -366,7 +367,7 @@ class SerialWorker(QThread):
                         fields[key] = int(fields[key])
                         if fields[key] not in (-1, 1):
                             raise ValueError('invalid installation direction')
-                for key, upper in (('Auto', 1), ('EdgeReady', 1), ('CornerStart', 1), ('YawTune', 1), ('BReason', 5), ('FullMs', 3000), ('RetryMs', 1000)):
+                for key, upper in (('Auto', 1), ('EdgeReady', 1), ('CornerStart', 1), ('YawTune', 1), ('TrimTune', 1), ('BReason', 5), ('FullMs', 3000), ('RetryMs', 1000)):
                     if key in fields:
                         fields[key] = int(fields[key])
                         if not 0 <= fields[key] <= upper:
@@ -2969,7 +2970,7 @@ class MainWindow(QMainWindow):
         self.edge_profile_pending = True;self.edge_profile_ack = False
         self.edge_profile_generation += 1;generation = self.edge_profile_generation
         for command in ('APP 1','BMODE 4','BAXIS 2 3 1','BDIR -1 -1 -1','U 6','L 330','BU 6',
-                        'LQR1 80 5 -0.030 0','LQR2 80 5 -0.030 0','LQR3 80 5 -0.030 0','BYAW 3',
+                        'LQR1 80 5 -0.030 0','LQR2 80 5 -0.030 0','LQR3 80 5 -0.030 0','BYAW 3','BTRIM 2',
                         'BTRIP 20','BFULL 250','BCAP 2',
                         'BREF -0.7028287890572913 0.3977869310324257 0.5897433770480731','STATE?'):
             self.worker.send_cmd(command)
@@ -3026,7 +3027,8 @@ class MainWindow(QMainWindow):
             expected = ({'App':1,'BMode':1,'Axis1':2,'D1':-1,'Ref':1,'EN':'000','TripDeg':20.0,'FullSpeed':250.0,'VLimit':6.0,'SLimit':330.0}
                         if self.profile_kind == 'edge' else
                         {'App':1,'BMode':4,'Axis1':2,'Axis2':3,'Axis3':1,'D1':-1,'D2':-1,'D3':-1,
-                         'AxisMask':7,'DirMask':7,'Ref':1,'EN':'000','TripDeg':20.0,'FullSpeed':250.0,'VLimit':6.0,'SLimit':330.0})
+                         'AxisMask':7,'DirMask':7,'Ref':1,'EN':'000','TripDeg':20.0,'FullSpeed':250.0,'VLimit':6.0,'SLimit':330.0,
+                         'BTrim':2.0,'TrimTune':1})
             if all(state.get(k) == v for k,v in expected.items()):
                 self.edge_profile_pending = False
                 self.spin_vq.setValue(6);self.spin_vlim.setValue(330)

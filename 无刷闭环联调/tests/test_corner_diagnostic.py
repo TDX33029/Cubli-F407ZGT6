@@ -29,7 +29,7 @@ class Device:
                           AxisMask='0', DirMask='0', Ref='0', VLimit='5', SLimit='180', TripDeg='20.0')
         if fault != 'legacy':
             self.state['CornerStart'] = '1'
-            self.state.update(YawTune='1', YawD='3.00')
+            self.state.update(YawTune='1', YawD='3.00', TrimTune='1', BTrim='2.0')
 
     def open(self):
         self.is_open = True
@@ -64,6 +64,8 @@ class Device:
             self.state['Ref'] = '1'
         elif name == 'BYAW':
             self.state['YawD'] = parts[1]
+        elif name == 'BTRIM':
+            self.state['BTrim'] = parts[1]
         elif name == 'FAST':
             self.fast = parts[1] == '7'
         elif name == 'BSTART':
@@ -283,8 +285,10 @@ class CornerAutoTests(unittest.TestCase):
         self.assertIn('BAUTO 1 8', device.commands)
         self.assertIn('L 330', device.commands)
         self.assertIn('BFULL 250', device.commands)
-        self.assertIn('BREF ' + ' '.join(f'{v:.9f}' for v in
-                      [-0.7028287890572913, 0.3977869310324257, 0.5897433770480731]), device.commands)
+        for command in ('BREF ' + ' '.join(f'{v:.9f}' for v in
+                        [-0.7028287890572913, 0.3977869310324257, 0.5897433770480731]),
+                        'LQR1 80 5 0.0 0.0', 'LQR2 80 5 0.0 0.0', 'LQR3 80 5 0.0 0.0'):
+            self.assertIn(command, device.commands)
         self.assertGreaterEqual(result['auto_attempts'], 1)
         self.assertGreaterEqual(result['balance_seconds_total'], 0.9)
         self.assertIn(result['attempts'][0]['end_reason'], (0, 1))
