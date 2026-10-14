@@ -1,0 +1,15 @@
+{
+  "motor": 3,
+  "body_axis": 1,
+  "body_direction": -1,
+  "gravity": [
+    -0.015433770091078394,
+    0.6225146366376196,
+    0.7824559578102196
+  ],
+  "pitch_deg": 38.5,
+  "roll_deg": 1.13,
+  "source": "Exploratory 38.5deg candidate between endpoint/coast observations; neutral not verified",
+  "neutral_verified": false,
+  "balance_verified": false
+}

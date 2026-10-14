@@ -1,0 +1,15 @@
+{
+  "motor": 3,
+  "body_axis": 1,
+  "body_direction": -1,
+  "gravity": [
+    -0.01563938710039756,
+    0.6091767443796341,
+    0.7928802580958576
+  ],
+  "pitch_deg": 37.53,
+  "roll_deg": 1.13,
+  "source": "repaired_m3_hand_reference_still.jsonl",
+  "neutral_verified": false,
+  "balance_verified": false
+}

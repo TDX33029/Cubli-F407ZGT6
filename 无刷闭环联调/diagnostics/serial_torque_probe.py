@@ -52,15 +52,16 @@ try:
         if abs(float(latest[speed_key]))>2:raise RuntimeError('Wheel has not stopped')
         wait(f'EN{a.axis} 0');wait('APP 1');wait(f'BMODE {a.axis}');phase=f'baseline_{level}_{sign}';pump(.4)
         baseline=[float(d['Rate']) for t,p,d in frames if p==phase and 'Rate' in d]
-        if a.baseline_angle is not None:
-            previous=state_revision;cmd('STATE?');deadline=time.monotonic()+1
-            while time.monotonic()<deadline:
-                pump(.02)
-                if state_revision>previous:break
-            else:raise RuntimeError('Fresh endpoint state not received')
-            latest=next(d for t,p,d in reversed(frames) if 'Rate' in d)
-            if state.get('EN')!='000' or abs(float(state['Angle'])-a.baseline_angle)>a.pose_tolerance or abs(float(latest['Rate']))>.1 or abs(float(latest[speed_key]))>2:
-                raise RuntimeError('Endpoint moved or is not stationary; refuse pulse')
+        previous=state_revision;cmd('STATE?');deadline=time.monotonic()+1
+        while time.monotonic()<deadline:
+            pump(.02)
+            if state_revision>previous:break
+        else:raise RuntimeError('Fresh endpoint state not received')
+        latest=next(d for t,p,d in reversed(frames) if speed_key in d and 'Rate' in d)
+        if state.get('EN')!='000' or len(baseline)<5 or max(abs(v) for v in baseline)>.1 or abs(float(latest['Rate']))>.1 or abs(float(latest[speed_key]))>2:
+            raise RuntimeError('Endpoint/wheel is not stationary; refuse pulse')
+        if a.baseline_angle is not None and abs(float(state['Angle'])-a.baseline_angle)>a.pose_tolerance:
+            raise RuntimeError('Endpoint moved from expected angle; refuse pulse')
         baseline_state=dict(state)
         phase=f'pulse_{level}_{sign}';guard=True;cmd(f'BPROBE {sign*level} {duration}');pump(a.observe_seconds);guard=False
         active=[d for t,p,d in frames if p==phase and d.get('Bal')=='7' and 'T' in d]

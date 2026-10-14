@@ -1,0 +1,11 @@
+{
+  "motor": 3,
+  "body_axis": "X",
+  "body_axis_command": 1,
+  "body_direction": -1,
+  "torque_direction_verified": true,
+  "balance_verified": false,
+  "evidence": "Hands-off -6V/100ms and120ms at larger-pitch endpoint moved towards smaller pitch then rebounded; user explicitly confirms hands off and rebound. Positive/negative probes show matching positive/negative IMU X response.",
+  "closed_loop_status": "M3 not stable. Earlier41deg trial held by hand. Free38.5deg tests stopped by body-rate/20deg protection. First failure caught by cable; user subsequently repaired fixture.",
+  "next_step": "zero-output hands-off gravity response, then revise reference/gains"
+}

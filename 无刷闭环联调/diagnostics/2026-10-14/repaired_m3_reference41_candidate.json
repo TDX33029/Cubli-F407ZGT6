@@ -1,0 +1,15 @@
+{
+  "motor": 3,
+  "body_axis": 1,
+  "body_direction": -1,
+  "gravity": [
+    -0.01476326820348569,
+    0.6630121096656793,
+    0.7484630841588763
+  ],
+  "pitch_deg": 41.53,
+  "roll_deg": 1.13,
+  "source": "Exploratory +4deg reference candidate after first saturated trial; not a measured neutral point",
+  "neutral_verified": false,
+  "balance_verified": false
+}
