@@ -32,7 +32,7 @@ parser.add_argument('--voltage', type=float, default=3.5)
 parser.add_argument('--wheel-bound', type=float, default=100)
 parser.add_argument('--kp', type=float, default=80)
 parser.add_argument('--kd', type=float, default=5)
-parser.add_argument('--kw', type=float, nargs=3, default=[-.045, -.045, -.030])
+parser.add_argument('--kw', type=float, nargs=3, default=[-.030, -.030, -.030])
 parser.add_argument('--yaw-damping', type=float, help='Independent corner yaw damping, 0..10; updated firmware required')
 parser.add_argument('--body-axes', type=int, nargs=3, choices=(1, 2, 3), required=True)
 parser.add_argument('--directions', type=int, nargs=3, choices=(-1, 1), required=True)
@@ -41,7 +41,7 @@ parser.add_argument('--reference-gravity', type=float, nargs=3, help='Saved norm
 parser.add_argument('--prepare-only', action='store_true', help='Capture/configure, then STOP without arming')
 parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent / '2026-10-14')
 args = parser.parse_args()
-if not (0 < args.seconds <= 5 and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 150
+if not (0 < args.seconds <= 5 and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 250
         and 0 <= args.kp <= 120 and 0 <= args.kd <= 10 and all(abs(v) <= .1 for v in args.kw)
         and sorted(args.body_axes) == [1, 2, 3]):
     parser.error('Corner diagnostic bounds exceeded')

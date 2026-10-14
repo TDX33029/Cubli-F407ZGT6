@@ -1,0 +1,11 @@
+{
+  "gravity": [
+    -0.7028287888061419,
+    0.39778693085358946,
+    0.589743377468008
+  ],
+  "roll_deg": 50,
+  "pitch_deg": 23.439901545989084,
+  "neutral_verified": false,
+  "source": "Exploratory +1deg M1/Y-plane reference adjustment; M3 Y/Z ratio preserved"
+}

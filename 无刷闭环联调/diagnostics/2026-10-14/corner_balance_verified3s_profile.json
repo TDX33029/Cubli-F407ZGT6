@@ -1,0 +1,104 @@
+{
+  "name": "First confirmed 3s autonomous corner balance",
+  "date": "2026-10-15",
+  "firmware": "Cubli-ST/MDK-ARM/CubeMX-corner-yaw-settle/CubeMX.hex",
+  "firmware_sha256": "5e7c2fbfcff1dc29397cb76c45f6936a01a81a6d6611b756f603800b147c6f9e",
+  "hardware": {
+    "supply": "Identical 3S batteries throughout session, rigidly mounted in same position",
+    "body_axes": [
+      2,
+      3,
+      1
+    ],
+    "body_directions": [
+      -1,
+      -1,
+      -1
+    ],
+    "encoder_maps": [
+      3,
+      1,
+      2
+    ],
+    "encoder_directions": [
+      1,
+      1,
+      1
+    ],
+    "pole_pairs": [
+      7,
+      7,
+      7
+    ],
+    "encoder_type": "I2C"
+  },
+  "reference": {
+    "gravity": [
+      -0.702828788806142,
+      0.3977869308535891,
+      0.5897433774680081
+    ],
+    "pitch_deg": 23.439901545989063,
+    "roll_deg": 50.00000000000001,
+    "neutral_verified": false
+  },
+  "runtime": {
+    "LQR_each": [
+      80,
+      5,
+      -0.03,
+      0
+    ],
+    "BYAW": 3,
+    "U": 6,
+    "BU": 6,
+    "L": 170,
+    "host_wheel_bound": 150,
+    "host_tilt_bound_deg": 10,
+    "host_gyro_norm_bound_rad_s": 1.5,
+    "BTRIP": 20,
+    "BSTART": 8,
+    "run_seconds": 3
+  },
+  "verified": {
+    "hands_off": true,
+    "external_support": false,
+    "duration_s": 3.0,
+    "user_report": "Short-time autonomous balance, no hand support or external interference; battery swapped/reset after test."
+  },
+  "metrics": {
+    "samples": 152,
+    "tilt_deg_max": 1.8085730949857106,
+    "wheel_ranges": {
+      "M1": [
+        -54.73,
+        17.52
+      ],
+      "M2": [
+        -120.63,
+        38.86
+      ],
+      "M3": [
+        -81.04,
+        5.15
+      ]
+    },
+    "gyro_norm_max": 0.16473615268058192,
+    "yaw_rate_abs_max": 0.09051131527004436,
+    "voltage_ranges": {
+      "M1": [
+        -1.62,
+        1.24
+      ],
+      "M2": [
+        -3.74,
+        1.65
+      ],
+      "M3": [
+        -2.35,
+        0.46
+      ]
+    }
+  },
+  "scope": "One finite3-second corner run; longer-duration momentum stability not yet verified. Reset requires fresh alignment and static calibration."
+}
