@@ -1,0 +1,48 @@
+{
+  "name": "M2 hard-surface edge balance 8s and 15s trials",
+  "hardware": {
+    "encoder_map": 1,
+    "encoder_direction": 1,
+    "pole_pairs": 7,
+    "body_axis_command": 3,
+    "body_direction": -1
+  },
+  "reference": {
+    "motor": 2,
+    "body_axis": 3,
+    "body_direction": -1,
+    "gravity": [
+      -0.62830067914088,
+      -0.7777497075148291,
+      -0.018537773644826793
+    ],
+    "pitch_deg": -51.055,
+    "roll_deg": 91.69,
+    "source": "repaired_m2_hand_reference_still.jsonl",
+    "neutral_verified": false,
+    "balance_verified": false
+  },
+  "runtime_parameters": {
+    "LQR2": [
+      80,
+      5,
+      -0.045,
+      0
+    ],
+    "U": 6,
+    "BU": 6,
+    "L": 330,
+    "BTRIP": 20,
+    "BFULL": 250,
+    "BSTART_seconds": 8
+  },
+  "trials": [
+    "repaired_m2_hard_edge51_trial1",
+    "repaired_m2_hard_edge51_trial15s"
+  ],
+  "user_observations": {
+    "8s": "Completely hands off, standing; possible slight cable influence; manual disturbance produced restoration.",
+    "15s": "Autonomous restoration obvious, condition very good."
+  },
+  "scope": "Finite single-edge tests; cable support/contact was not explicitly excluded for every instant. Long-duration momentum stability and corner balance not verified."
+}

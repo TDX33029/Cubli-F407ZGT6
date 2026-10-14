@@ -1,0 +1,32 @@
+{
+  "motor": 2,
+  "samples": 752,
+  "observed_duration_s": 15.047000000005937,
+  "hands_off_verified": false,
+  "fixture_free_verified": false,
+  "cable_free_verified": false,
+  "angle_deg": {
+    "min": -3.2,
+    "max": 1.62,
+    "mean": 0.3142686170212766,
+    "last": 1.35
+  },
+  "wheel_rad_s": {
+    "min": -158.53,
+    "max": 93.89,
+    "mean": 13.98128989361702,
+    "last": 79.38
+  },
+  "voltage_v": {
+    "min": -4.76,
+    "max": 2.44,
+    "mean": 0.3675,
+    "last": 1.67
+  },
+  "body_rate_rad_s": {
+    "min": -0.295,
+    "max": 0.146,
+    "mean": 0.0008563829787234041,
+    "last": 0.002
+  }
+}
