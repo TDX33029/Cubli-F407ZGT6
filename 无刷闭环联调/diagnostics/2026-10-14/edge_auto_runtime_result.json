@@ -1,0 +1,110 @@
+{
+  "operator_report": "Very stable, no external interference; later operator stopped and changed settings to study GUI use",
+  "automatic_control_runtime_verified": true,
+  "observations": [
+    {
+      "source": "edge_auto_continuous60",
+      "continuous_active_samples": 118,
+      "continuous_active_seconds": 20.164961099624634,
+      "ranges_during_active_segment": {
+        "Angle": {
+          "min": -0.94,
+          "max": 0.52
+        },
+        "Wheel": {
+          "min": -50.18,
+          "max": 30.94
+        },
+        "Rate": {
+          "min": -0.301,
+          "max": 0.308
+        },
+        "U1": {
+          "min": -1.72,
+          "max": 0.98
+        }
+      }
+    },
+    {
+      "source": "edge_auto_continuous60_retry",
+      "continuous_active_samples": 161,
+      "continuous_active_seconds": 30.089650869369507,
+      "ranges_during_active_segment": {
+        "Angle": {
+          "min": -1.33,
+          "max": 0.48
+        },
+        "Wheel": {
+          "min": -71.76,
+          "max": 31.87
+        },
+        "Rate": {
+          "min": -0.053,
+          "max": 0.109
+        },
+        "U1": {
+          "min": -1.9,
+          "max": 1.31
+        }
+      }
+    }
+  ],
+  "manual_stop_observed": true,
+  "current_device_state": {
+    "App": 0,
+    "Dbg": 1,
+    "Mode": 1,
+    "BMode": 1,
+    "Bal": 0,
+    "Cal": 0,
+    "IMU": 1,
+    "Aligned": "000",
+    "EN": "000",
+    "Fault": 0,
+    "Trip": 0,
+    "Tilt": 0.0,
+    "PoseTilt": 91.14,
+    "Angle": 0.0,
+    "TripDeg": 20.0,
+    "Auto": 0,
+    "BReason": 0,
+    "FullSpeed": 250.0,
+    "FullMs": 0,
+    "RetryMs": 0,
+    "EdgeReady": 0,
+    "Wheel": -0.01,
+    "Rate": 0.007,
+    "U1": 0.0,
+    "U2": 0.0,
+    "U3": 0.0,
+    "D1": 1,
+    "D2": 1,
+    "D3": 1,
+    "Enc": "111",
+    "VLimit": 5.0,
+    "SLimit": 180.0,
+    "EncType": 0,
+    "C1": 16384,
+    "C2": 16384,
+    "C3": 16384,
+    "Map1": 1,
+    "Map2": 2,
+    "Map3": 3,
+    "PP1": 7,
+    "PP2": 7,
+    "PP3": 7,
+    "Dir1": 1,
+    "Dir2": 1,
+    "Dir3": 1,
+    "Ref": 0,
+    "Axis1": 1,
+    "Axis2": 2,
+    "Axis3": 3,
+    "AxesOK": 0,
+    "DirOK": 0,
+    "AxisMask": 0,
+    "DirMask": 0,
+    "CountMs": 0
+  },
+  "note": "Do not claim a complete60second uninterrupted capture: first observer hit temporary Windows file lock; second capture included operator manual stop. Controller did not stop due to observation duration. Actual20degree/full-speed hardware protection triggers were not deliberately tested; production C tests passed."
+}

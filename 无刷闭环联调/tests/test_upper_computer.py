@@ -60,6 +60,8 @@ class UpperTests(unittest.TestCase):
         self.assertTrue(self.win.btn_auto_edge.isEnabled())
         self.win.btn_auto_edge.click()
         self.assertEqual(self.queued(),['BAUTO 0'])
+        self.win.worker._process_received_line(AUTO_STATE.replace('Bal:0','Bal:3').replace('EdgeReady:1','EdgeReady:0'))
+        self.assertIn('正在平衡',self.win.lbl_edge_detect.text())
     def test_auto_edge_requires_reference_limit_and_selected_axis(self):
         for bad in (AUTO_STATE.replace('Ref:1','Ref:0'),AUTO_STATE.replace('Aligned:100','Aligned:000'),
                     AUTO_STATE.replace('SLimit:330.0','SLimit:180.0'),AUTO_STATE.replace('BMode:1','BMode:4')):
@@ -130,6 +132,12 @@ class UpperTests(unittest.TestCase):
         app.processEvents()
         self.assertFalse(self.win.startup_auto_edge)
         self.assertEqual(self.queued(),[])
+    def test_uncalibrated_direction_flag_is_valid_boot_state(self):
+        initial=AUTO_STATE.replace('DirOK:1','DirOK:0').replace('AxesOK:1','AxesOK:0').replace('Ref:1','Ref:0')
+        self.win.worker._process_received_line(initial)
+        self.assertEqual(self.win.device_state['DirOK'],0)
+        self.assertFalse(self.win.btn_auto_edge.isEnabled())
+        self.assertTrue(self.win.btn_edge_profile.isEnabled())
     def test_body_axes_need_confirmation(self):
         state=STATE.replace('App:0','App:1').replace('#', ',Ref:1,AxesOK:0,DirOK:0,Axis1:1,Axis2:2,Axis3:3#')
         self.win.worker._process_received_line(state)

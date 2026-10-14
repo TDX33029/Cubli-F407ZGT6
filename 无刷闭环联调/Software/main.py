@@ -344,7 +344,7 @@ class SerialWorker(QThread):
                             raise ValueError('invalid map')
                         if key.startswith('PP') and not 1 <= fields[key] <= 32:
                             raise ValueError('invalid pole pairs')
-                        if key.startswith('Dir') and fields[key] not in (-1, 1):
+                        if key in ('Dir1', 'Dir2', 'Dir3') and fields[key] not in (-1, 1):
                             raise ValueError('invalid encoder direction')
                         if key.startswith('Axis') and fields[key] not in (1, 2, 3):
                             raise ValueError('invalid body axis')
@@ -2979,9 +2979,12 @@ class MainWindow(QMainWindow):
         reasons = {0:'无',1:'倾角超过阈值',2:'满速持续3秒',3:'立即超速',4:'机体角速度过大',5:'传感器/安全故障'}
         if state.get('BMode',4) < 4 and 'Auto' in state:
             reason = state.get('BReason',0)
+            detection = ('正在平衡（持续运行）' if state['Bal']==3 else
+                         '入位倒计时中' if state['Bal']==5 else
+                         '入位条件符合' if state.get('EdgeReady') else '等待入位/静止/飞轮停转')
             self.lbl_edge_detect.setText(
                 f"M{state['BMode']} 单边检测 | {'自动已启用' if state['Auto'] else '自动未启用'}\n"
-                f"{'入位条件符合' if state.get('EdgeReady') else '等待入位/静止/飞轮停转'} | 偏角 {float(state.get('Angle',0)):+.2f}°\n"
+                f"{detection} | 偏角 {float(state.get('Angle',0)):+.2f}°\n"
                 f"机体 {float(state.get('Rate',0)):+.3f} rad/s | 飞轮 {float(state.get('Wheel',0)):+.1f} rad/s\n"
                 f"满速 {float(state.get('FullSpeed',250)):.0f} rad/s，持续 {state.get('FullMs',0)/1000:.1f}/3.0秒\n"
                 f"保护：{reasons.get(reason,'未知')} | 重试冷却 {state.get('RetryMs',0)/1000:.1f}秒")

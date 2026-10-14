@@ -1,0 +1,95 @@
+{
+  "hardware_commands_issued": false,
+  "error": null,
+  "transient_read_errors": 0,
+  "observation_seconds": 60.01600000000326,
+  "samples": 315,
+  "states": {
+    "3": 172,
+    "0": 143
+  },
+  "all_auto_enabled": false,
+  "m2_m3_always_disabled": true,
+  "last_state": {
+    "App": 1,
+    "Dbg": 1,
+    "Mode": 1,
+    "BMode": 1,
+    "Bal": 0,
+    "Cal": 1,
+    "IMU": 1,
+    "Aligned": "100",
+    "EN": "000",
+    "Fault": 0,
+    "Trip": 0,
+    "Tilt": 5.95,
+    "PoseTilt": 5.94,
+    "Angle": -5.95,
+    "TripDeg": 20.0,
+    "Auto": 0,
+    "BReason": 0,
+    "FullSpeed": 250.0,
+    "FullMs": 0,
+    "RetryMs": 0,
+    "EdgeReady": 0,
+    "Wheel": 0.0,
+    "Rate": 0.0,
+    "U1": 0.0,
+    "U2": 0.0,
+    "U3": 0.0,
+    "D1": -1,
+    "D2": 1,
+    "D3": 1,
+    "Enc": "111",
+    "VLimit": 6.0,
+    "SLimit": 330.0,
+    "EncType": 0,
+    "C1": 16384,
+    "C2": 16384,
+    "C3": 16384,
+    "Map1": 3,
+    "Map2": 2,
+    "Map3": 3,
+    "PP1": 7,
+    "PP2": 7,
+    "PP3": 7,
+    "Dir1": 1,
+    "Dir2": 1,
+    "Dir3": 1,
+    "Ref": 1,
+    "Axis1": 2,
+    "Axis2": 1,
+    "Axis3": 3,
+    "AxesOK": 1,
+    "DirOK": 1,
+    "AxisMask": 1,
+    "DirMask": 1,
+    "CountMs": 0
+  },
+  "ranges": {
+    "Angle": {
+      "min": -6.76,
+      "max": 1.03
+    },
+    "PoseTilt": {
+      "min": 0.01,
+      "max": 6.76
+    },
+    "Wheel": {
+      "min": -71.76,
+      "max": 239.25
+    },
+    "Rate": {
+      "min": -0.463,
+      "max": 0.486
+    },
+    "U1": {
+      "min": -1.9,
+      "max": 6.0
+    },
+    "FullMs": {
+      "min": 0.0,
+      "max": 0.0
+    }
+  }
+}
