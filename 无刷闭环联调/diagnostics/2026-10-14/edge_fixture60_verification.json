@@ -73,5 +73,7 @@
     "Cubli-ST/MDK-ARM/CubeMX-edge-fixture60/build_config.json": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b",
     "Cubli-ST/MDK-ARM/CubeMX-edge-fixture60-quad/CubeMX.hex": "b61236426dd75f7dd716d2256a946338b3a9363a675e7d5ab4a948f26086bcea",
     "Cubli-ST/MDK-ARM/CubeMX-edge-fixture60-quad/build_config.json": "7b495494b5cf84e90e8378e229dbea5efda8a51ccfa4c384f2aa43df514ee37d"
-  }
+  },
+  "is_current_image": false,
+  "superseded_by": "edge_impulse6v_verification.json"
 }

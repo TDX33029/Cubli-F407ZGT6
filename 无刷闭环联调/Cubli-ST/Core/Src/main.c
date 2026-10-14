@@ -651,7 +651,7 @@ void commander_run(void) {
             printf("ERR BSTART (edge ALIGN/CAL_IMU/BAXIS/BDIR/BZERO required)\r\n");return;
         }
         printf("OK BSTART\r\n");
-    } else if(!strcmp(name,"BPROBE") && n==2 && fabsf(v[0])<=3 && v[1]>=20 && v[1]<=120 && v[1]==(int)v[1]) {
+    } else if(!strcmp(name,"BPROBE") && n==2 && fabsf(v[0])<=6 && v[1]>=20 && v[1]<=120 && v[1]==(int)v[1]) {
         if(!app_mode || cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST_WORK_ONLY\r\n");return;}
         if(!control_reset_latch() || !LQR_StartProbe(v[0],(uint16_t)v[1])) {printf("ERR BPROBE_PRECONDITION\r\n");return;}
         printf("OK BPROBE\r\n");return; /* Keep the short pulse trace free of a large STATE frame. */
@@ -804,7 +804,7 @@ void commander_run(void) {
         velocity_ramp_accel=v[0]; printf("OK ACC:%.1f rad/s^2\r\n",velocity_ramp_accel);
     } else if((!strcmp(name,"U") || !strcmp(name,"L") || !strcmp(name,"BU")) && n==1) {
         if(v[0]<=0) {printf("ERR LIMIT\r\n");return;}
-        if(!strcmp(name,"L")) velocity_limit=_constrain(v[0],1,180);
+        if(!strcmp(name,"L")) velocity_limit=_constrain(v[0],1,360);
         else if(!strcmp(name,"BU")) LQR_SetMaxVoltage(_constrain(v[0],0.1f,voltage_limit));
         else voltage_limit=_constrain(v[0],0.1f,voltage_power_supply*0.577350269f);
         printf("OK LIMIT\r\n");

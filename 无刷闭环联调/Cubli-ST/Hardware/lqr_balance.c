@@ -112,8 +112,8 @@ bool LQR_StartProbe(float volts,uint16_t duration_ms) {
     if(cubli_bal.state!=BAL_STATE_DISABLED || m>2 || !LQR_AxesConfirmed() ||
        !motor_aligned[m] || !cubli_bal.attitude.valid || !cubli_bal.attitude.is_calibrated ||
        HAL_GetTick()-cubli_bal.attitude.last_sample_ms>30 || Control_Aborted() ||
-       !isfinite(volts) || fabsf(volts)>3 || fabsf(volts)>voltage_limit ||
-       duration_ms<20 || duration_ms>120) return false;
+       !isfinite(volts) || fabsf(volts)>6 || fabsf(volts)>voltage_limit ||
+       duration_ms<20 || duration_ms>120 || (fabsf(volts)>3 && duration_ms>80)) return false;
     updateSensor(m);if(!sensor_valid[m] || fabsf(shaft_velocity[m])>5) return false;
     for(i=0;i<3;i++) cubli_bal.probe_start_gravity[i]=cubli_bal.attitude.gravity[i];
     cubli_bal.probe_voltage=volts;cubli_bal.probe_deadline_us=micros()+1000U*duration_ms;

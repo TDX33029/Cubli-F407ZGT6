@@ -76,6 +76,7 @@ int main(void) {
  command("M2 nan");command("M2 8junk");assert(target_m2==-180);
  command("ACC 100");assert(velocity_ramp_accel==400);command("EN1 0");command("EN2 0");command("EN3 0");
  command("ACC 1000");assert(velocity_ramp_accel==1000);command("ACC 1501");assert(velocity_ramp_accel==1000);command("ACC 400");
+ command("L 330");assert(velocity_limit==330);command("L 999");assert(velocity_limit==360);command("L 180");
  reset_motion_state(1);shaft_velocity_sp[1]=10;
  for(i=0;i<50;i++){fake_us+=1000;fake_ms++;ramp_velocity_target(-10,1);}
  assert(fabsf(shaft_velocity_sp[1]+10)<.001f);
@@ -155,13 +156,25 @@ int main(void) {
  /* Torque identification must time out on the MCU, without a host STOP. */
  setup();command("APP 1");cubli_bal.attitude.is_calibrated=true;gravity(0,0,1);
  command("BPROBE 0.75 80");assert(!m1_enabled);command("BAXIS1 2");
- assert(!cubli_bal.directions_confirmed_mask);command("BPROBE 3.1 80");assert(!m1_enabled);
+ assert(!cubli_bal.directions_confirmed_mask);command("BPROBE 6.1 80");assert(!m1_enabled);
  command("BPROBE 0.75 80");assert(cubli_bal.state==BAL_STATE_PROBE&&m1_enabled&&!m2_enabled&&!m3_enabled);
  LQR_Motor_Loop();assert(fabsf(voltage[0].q-.75f)<.0001f);
  fake_us+=79000;fake_ms+=79;gravity(0,0,1);LQR_Motor_Loop();assert(m1_enabled);
  fake_us+=1000;fake_ms++;gravity(0,0,1);LQR_Motor_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_DISABLED&&voltage[0].q==0);
  command("BPROBE -0.75 80");LQR_Motor_Loop();assert(voltage[0].q<0);
  advance();gravity(-sinf(.3f),0,cosf(.3f));LQR_Balance_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_FALL_PROTECT);
+ /* Larger fixture impulses shorten the maximum on-time and still auto-disarm. */
+ command("BAL 0");gravity(0,0,1);command("U 6");
+ command("BPROBE 6 81");assert(!m1_enabled);
+ command("BPROBE -6 80");LQR_Motor_Loop();assert(voltage[0].q==-6&&m1_enabled&&!m2_enabled&&!m3_enabled);
+ fake_us+=80000;fake_ms+=80;gravity(0,0,1);LQR_Motor_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_DISABLED&&voltage[0].q==0);
+ command("U 4");command("BPROBE 6 40");assert(!m1_enabled);
+ /* Telemetry must exceed the raised wheel threshold, not clip at 300. */
+ setup();lpf_velocity[0].Tf=0;fake_us+=1000;fake_ms++;encoder_raw[0]=1000;updateSensor(0);assert(shaft_velocity[0]>350);
+ setup();command("APP 1");command("BAXIS1 2");command("BDIR1 -1");command("L 330");
+ cubli_bal.attitude.is_calibrated=true;gravity(0,0,1);command("BZERO");command("BAL 1");
+ for(i=0;i<22;i++){advance();gravity(0,0,1);LQR_Balance_Loop();}
+ assert(m1_enabled);shaft_velocity[0]=340;advance();gravity(0,0,1);LQR_Balance_Loop();assert(cubli_bal.state==BAL_STATE_FALL_PROTECT&&!m1_enabled);
  /* A held body with a spinning wheel must not receive the full wheel term
     immediately at handover; it must reach the configured term smoothly. */
  setup();command("APP 1");command("BAXIS1 2");command("BDIR1 -1");command("LQR1 0 0 -0.03 0");

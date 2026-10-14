@@ -102,6 +102,12 @@ class UpperTests(unittest.TestCase):
         self.win._flush_speed_command()
         self.assertEqual(self.queued(), ['STOP'])
         self.assertFalse(self.win.pending_flag)
+    def test_balance_wheel_limit_readback_above_debug_speed_range(self):
+        self.win.device_state=None
+        state=STATE.replace('App:0','App:1').replace('EN:010','EN:000').replace('#',',VLimit:6.0,SLimit:330.0#')
+        self.win.worker._process_received_line(state)
+        self.assertEqual(self.win.spin_vlim.value(),330)
+        self.assertEqual(self.win.card_m1.spin_speed.maximum(),180)
     def test_speed_only_selected_axis(self):
         self.win.on_motor_speed_change(2, -3)
         self.win._flush_speed_command()

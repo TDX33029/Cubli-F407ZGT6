@@ -2037,7 +2037,7 @@ class MainWindow(QMainWindow):
         # 速度上限 limit
         lbl_vlim = QLabel("极速限制 Limit:")
         self.spin_vlim = QDoubleSpinBox()
-        self.spin_vlim.setRange(1.0, 180.0)
+        self.spin_vlim.setRange(1.0, 360.0)
         self.spin_vlim.setSingleStep(5.0)
         self.spin_vlim.setValue(60.0)
         self.spin_vlim.setSuffix(" rad/s")

@@ -1,0 +1,13 @@
+{
+  "source": "Exploratory +4deg target after confirmed free fall towards A from43deg; not an identified neutral",
+  "gravity": [
+    -0.7312189219971714,
+    -0.01919744239968967,
+    0.6818726760316804
+  ],
+  "source_pose": {
+    "Pit": -1.1,
+    "Rol": 47
+  },
+  "neutral_verified": false
+}

@@ -200,8 +200,8 @@ void updateSensor(int motor)
 			vel_prev_ts[motor] = now_us;
 
 			// 极值限幅保护
-			if(raw_vel > 300.0f) raw_vel = 300.0f;
-			else if(raw_vel < -300.0f) raw_vel = -300.0f;
+			if(raw_vel > 600.0f) raw_vel = 600.0f;
+			else if(raw_vel < -600.0f) raw_vel = -600.0f;
 			last_raw_velocity[motor] = raw_vel;
 
 			// 一阶低通滤波 (Tf = 12ms)
