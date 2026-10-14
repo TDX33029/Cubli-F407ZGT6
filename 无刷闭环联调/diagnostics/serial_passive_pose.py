@@ -6,11 +6,15 @@ import time
 from pathlib import Path
 
 import serial
+from live_pose import PosePublisher
 
 p = argparse.ArgumentParser()
 p.add_argument('--tag', required=True)
 p.add_argument('--seconds', type=float, default=5)
 p.add_argument('--port', default='COM9')
+p.add_argument('--live-state',type=Path)
+p.add_argument('--target-pitch',type=float,default=23.4399)
+p.add_argument('--target-roll',type=float,default=50)
 a = p.parse_args()
 if not 1 <= a.seconds <= 30:
     raise SystemExit('Passive recording duration must be 1..30 seconds')
@@ -24,6 +28,7 @@ start = time.monotonic()
 buf = b''
 frames = []
 state = {}
+publisher=PosePublisher(a.live_state,[a.target_pitch,a.target_roll])
 
 def record(kind, data):
     log.write(json.dumps({'t': time.monotonic() - start, 'kind': kind, 'data': data}) + '\n')
@@ -60,6 +65,7 @@ try:
                 continue
             if d.get('EN') != '000':
                 raise RuntimeError('Motor enable seen during passive recording')
+            publisher.update(d)
             if line.startswith('$STATE,'):
                 state = d
             else:

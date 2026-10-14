@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import serial
+from live_pose import PosePublisher
 
 
 def gravity(data):
@@ -40,6 +41,7 @@ parser.add_argument('--expected-pose', type=Path, required=True, help='Disabled 
 parser.add_argument('--reference-gravity', type=float, nargs=3, help='Saved normalized corner target; requires CornerStart firmware')
 parser.add_argument('--prepare-only', action='store_true', help='Capture/configure, then STOP without arming')
 parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent / '2026-10-14')
+parser.add_argument('--live-state',type=Path)
 args = parser.parse_args()
 if not (0 < args.seconds <= 5 and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 250
         and 0 <= args.kp <= 120 and 0 <= args.kd <= 10 and all(abs(v) <= .1 for v in args.kw)
@@ -49,6 +51,7 @@ if args.yaw_damping is not None and not 0 <= args.yaw_damping <= 10:
     parser.error('Yaw damping must be 0..10')
 expected = json.loads(args.expected_pose.read_text(encoding='utf-8'))
 expected_g = gravity({key: expected['ranges'][key]['median'] for key in ('Pit', 'Rol')})
+publisher=PosePublisher(args.live_state)
 if min(abs(v) for v in expected_g) < .25:
     parser.error('Expected pose is too close to a face/edge; capture a corner pose first')
 if args.reference_gravity is not None:
@@ -118,6 +121,9 @@ def pump(duration):
             if not line.startswith(('$STATE,', '$TELE,', '$FAST,')) or not line.endswith('#'):
                 continue
             data = dict(item.split(':', 1) for item in line.split(',', 1)[1][:-1].split(','))
+            target_vector = reference or args.reference_gravity or expected_g
+            publisher.target=[math.degrees(math.asin(target_vector[1])),math.degrees(math.atan2(-target_vector[0],target_vector[2]))]
+            publisher.update(data)
             if line.startswith('$STATE,'):
                 state = data
                 revision += 1
@@ -199,7 +205,7 @@ try:
             'Three alignments/static IMU calibration')
     for text in ('APP 1', 'BMODE 4', 'BAXIS ' + ' '.join(map(str, args.body_axes)),
                  'BDIR ' + ' '.join(map(str, args.directions)), f'U {args.voltage}',
-                 f'L {args.wheel_bound + 20}', f'BU {args.voltage}', 'BTRIP 20', 'FREQ 7'):
+                 f'L {args.wheel_bound + 20}', f'BU {args.voltage}', 'BTRIP 20', 'BCAP 2', 'FREQ 7'):
         command(text)
     for i, kw in enumerate(args.kw, 1):
         command(f'LQR{i} {args.kp} {args.kd} {kw} 0')

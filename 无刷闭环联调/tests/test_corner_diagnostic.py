@@ -107,7 +107,8 @@ class CornerDiagnosticTests(unittest.TestCase):
                 argv += ['--yaw-damping', str(yaw)]
             code = 0
             with patch.object(sys, 'argv', argv), patch('serial.Serial', return_value=device), \
-                    patch('time.monotonic', side_effect=lambda: device.now), contextlib.redirect_stdout(io.StringIO()):
+                    patch('time.monotonic', side_effect=lambda: device.now), \
+                    patch.object(sys,'path',[str(SCRIPT.parent),*sys.path]), contextlib.redirect_stdout(io.StringIO()):
                 try:
                     runpy.run_path(str(SCRIPT), run_name='__main__')
                 except SystemExit as error:
@@ -130,6 +131,7 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertEqual(result['result'], 'bounded_run_completed')
         self.assertIn('BAXIS 2 3 1', device.commands)
         self.assertIn('BSTART 8', device.commands)
+        self.assertIn('BCAP 2', device.commands)
         self.assertGreaterEqual(result['run_duration_s'], 3)
 
     def test_m2_speed_trips_and_stops_every_axis(self):
