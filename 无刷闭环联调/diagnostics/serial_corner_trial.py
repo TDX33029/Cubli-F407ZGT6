@@ -43,7 +43,7 @@ parser.add_argument('--prepare-only', action='store_true', help='Capture/configu
 parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent / '2026-10-14')
 parser.add_argument('--live-state',type=Path)
 args = parser.parse_args()
-if not (0 < args.seconds <= 5 and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 250
+if not (0 < args.seconds <= 15 and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 250
         and 0 <= args.kp <= 120 and 0 <= args.kd <= 10 and all(abs(v) <= .1 for v in args.kw)
         and sorted(args.body_axes) == [1, 2, 3]):
     parser.error('Corner diagnostic bounds exceeded')
@@ -101,7 +101,7 @@ def send(command):
 
 
 def pump(duration):
-    global buffer, next_ping, state, revision, tele, last_tele, run_started
+    global buffer, next_ping, state, revision, tele, last_tele, run_started, phase
     deadline = time.monotonic() + duration
     while time.monotonic() < deadline:
         now = time.monotonic()
@@ -146,15 +146,20 @@ def pump(duration):
                 if data.get('EN', '000') not in ('000', '111'):
                     raise RuntimeError('Partial three-axis enable: ' + line)
                 if line.startswith(('$TELE,', '$FAST,')):
+                    if not all(math.isfinite(float(data[k])) for k in ('Pit','Rol','Gx','Gy','Gz','S1','S2','S3')):
+                        summary['guard_frame']=data
+                        raise RuntimeError('Non-finite corner telemetry')
                     if max(abs(float(data[f'S{i}'])) for i in (1, 2, 3)) > args.wheel_bound:
                         summary['guard_frame'] = data
                         raise RuntimeError('Corner wheel speed bound')
                     rate = math.sqrt(sum(float(data[k]) ** 2 for k in ('Gx', 'Gy', 'Gz'))) * math.pi / 180
                     if rate > 1.5 or tilt(gravity(data), reference) > 10:
+                        summary['guard_frame']=data
                         raise RuntimeError('Corner body rate/tilt bound')
                     if data.get('Bal') == '3':
                         if run_started is None:
                             run_started = now
+                            phase='corner_run'
                             send('FREQ 7')
                             print('BALANCING: PG6 on, release now', flush=True)
                         active.append(data)

@@ -84,6 +84,8 @@ class Device:
         data = dict(Bal=self.state['Bal'], EN=self.state['EN'], Pit='23.56', Rol='46.79',
                     Gx='100' if active and self.fault == 'gyro' else '.5', Gy='-.4', Gz='.2',
                     S1='0', S2='101' if active and self.fault == 'M2_speed' else '0', S3='0')
+        if active and self.fault == 'nan':
+            data['S3']='nan'
         if self.fast:
             data.update(V1=data['S1'], V2=data['S2'], V3=data['S3'],
                         Wx='1.746' if active and self.fault == 'gyro' else '0', Wy='0', Wz='0')
@@ -143,6 +145,10 @@ class CornerDiagnosticTests(unittest.TestCase):
         _, result, code = self.run_trial(fault='gyro')
         self.assertEqual(code, 2)
         self.assertIn('body rate/tilt bound', result['error'])
+    def test_nonfinite_feedback_trips(self):
+        _, result, code=self.run_trial(fault='nan')
+        self.assertEqual(code,2)
+        self.assertIn('Non-finite',result['error'])
 
     def test_uncalibrated_device_never_arms(self):
         device, result, code = self.run_trial(fault='uncalibrated')

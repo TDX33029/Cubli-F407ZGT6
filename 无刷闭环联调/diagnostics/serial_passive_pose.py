@@ -15,9 +15,10 @@ p.add_argument('--port', default='COM9')
 p.add_argument('--live-state',type=Path)
 p.add_argument('--target-pitch',type=float,default=23.4399)
 p.add_argument('--target-roll',type=float,default=50)
+p.add_argument('--stop-on-capture',type=Path,help='End disabled recording when the pose guide saves a new candidate')
 a = p.parse_args()
-if not 1 <= a.seconds <= 30:
-    raise SystemExit('Passive recording duration must be 1..30 seconds')
+if not 1 <= a.seconds <= 600:
+    raise SystemExit('Passive recording duration must be 1..600 seconds')
 folder = Path(__file__).resolve().parent / '2026-10-14'
 log = (folder / (a.tag + '.jsonl')).open('x', encoding='utf-8')
 s = serial.Serial(port=None, baudrate=115200, timeout=.01, write_timeout=.3)
@@ -25,6 +26,9 @@ s.dtr = False
 s.rts = False
 s.port = a.port
 start = time.monotonic()
+started_at=time.time()
+capture_check=0
+captured_candidate=None
 buf = b''
 frames = []
 state = {}
@@ -47,6 +51,14 @@ try:
     ping = time.monotonic() + .25
     deadline = time.monotonic() + a.seconds
     while time.monotonic() < deadline:
+        if a.stop_on_capture and time.monotonic()>=capture_check:
+            capture_check=time.monotonic()+.2
+            try:
+                candidate=json.loads(a.stop_on_capture.read_text(encoding='utf-8'))
+                if float(candidate.get('captured_at',0))>=started_at:
+                    captured_candidate=candidate;record('candidate',candidate);break
+            except (OSError,ValueError,TypeError):
+                pass
         if time.monotonic() >= ping:
             send('PING')
             ping = time.monotonic() + .25
@@ -73,7 +85,7 @@ try:
     if len(frames) < 10 or state.get('EN') != '000':
         raise RuntimeError('Insufficient disabled telemetry')
     summary = {'motor_motion_commanded': False, 'neutral_verified': False,
-               'samples': len(frames), 'last_state': state, 'ranges': {}}
+               'samples': len(frames), 'last_state': state, 'ranges': {},'captured_candidate':captured_candidate}
     for key in ('Pit', 'Rol', 'Ax', 'Ay', 'Az', 'Gx', 'Gy', 'Gz'):
         vals = [float(d[key]) for d in frames if key in d]
         if vals:

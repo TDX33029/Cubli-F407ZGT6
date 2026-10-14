@@ -1,0 +1,12 @@
+{
+  "pitch_deg": 23.55,
+  "roll_deg": 49.86,
+  "gravity": [
+    -0.7008000361846866,
+    0.39954920287812,
+    0.5909650952154459
+  ],
+  "captured_at": 1792000958.6570654,
+  "neutral_verified": false,
+  "motor_motion_commanded": false
+}
