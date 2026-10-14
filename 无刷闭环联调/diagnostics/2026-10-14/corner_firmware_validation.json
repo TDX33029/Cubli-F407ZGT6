@@ -8,5 +8,9 @@
   "firmware_harness": "passed",
   "uart_harness": "passed",
   "hex_sha256": "0da81d5bbf06329f1d5a777dad21c8a01c1a034e0442a6fde8e69b4f47dbeca0",
-  "flashed": false
+  "flashed": true,
+  "flash_verify": "STM32CubeProgrammer download verified successfully",
+  "boot_capability": "CornerStart:1",
+  "post_flash_aligned": "111",
+  "post_flash_calibrated": true
 }
