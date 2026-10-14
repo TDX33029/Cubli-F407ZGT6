@@ -599,7 +599,8 @@ void Control_Status(void) {
     report_int("FullMs",LQR_FullSpeedElapsedMs());
     report_int("RetryMs",LQR_AutoRetryRemainingMs());
     report_int("EdgeReady",LQR_AutoPoseReady());
-    report_float("Wheel",cubli_bal.mode<3?shaft_velocity[cubli_bal.mode]:0,2);
+    report_float("Wheel",cubli_bal.mode<3?shaft_velocity[cubli_bal.mode]:
+                 fmaxf(fmaxf(fabsf(shaft_velocity[0]),fabsf(shaft_velocity[1])),fabsf(shaft_velocity[2])),2);
     report_float("Rate",cubli_bal.mode<3?cubli_bal.attitude.gyro_rad[cubli_bal.body_axis[cubli_bal.mode]]:
                  sqrtf(cubli_bal.attitude.gyro_rad[0]*cubli_bal.attitude.gyro_rad[0]+
                        cubli_bal.attitude.gyro_rad[1]*cubli_bal.attitude.gyro_rad[1]+
@@ -670,7 +671,7 @@ void commander_run(void) {
         Control_Stop();
         if(v[0]) {
             if(!app_mode || !imu_online || !control_reset_latch() || !LQR_StartAuto(n==2?(uint8_t)v[1]:8)) {
-                printf("ERR BAUTO (edge ALIGN/CAL/AXIS/DIR/REF and L>BFULL required)\r\n");return;
+                printf("ERR BAUTO (ALIGN/CAL/AXIS/DIR/REF for the selected mode and L>BFULL required)\r\n");return;
             }
         }
         printf("OK BAUTO:%d\r\n",(int)v[0]);

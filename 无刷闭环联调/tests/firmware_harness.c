@@ -156,13 +156,85 @@ static void test_corner_countdown(void) {
  uart_bytes=0;Control_FastTelemetry();assert(uart_bytes>100&&uart_bytes<280);
  command("BREF -.577 .577 .577");assert(cubli_bal.reference_valid[3]&&fabsf(cubli_bal.reference[3][0]+.683937788f)<.0001f); /* Active BREF rejected. */
  advance();gravity(1,0,0);LQR_Balance_Loop();assert(cubli_bal.state==BAL_STATE_FALL_PROTECT&&!m1_enabled&&!m2_enabled&&!m3_enabled);
- command("BAUTO 1 3");assert(!cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_DISABLED&&!m1_enabled);
+ command("BAUTO 1 3");assert(!cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_DISABLED&&!m1_enabled); /* L<=BFULL still rejects. */
+ command("L 270");command("BAUTO 1 3");
+ assert(cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled&&!m2_enabled&&!m3_enabled);
+ command("BAUTO 0");assert(!cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_DISABLED);
+}
+static void corner_gravity(float angle) {
+ float c=cosf(angle),s=sinf(angle),*p=cubli_bal.reference[3];
+ /* Tilt the captured reference towards a fixed perpendicular direction. */
+ gravity(p[0]*c+.5581f*s,p[1]*c+.8298f*s,p[2]*c);
+}
+static void corner_auto_ticks(int count,float angle,float w0,float w1,float w2) {
+ int j;
+ for(j=0;j<count;j++) {
+  advance();corner_gravity(angle);
+  shaft_velocity[0]=w0;shaft_velocity[1]=w1;shaft_velocity[2]=w2;
+  LQR_Balance_Loop();
+ }
+}
+static void setup_corner_auto(void) {
+ setup();command("APP 1");command("BAXIS 2 3 1");command("BDIR -1 -1 -1");command("BMODE 4");
+ cubli_bal.attitude.is_calibrated=true;corner_gravity(0);
+ command("BREF -0.683937788 0.460044825 0.566204788");
+ command("L 270");command("BFULL 250");command("BYAW 3");
+ assert(cubli_bal.reference_valid[3]&&cubli_bal.full_speed_limit==250);
+ command("BAUTO 1 3");
+ assert(cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled&&!m2_enabled&&!m3_enabled);
+}
+static void test_corner_auto(void) {
+ /* Arming needs all three axes, sensors, directions and a reference. */
+ setup_corner_auto();
+ command("BAUTO 0");
+ cubli_bal.directions_confirmed_mask=6;command("BAUTO 1 3");
+ assert(!cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_DISABLED);
+ cubli_bal.directions_confirmed_mask=7;
+ motor_aligned[1]=0;command("BAUTO 1 3");assert(!cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_DISABLED);
+ motor_aligned[1]=1;encoder_ok=0;command("BAUTO 1 3");assert(!cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_DISABLED);
+ encoder_ok=1;command("BAUTO 1 3");
+ assert(cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_WAIT_POSE);
+ /* Entry needs <3deg, low body rate and all three wheels below5rad/s. */
+ corner_auto_ticks(220,4*DEG_TO_RAD,0,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ corner_auto_ticks(100,0,0,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ cubli_bal.attitude.gyro_rad[0]=.21f;corner_auto_ticks(220,0,0,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ cubli_bal.attitude.gyro_rad[0]=0;corner_auto_ticks(220,0,0,0,6);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ corner_auto_ticks(210,0,0,0,0);
+ assert(cubli_bal.state==BAL_STATE_COUNTDOWN&&!m1_enabled&&!m2_enabled&&!m3_enabled);
+ corner_auto_ticks(1,4*DEG_TO_RAD,0,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
+ corner_auto_ticks(900,0,0,0,0);
+ assert(cubli_bal.state==BAL_STATE_BALANCING&&m1_enabled&&m2_enabled&&m3_enabled&&cubli_bal.auto_enabled);
+ corner_auto_ticks(12000,0,0,0,0);assert(m1_enabled&&m2_enabled&&m3_enabled); /* No run deadline, even after60s. */
+ corner_auto_ticks(1,19*DEG_TO_RAD,0,0,0);assert(m1_enabled&&m2_enabled&&m3_enabled);
+ corner_auto_ticks(1,21*DEG_TO_RAD,0,0,0);
+ assert(!m1_enabled&&!m2_enabled&&!m3_enabled&&cubli_bal.auto_enabled&&
+        cubli_bal.state==BAL_STATE_WAIT_POSE&&cubli_bal.stop_reason==BAL_STOP_ANGLE);
+ corner_auto_ticks(250,0,0,0,40);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ corner_auto_ticks(199,0,0,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ corner_auto_ticks(2,0,0,0,0);assert(cubli_bal.state==BAL_STATE_COUNTDOWN);
+ corner_auto_ticks(610,0,0,0,0);assert(m1_enabled&&m2_enabled&&m3_enabled&&cubli_bal.auto_enabled);
+ /* Full speed on the third axis is protected and retried like the edges. */
+ corner_auto_ticks(400,0,0,0,250);assert(m1_enabled&&LQR_FullSpeedElapsedMs()<2000);
+ corner_auto_ticks(1,0,0,0,249);assert(!LQR_FullSpeedElapsedMs());
+ corner_auto_ticks(600,0,0,0,250);assert(m1_enabled&&LQR_FullSpeedElapsedMs()==2995);
+ corner_auto_ticks(1,0,0,0,250);
+ assert(!m1_enabled&&cubli_bal.auto_enabled&&cubli_bal.stop_reason==BAL_STOP_FULL_SPEED);
+ corner_auto_ticks(1100,0,0,0,0);assert(m1_enabled&&cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_BALANCING);
+ /* Overspeed exits automatic mode for good. */
+ corner_auto_ticks(1,0,271,0,0);
+ assert(!m1_enabled&&!m2_enabled&&!m3_enabled&&!cubli_bal.auto_enabled&&cubli_bal.stop_reason==BAL_STOP_OVERSPEED);
+ corner_auto_ticks(1500,0,0,0,0);assert(cubli_bal.state==BAL_STATE_FALL_PROTECT);
+ setup_corner_auto();corner_auto_ticks(220,0,0,0,0);command("STOP");corner_auto_ticks(1000,0,0,0,0);
+ assert(!m1_enabled&&!cubli_bal.auto_enabled&&cubli_bal.state==BAL_STATE_DISABLED);
+ setup_corner_auto();command("BAUTO 0");corner_auto_ticks(1000,0,0,0,0);
+ assert(!cubli_bal.auto_enabled&&!m1_enabled&&!m2_enabled&&!m3_enabled&&cubli_bal.state==BAL_STATE_DISABLED);
 }
 int main(void) {
  int i;float u;uint32_t saved;
  setvbuf(stdout,NULL,_IONBF,0);
  test_auto_edge();
  test_corner_countdown();
+ test_corner_auto();
  setup();command("DBG 2");command("EN1 1");command("EN2 1");command("EN3 1");assert(m1_enabled&&m2_enabled&&m3_enabled);
  command("M1 20");command("M2 -30");command("M3 40");assert(target_m1==20&&target_m2==-30&&target_m3==40);
  command("M 180 -180 0");assert(target_m1==180&&target_m2==-180&&target_m3==0);

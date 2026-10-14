@@ -137,7 +137,7 @@ bool LQR_StartCountdown(uint8_t seconds) {
     return true;
 }
 bool LQR_StartAuto(uint8_t seconds) {
-    if(cubli_bal.mode==BAL_MODE_CORNER || cubli_bal.full_speed_limit>=velocity_limit || !LQR_StartCountdown(seconds)) return false;
+    if(cubli_bal.full_speed_limit>=velocity_limit || !LQR_StartCountdown(seconds)) return false;
     cubli_bal.auto_enabled=true;
     cubli_bal.max_angle_trip=20*DEG_TO_RAD;
     cubli_bal.stop_reason=BAL_STOP_NONE;
@@ -150,13 +150,16 @@ uint32_t LQR_AutoRetryRemainingMs(void) {
     return left>0?(uint32_t)left:0;
 }
 bool LQR_AutoPoseReady(void) {
-    int m=(int)cubli_bal.mode;
-    return m<3 && !Control_Aborted() && !LQR_AutoRetryRemainingMs() &&
-        LQR_AxesConfirmed() && LQR_DirectionsConfirmed() && cubli_bal.reference_valid[m] &&
-        motor_aligned[m] && sensor_valid[m] && cubli_bal.attitude.is_calibrated && cubli_bal.attitude.valid &&
-        HAL_GetTick()-cubli_bal.attitude.last_sample_ms<=30U &&
-        cubli_bal.pose_tilt_deg<3 && fabsf(cubli_bal.signed_tilt_deg)<3 &&
-        norm3(cubli_bal.attitude.gyro_rad)<0.2f && fabsf(shaft_velocity[m])<5;
+    int m=(int)cubli_bal.mode,i;
+    if(m>3 || Control_Aborted() || LQR_AutoRetryRemainingMs() ||
+       !LQR_AxesConfirmed() || !LQR_DirectionsConfirmed() || !cubli_bal.reference_valid[m] ||
+       !cubli_bal.attitude.is_calibrated || !cubli_bal.attitude.valid ||
+       HAL_GetTick()-cubli_bal.attitude.last_sample_ms>30U ||
+       cubli_bal.pose_tilt_deg>=3 || fabsf(cubli_bal.signed_tilt_deg)>=3 ||
+       norm3(cubli_bal.attitude.gyro_rad)>=0.2f) return false;
+    if(m<3) return motor_aligned[m] && sensor_valid[m] && fabsf(shaft_velocity[m])<5;
+    for(i=0;i<3;i++) if(!motor_aligned[i] || !sensor_valid[i] || fabsf(shaft_velocity[i])>=5) return false;
+    return true;
 }
 uint32_t LQR_FullSpeedElapsedMs(void) {
     int i;uint32_t longest=0;
