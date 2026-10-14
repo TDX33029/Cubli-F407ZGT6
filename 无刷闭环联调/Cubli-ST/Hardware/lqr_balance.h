@@ -39,7 +39,7 @@ typedef struct {
     uint32_t countdown_deadline_ms, countdown_stable_ms;
     uint8_t countdown_seconds;
     uint32_t probe_deadline_us;
-    float probe_voltage, probe_start_gravity[3];
+    float probe_voltage, probe_wheel_limit, probe_start_gravity[3];
     float max_angle_trip, capture_angle;
     uint32_t last_update_us, calib_samples;
     float gyro_calib_sum[3];

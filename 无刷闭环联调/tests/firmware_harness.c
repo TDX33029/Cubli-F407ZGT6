@@ -163,11 +163,17 @@ int main(void) {
  fake_us+=1000;fake_ms++;gravity(0,0,1);LQR_Motor_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_DISABLED&&voltage[0].q==0);
  command("BPROBE -0.75 80");LQR_Motor_Loop();assert(voltage[0].q<0);
  advance();gravity(-sinf(.3f),0,cosf(.3f));LQR_Balance_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_FALL_PROTECT);
- /* Larger fixture impulses shorten the maximum on-time and still auto-disarm. */
+ /* Explicit long fixture impulses retain the MCU timeout and pose/rate guards. */
  command("BAL 0");gravity(0,0,1);command("U 6");
- command("BPROBE 6 81");assert(!m1_enabled);
- command("BPROBE -6 80");LQR_Motor_Loop();assert(voltage[0].q==-6&&m1_enabled&&!m2_enabled&&!m3_enabled);
- fake_us+=80000;fake_ms+=80;gravity(0,0,1);LQR_Motor_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_DISABLED&&voltage[0].q==0);
+ command("BPROBE 6 121");assert(!m1_enabled);
+ command("BPROBE -6 120");LQR_Motor_Loop();assert(voltage[0].q==-6&&m1_enabled&&!m2_enabled&&!m3_enabled&&cubli_bal.probe_wheel_limit==100);
+ fake_us+=119000;fake_ms+=119;gravity(0,0,1);LQR_Motor_Loop();assert(m1_enabled);
+ fake_us+=1000;fake_ms++;gravity(0,0,1);LQR_Motor_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_DISABLED&&voltage[0].q==0);
+ command("BPROBE 6 80");assert(cubli_bal.probe_wheel_limit==60);shaft_velocity[0]=61;LQR_Motor_Loop();assert(!m1_enabled);
+ command("BAL 0");shaft_velocity[0]=0;command("BPROBE 6 120");shaft_velocity[0]=95;LQR_Motor_Loop();assert(m1_enabled);
+ shaft_velocity[0]=101;LQR_Motor_Loop();assert(!m1_enabled&&cubli_bal.state==BAL_STATE_FALL_PROTECT);
+ command("BAL 0");shaft_velocity[0]=0;command("BPROBE 6 120");cubli_bal.attitude.gyro_rad[1]=2.01f;advance();gravity(0,0,1);LQR_Balance_Loop();assert(!m1_enabled);
+ command("BAL 0");cubli_bal.attitude.gyro_rad[1]=0;
  command("U 4");command("BPROBE 6 40");assert(!m1_enabled);
  /* Telemetry must exceed the raised wheel threshold, not clip at 300. */
  setup();lpf_velocity[0].Tf=0;fake_us+=1000;fake_ms++;encoder_raw[0]=1000;updateSensor(0);assert(shaft_velocity[0]>350);

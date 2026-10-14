@@ -6,7 +6,7 @@
   "positive_q_body_motion": "toward B, positive Y; endpoint contact limits displacement",
   "negative_q_body_motion": "away from B toward middle/A, negative Y",
   "hardware_auto_disarm_verified": true,
-  "operator_hands_off_confirmation": "Hands-off instructed; operator observed both motions and confirmed a clear lift during the second negative pulse; no separate hands-off restatement",
+  "operator_hands_off_confirmation": "Explicitly confirmed for the6V100ms follow-up; 80ms pair was observed but hands-off not separately restated",
   "free_balance_verified": false,
   "pulses": [
     {
@@ -73,5 +73,16 @@
   "last_state_source": "b_endpoint_final_disarmed.json",
   "configuration_restored": "BDIR1=-1, AxisMask=1, DirMask=1; Ref0 requires deliberate new neutral reference; all motors disabled",
   "operator_observed_negative_lift": true,
-  "direction_test_conclusion": "Positive q initially moves body toward B/positive IMU Y; negative q pulls away from B/negative Y. Feedback restoration sign remains BDIR1=-1."
+  "direction_test_conclusion": "Positive q initially moves body toward B/positive IMU Y; negative q pulls away from B/negative Y. Feedback restoration sign remains BDIR1=-1.",
+  "direction_confirmed": true,
+  "follow_up": {
+    "source": "b_long_impulse_negative6v100.jsonl",
+    "operator_report": "No hand support; body jumped from B to A; fixture and support edge stayed in place",
+    "voltage": -6,
+    "duration_ms": 100,
+    "baseline_pose_deg": 54.05,
+    "minimum_pose_after_cutoff_deg": 34.04,
+    "final_pose_deg": 35.99,
+    "active_wheel_peak_rad_s": 61.93
+  }
 }

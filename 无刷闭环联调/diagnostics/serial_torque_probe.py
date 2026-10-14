@@ -8,7 +8,7 @@ p.add_argument('--baseline-angle',type=float,help='Expected signed STATE angle a
 p.add_argument('--pose-tolerance',type=float,default=1)
 p.add_argument('--observe-seconds',type=float,default=.35);a=p.parse_args()
 if not (0<a.pose_tolerance<=2 and .35<=a.observe_seconds<=2):raise SystemExit('Fixture observation bounds exceeded')
-if a.single_voltage is not None and not (0<abs(a.single_voltage)<=6 and 20<=a.duration_ms<=(80 if abs(a.single_voltage)>3 else 120)):raise SystemExit('MCU probe bounds exceeded')
+if a.single_voltage is not None and not (0<abs(a.single_voltage)<=6 and 20<=a.duration_ms<=120):raise SystemExit('MCU probe bounds exceeded')
 plan=[(a.single_voltage,a.duration_ms)] if a.single_voltage is not None else [(sign*level,duration) for level,duration in [(1,80),(1.5,80),(2,60),(2.5,50)] for sign in (1,-1)]
 folder=Path(__file__).resolve().parent/'2026-10-14'
 log=(folder/(a.tag+'.jsonl')).open('x',encoding='utf-8')
@@ -35,7 +35,7 @@ def pump(duration):
             if guard and (int(d.get('Fault',0)) or int(d.get('Trip',0)) or d.get('Bal')=='4' or ('EN' in d and d['EN'][1:]!='00')):raise RuntimeError('Torque probe protection: '+line)
 def wait(c,t=.1):cmd(c);pump(t)
 try:
-    s.open();wait('PING');wait('STOP');wait('APP 0');wait('MODE 1');wait(f'U {max(3,max(abs(v) for v,ms in plan))}');wait('L 90');wait('ACC 400');wait('BAXIS1 2');wait('STATE?')
+    s.open();wait('PING');wait('STOP');wait('APP 0');wait('MODE 1');wait(f'U {max(3,max(abs(v) for v,ms in plan))}');wait('L '+('110' if any(abs(v)>3 and ms>80 for v,ms in plan) else '90'));wait('ACC 400');wait('BAXIS1 2');wait('STATE?')
     if state.get('Cal')!='1' or state.get('Aligned','000')[0]!='1':raise RuntimeError('M1 alignment/static IMU calibration required')
     wait('FAST 1')
     for pulse_voltage,duration in plan:
@@ -60,7 +60,7 @@ try:
         if len(active)<2:raise RuntimeError('Insufficient active probe samples')
         if state.get('EN')!='000' or state.get('Bal')!='0':raise RuntimeError('MCU did not end probe/disarm')
         rates=[float(d['Rate']) for d in active]
-        d={'voltage':sign*level,'duration_ms':duration,'samples':len(active),'baseline_rate':statistics.mean(baseline) if baseline else None,'baseline_state':baseline_state,
+        d={'voltage':sign*level,'duration_ms':duration,'expected_wheel_guard_rad_s':100 if level>3 and duration>80 else 60,'samples':len(active),'baseline_rate':statistics.mean(baseline) if baseline else None,'baseline_state':baseline_state,
            'rates':rates,'speed_peak':max(abs(float(d['V1'])) for d in active),
            'wx':[float(d['Wx']) for d in active],'wy':[float(d['Wy']) for d in active],'wz':[float(d['Wz']) for d in active]}
         summary['pulses'].append(d);print(json.dumps(d),flush=True)

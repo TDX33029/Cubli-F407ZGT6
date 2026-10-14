@@ -84,5 +84,7 @@
     "Cubli-ST/MDK-ARM/CubeMX-edge-wheel300/build_config.json": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b",
     "Cubli-ST/MDK-ARM/CubeMX-edge-wheel300-quad/CubeMX.hex": "56d0d589d78678c9a1f0d7e1666e48e8560f538b8ba49a9c78c92437d8543850",
     "Cubli-ST/MDK-ARM/CubeMX-edge-wheel300-quad/build_config.json": "7b495494b5cf84e90e8378e229dbea5efda8a51ccfa4c384f2aa43df514ee37d"
-  }
+  },
+  "is_current_image": false,
+  "superseded_by": "edge_impulse120_verification.json"
 }
