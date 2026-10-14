@@ -4,6 +4,7 @@ TIM_TypeDef mock_timers[3];GPIO_TypeDef mock_gpio;
 static uint32_t fake_ms=100,fake_us=100000;
 static const char *input_line;
 static uint8_t encoder_ok=1,model_on=0;
+static int settle_drift_reads;
 static int16_t encoder_raw[3];
 static int true_map[3]={2,0,1},true_sign[3]={1,-1,1},true_pp[3]={7,7,7};
 static float rotor[3],field_previous[3];
@@ -42,6 +43,7 @@ static void model(void) {
     }
 }
 uint8_t ENC_GetAngle(uint8_t idx,int16_t *raw,float *deg) {
+    if(settle_drift_reads>0) {encoder_raw[idx]=(encoder_raw[idx]+8)%16384;settle_drift_reads--;}
     model();*raw=encoder_raw[idx];*deg=*raw*360.0f/16384;return !encoder_ok;
 }
 uint8_t LSM6DSR_Init(void) {return 0;}
@@ -58,7 +60,7 @@ static void gravity(float x,float y,float z) {
  cubli_bal.attitude.valid=true;cubli_bal.attitude.last_sample_ms=fake_ms;
 }
 static void setup(void) {
- int i;fake_ms=fake_us/1000;model_on=0;encoder_ok=1;safety_trip=0;diagnostic_busy=0;
+ int i;fake_ms=fake_us/1000;model_on=0;encoder_ok=1;settle_drift_reads=0;safety_trip=0;diagnostic_busy=0;
  mock_gpio.IDR=GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11;
  LQR_Balance_Init();SimpleFOC_PID_Init();voltage_power_supply=12;voltage_limit=5;velocity_limit=180;velocity_ramp_accel=400;pole_pairs=7;
  imu_online=1;Control_Heartbeat();main_alive_ms=fake_ms;controller=Type_velocity;
@@ -302,6 +304,11 @@ int main(void) {
  for(i=0;i<1100;i++) {fake_us+=1000;fake_ms++;encoder_raw[0]=(encoder_raw[0]+26)%16384;move(180,0);}
  assert(!safety_trip && fabsf(voltage[0].q)>4.5f);
  setup();velocityOpenloop(0,0);assert(TIM1->CCR1==TIM1->CCR2&&TIM1->CCR2==TIM1->CCR3);
+ /* Initial motion must settle before it can become a pole-pair endpoint. */
+ setup();diagnostic_busy=1;settle_drift_reads=55;saved=fake_ms;
+ assert(align_wait_still(0,&u)&&fake_ms-saved>=240);
+ settle_drift_reads=10000;saved=fake_ms;assert(!align_wait_still(0,&u)&&fake_ms-saved==1600);
+ encoder_ok=0;assert(!align_wait_still(0,&u));
  setup();diagnostic_busy=1;model_on=1;memset(motor_mapping_valid,0,3);memset(motor_aligned,0,3);
  cubli_bal.axes_confirmed_mask=cubli_bal.directions_confirmed_mask=7;
  memset(cubli_bal.reference_valid,1,sizeof(cubli_bal.reference_valid));

@@ -138,9 +138,35 @@ static uint8_t detect_motor_encoder(int motor)
 
 /******************************************************************************/
 /* 对单个电机进行电角度零位对齐与旋转方向辨识 (严格遵循官方 SimpleFOC 闭环校准算法) */
+static uint8_t align_wait_still(int motor,float *angle)
+{
+    int window,sample,stable=0;
+    float previous=0;
+    /* A fixed delay can end at a flywheel oscillation peak. Require two
+       consecutive 80ms windows with the existing 0.02rad spread bound. */
+    for(window=0;window<20;window++) {
+        float mean=0,lo=0,hi=0;
+        for(sample=0;sample<40;sample++) {
+            float current_angle;
+            updateSensor(motor);
+            if(!sensor_valid[motor] || Control_Aborted()) return 0;
+            current_angle=shaftAngle(motor);
+            if(!sample) lo=hi=current_angle;
+            lo=fminf(lo,current_angle);hi=fmaxf(hi,current_angle);
+            mean+=current_angle;delay_ms(2);
+        }
+        mean/=40.0f;
+        if(hi-lo<=0.02f) {
+            stable=(stable && fabsf(mean-previous)<=0.01f)?stable+1:1;
+            if(stable>=2) {*angle=mean;return 1;}
+        } else stable=0;
+        previous=mean;
+    }
+    return 0;
+}
 uint8_t Motor_alignSensor(int motor)
 {
-    int i; float start,finish,forward,reverse,pp_est,align_v,mean=0,lo=0,hi=0;
+    int i; float start,finish,forward,reverse,pp_est,align_v,settled;
     if(motor<0 || motor>2) return 1;
     LQR_InvalidateMotorCalibration((uint8_t)motor);
     motor_aligned[motor]=0;motor_mapping_valid[motor]=0;motor_test_travel_deg[motor]=0;
@@ -149,7 +175,7 @@ uint8_t Motor_alignSensor(int motor)
     set_motor_enable(motor+1,1);
     setPhaseVoltage(align_v,0,_3PI_2,motor);delay_ms(500);updateSensor(motor);
     if(!sensor_valid[motor] || Control_Aborted()) goto failed;
-    start=shaftAngle(motor);
+    if(!align_wait_still(motor,&start)) {printf("ERR ALIGN_UNSTABLE M%d stage=start\r\n",motor+1);goto failed;}
     /* Independent, slow forward/backward electrical sweep. Open-loop mapping
        travel is NOT sufficient to establish commutation direction or pole count. */
     for(i=1;i<=120;i++) {
@@ -158,14 +184,18 @@ uint8_t Motor_alignSensor(int motor)
         if(!sensor_valid[motor] || Control_Aborted()) goto failed;
         if((i%20)==0) printf("$SCAN,M:%d,Stage:F,Step:%d,Angle:%.4f#\r\n",motor+1,i,shaftAngle(motor));
     }
-    delay_ms(200);updateSensor(motor);finish=shaftAngle(motor);forward=finish-start;
+    delay_ms(200);
+    if(!align_wait_still(motor,&finish)) {printf("ERR ALIGN_UNSTABLE M%d stage=forward\r\n",motor+1);goto failed;}
+    forward=finish-start;
     for(i=119;i>=0;i--) {
         setPhaseVoltage(align_v,0,_3PI_2+_2PI*i/120.0f,motor);
         delay_ms(10);updateSensor(motor);
         if(!sensor_valid[motor] || Control_Aborted()) goto failed;
         if((i%20)==0) printf("$SCAN,M:%d,Stage:R,Step:%d,Angle:%.4f#\r\n",motor+1,i,shaftAngle(motor));
     }
-    delay_ms(200);updateSensor(motor);reverse=shaftAngle(motor)-finish;
+    delay_ms(200);
+    if(!align_wait_still(motor,&settled)) {printf("ERR ALIGN_UNSTABLE M%d stage=reverse\r\n",motor+1);goto failed;}
+    reverse=settled-finish;
     if(!sensor_valid[motor] || Control_Aborted()) goto failed;
     if(fabsf(forward)<0.05f || fabsf(reverse)<0.05f || forward*reverse>=0 ||
        fabsf(fabsf(forward)-fabsf(reverse))>0.2f*fmaxf(fabsf(forward),fabsf(reverse))) {
@@ -177,15 +207,7 @@ uint8_t Motor_alignSensor(int motor)
         printf("ERR ALIGN_PP M%d expected=%d measured=%.2f (check PP, phases and magnet)\r\n",motor+1,motor_pole_pairs[motor],pp_est);goto failed;
     }
     sensor_direction[motor]=forward>0?1:-1;
-    /* Confirm the rotor really settles; do not save a zero while it is vibrating. */
-    for(i=0;i<40;i++) {
-        updateSensor(motor);if(!sensor_valid[motor] || Control_Aborted()) goto failed;
-        if(i==0) lo=hi=shaftAngle(motor);
-        lo=fminf(lo,shaftAngle(motor));hi=fmaxf(hi,shaftAngle(motor));
-        mean+=shaftAngle(motor);delay_ms(2);
-    }
-    if(hi-lo>0.02f) {printf("ERR ALIGN_UNSTABLE M%d spread=%.3f rad\r\n",motor+1,hi-lo);goto failed;}
-    zero_electric_angle[motor]=_normalizeAngle(sensor_direction[motor]*(mean/40.0f)*motor_pole_pairs[motor]);
+    zero_electric_angle[motor]=_normalizeAngle(sensor_direction[motor]*settled*motor_pole_pairs[motor]);
     set_motor_enable(motor+1,0);reset_closed_loop_state(motor);reset_motion_state(motor);
     motor_aligned[motor]=1;
     printf("Align M%d OK (ENC%d): Dir=%d, PP=%d, Zero_Elec=%.4f rad\r\n",motor+1,motor_sensor_map[motor]+1,sensor_direction[motor],motor_pole_pairs[motor],zero_electric_angle[motor]);

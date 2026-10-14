@@ -58,7 +58,7 @@ try:
   phase='prepare_M'+str(axis)
   cmd('APP 0');pump(.15)
   if args.align:
-   phase='align_M'+str(axis);cmd('TEST '+str(axis));align_deadline=time.monotonic()+8
+   phase='align_M'+str(axis);cmd('TEST '+str(axis));align_deadline=time.monotonic()+15
    while time.monotonic()<align_deadline:
     pump(.1)
     if any(p==phase and line in ('OK ALIGN','ERR ALIGN') for t,p,line in messages):break
