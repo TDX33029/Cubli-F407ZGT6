@@ -1,0 +1,9 @@
+{
+  "method": "Independent analytic Green-theorem integration of DXF circular arcs and straight segments",
+  "exact_area_mm2": 1714.9678464737635,
+  "exact_polar_area_moment_mm4": 1263051.3585587335,
+  "exact_mass_kg": 0.06799847511268473,
+  "exact_inertia_kg_m2": 5.007998636685378e-05,
+  "polygon_area_relative_error": 1.5854057185960002e-06,
+  "polygon_inertia_relative_error": 6.793968635787628e-06
+}

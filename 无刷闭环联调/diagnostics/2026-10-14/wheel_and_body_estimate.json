@@ -1,0 +1,460 @@
+{
+  "source": "User dimensions and material, 2026-10-14; no hardware was powered for this calculation.",
+  "user_inputs": {
+    "cube_side_mm": 70,
+    "outer_ring_OD_ID_mm": [
+      66,
+      51
+    ],
+    "inner_ring_OD_ID_mm": [
+      20,
+      16
+    ],
+    "thickness_mm": 5,
+    "material": "304 stainless steel",
+    "density_assumed_kg_m3": 7930.0,
+    "motor": "2804 220KV",
+    "frame_and_mainboard_mass_kg_approx": 0.05,
+    "motor_mass_measured": false,
+    "total_mass_measured": false
+  },
+  "annuli_only": {
+    "outer": {
+      "mass_kg": 0.05465252024863401,
+      "polar_inertia_kg_m2": 4.752719792121835e-05
+    },
+    "inner": {
+      "mass_kg": 0.004484309353734071,
+      "polar_inertia_kg_m2": 3.6771336700619386e-07
+    },
+    "one_mass_kg": 0.05913682960236808,
+    "one_inertia_kg_m2": 4.789491128822454e-05,
+    "three_mass_kg": 0.17741048880710425,
+    "nominal_mass_subtotal_kg_before_motors_spokes_and_cutouts": 0.22741048880710424
+  },
+  "cad_crosscheck": {
+    "file": "Mechanical\\2D\\动量轮CAD.dxf",
+    "sha256": "e329ce060f6b1168f0a950942d9e07502dd7e44b1178f0a391e8e53b5a4351c6",
+    "matches": [
+      "outer OD66",
+      "outer ring ID51",
+      "hub OD20",
+      "thickness supplied by user"
+    ],
+    "drawing_center_hole_mm": 12,
+    "bolt_pattern_PCD_mm": 16,
+    "bolt_holes": "4 x diameter 2.5mm",
+    "spokes_width_mm": 2.5,
+    "mismatch": "User described a 16mm center opening; drawing center opening is 12mm. 16mm is also the drawing bolt PCD. Actual interpretation must be checked.",
+    "original_drawing_center12": {
+      "area_mm2": 1714.9651275539325,
+      "mass_kg": 0.06799836730751342,
+      "polar_inertia_kg_m2": 5.0079646124997126e-05,
+      "valid": true,
+      "connected_components": 1
+    },
+    "hypothetical_center16_same_spokes_and_bolts": {
+      "area_mm2": 1636.491493205365,
+      "mass_kg": 0.06488688770559273,
+      "polar_inertia_kg_m2": 4.992633767256148e-05,
+      "valid": true,
+      "connected_components": 1
+    },
+    "mass_relative_change_at_10x_finer_tolerance": 1.6090181929939718e-05,
+    "note": "CAD estimates include spokes and screw holes; center16 is a hypothetical edit, not a claim about the installed wheel. Original CAD was not modified."
+  },
+  "pulse_based_torque_estimate": {
+    "acceleration_gain_rad_s2_per_V": 130.97259809029188,
+    "annuli_only_torque_gain_Nm_per_V": 0.006272920966722817,
+    "phase_bemf_used_V_per_rad_s": 0.024,
+    "note": "Approximation from short filtered-speed pulses; not measured current or torque. Inertia and mass exclude unconfirmed spokes/rotor."
+  },
+  "body_mass_scenarios": [
+    {
+      "assumed_each_motor_mass_g": 0,
+      "total_mass_kg_excluding_spokes_fasteners": 0.22741048880710424,
+      "uniform_cube_edge_inertia_kg_m2": 0.0007428742634365406,
+      "geometric_gravity_torque_slope_Nm_per_rad": 0.11042376259056122,
+      "gravity_torque_Nm": {
+        "1": 0.0019271603850645768,
+        "3": 0.005779133207120831,
+        "5": 0.009624065045571433,
+        "10": 0.01917488514497671,
+        "20": 0.037767151107783364
+      },
+      "gravity_only_phase_voltage_V": {
+        "1": 0.3072189806452144,
+        "3": 0.9212826429311834,
+        "5": 1.5342238642294526,
+        "10": 3.0567713584624214,
+        "20": 6.020664265998904
+      }
+    },
+    {
+      "assumed_each_motor_mass_g": 20,
+      "total_mass_kg_excluding_spokes_fasteners": 0.28741048880710424,
+      "uniform_cube_edge_inertia_kg_m2": 0.0009388742634365406,
+      "geometric_gravity_torque_slope_Nm_per_rad": 0.13955797618900936,
+      "gravity_torque_Nm": {
+        "1": 0.002435622522015326,
+        "3": 0.007303900135181791,
+        "5": 0.012163279071113104,
+        "10": 0.02423398824410633,
+        "20": 0.04773163901840524
+      },
+      "gravity_only_phase_voltage_V": {
+        "1": 0.3882756589690905,
+        "3": 1.1643539228260982,
+        "5": 1.9390136007831145,
+        "10": 3.863270137255846,
+        "20": 7.609156766300188
+      }
+    },
+    {
+      "assumed_each_motor_mass_g": 30,
+      "total_mass_kg_excluding_spokes_fasteners": 0.3174104888071042,
+      "uniform_cube_edge_inertia_kg_m2": 0.0010368742634365405,
+      "geometric_gravity_torque_slope_Nm_per_rad": 0.1541250829882334,
+      "gravity_torque_Nm": {
+        "1": 0.0026898535904907,
+        "3": 0.00806628359921227,
+        "5": 0.013432886083883936,
+        "10": 0.026763539793671135,
+        "20": 0.052713882973716174
+      },
+      "gravity_only_phase_voltage_V": {
+        "1": 0.4288039981310285,
+        "3": 1.2858895627735554,
+        "5": 2.141408469059945,
+        "10": 4.266519526652558,
+        "20": 8.403403016450829
+      }
+    },
+    {
+      "assumed_each_motor_mass_g": 40,
+      "total_mass_kg_excluding_spokes_fasteners": 0.34741048880710423,
+      "uniform_cube_edge_inertia_kg_m2": 0.0011348742634365407,
+      "geometric_gravity_torque_slope_Nm_per_rad": 0.16869218978745748,
+      "gravity_torque_Nm": {
+        "1": 0.002944084658966075,
+        "3": 0.008828667063242751,
+        "5": 0.014702493096654771,
+        "10": 0.029293091343235947,
+        "20": 0.05769612692902711
+      },
+      "gravity_only_phase_voltage_V": {
+        "1": 0.46933233729296653,
+        "3": 1.4074252027210128,
+        "5": 2.3438033373367757,
+        "10": 4.66976891604927,
+        "20": 9.197649266601472
+      }
+    }
+  ],
+  "cad_body_mass_scenarios": [
+    {
+      "wheel_case": "drawing_center12",
+      "assumed_each_motor_mass_g": 20,
+      "total_mass_kg_excluding_fasteners": 0.31399510192254027,
+      "torque_gain_Nm_per_V": 0.006559061364433292,
+      "geometric_gravity_torque_slope_Nm_per_rad": 0.15246667280462967,
+      "gravity_only_phase_voltage_V": {
+        "1": 0.40568462377186837,
+        "3": 1.2165596070924647,
+        "5": 2.0259523999284608,
+        "10": 4.03648607878996,
+        "20": 7.9503255706364
+      },
+      "offline_feedback_candidate": {
+        "uniform_locked_cube_edge_inertia_kg_m2": 0.0010257173329469651,
+        "body_edge_inertia_excluding_controlled_wheel_spin_kg_m2": 0.000975637686821968,
+        "plant_a_b_c": [
+          156.27386566141476,
+          6.722845430252607,
+          130.97259809029188
+        ],
+        "firmware_body_direction_assumed": -1,
+        "K_theta": 55.969435793985895,
+        "K_body_rate": 3.323815389629685,
+        "K_wheel_signed": -0.03377154413228254,
+        "K_integral": 0,
+        "predicted_full_gain_poles": [
+          {
+            "real": -9.999999999999996,
+            "imag": 10.0
+          },
+          {
+            "real": -9.999999999999996,
+            "imag": -10.0
+          },
+          {
+            "real": -1.0000000000000013,
+            "imag": 0.0
+          }
+        ],
+        "applies_after_handover": true,
+        "note": "OFFLINE ONLY: assumes geometric neutral COM and positive body response to positive q voltage. No voltage saturation, friction, sensor delay or current limit. Must not be installed as validated gains."
+      }
+    },
+    {
+      "wheel_case": "drawing_center12",
+      "assumed_each_motor_mass_g": 30,
+      "total_mass_kg_excluding_fasteners": 0.34399510192254024,
+      "torque_gain_Nm_per_V": 0.006559061364433292,
+      "geometric_gravity_torque_slope_Nm_per_rad": 0.1670337796038537,
+      "gravity_only_phase_voltage_V": {
+        "1": 0.44444490582288704,
+        "3": 1.3327932298124059,
+        "5": 2.2195177505524564,
+        "10": 4.422143630841749,
+        "20": 8.70992266517302
+      },
+      "offline_feedback_candidate": {
+        "uniform_locked_cube_edge_inertia_kg_m2": 0.001123717332946965,
+        "body_edge_inertia_excluding_controlled_wheel_spin_kg_m2": 0.0010736376868219677,
+        "plant_a_b_c": [
+          155.57741839175168,
+          6.109194419067488,
+          130.97259809029188
+        ],
+        "firmware_body_direction_assumed": -1,
+        "K_theta": 61.477404814541835,
+        "K_body_rate": 3.65768308722217,
+        "K_wheel_signed": -0.03381528676088295,
+        "K_integral": 0,
+        "predicted_full_gain_poles": [
+          {
+            "real": -9.999999999999995,
+            "imag": 9.999999999999998
+          },
+          {
+            "real": -9.999999999999995,
+            "imag": -9.999999999999998
+          },
+          {
+            "real": -1.000000000000001,
+            "imag": 0.0
+          }
+        ],
+        "applies_after_handover": true,
+        "note": "OFFLINE ONLY: assumes geometric neutral COM and positive body response to positive q voltage. No voltage saturation, friction, sensor delay or current limit. Must not be installed as validated gains."
+      }
+    },
+    {
+      "wheel_case": "drawing_center12",
+      "assumed_each_motor_mass_g": 40,
+      "total_mass_kg_excluding_fasteners": 0.37399510192254026,
+      "torque_gain_Nm_per_V": 0.006559061364433292,
+      "geometric_gravity_torque_slope_Nm_per_rad": 0.18160088640307778,
+      "gravity_only_phase_voltage_V": {
+        "1": 0.4832051878739059,
+        "3": 1.4490268525323466,
+        "5": 2.413083101176452,
+        "10": 4.807801182893538,
+        "20": 9.469519759709643
+      },
+      "offline_feedback_candidate": {
+        "uniform_locked_cube_edge_inertia_kg_m2": 0.0012217173329469651,
+        "body_edge_inertia_excluding_controlled_wheel_spin_kg_m2": 0.001171637686821968,
+        "plant_a_b_c": [
+          154.99747784288567,
+          5.59819937358327,
+          130.97259809029188
+        ],
+        "firmware_body_direction_assumed": -1,
+        "K_theta": 66.9853738350978,
+        "K_body_rate": 3.991550784814656,
+        "K_wheel_signed": -0.0338520117635772,
+        "K_integral": 0,
+        "predicted_full_gain_poles": [
+          {
+            "real": -10.000000000000004,
+            "imag": 9.999999999999995
+          },
+          {
+            "real": -10.000000000000004,
+            "imag": -9.999999999999995
+          },
+          {
+            "real": -1.0000000000000016,
+            "imag": 0.0
+          }
+        ],
+        "applies_after_handover": true,
+        "note": "OFFLINE ONLY: assumes geometric neutral COM and positive body response to positive q voltage. No voltage saturation, friction, sensor delay or current limit. Must not be installed as validated gains."
+      }
+    },
+    {
+      "wheel_case": "hypothetical_center16",
+      "assumed_each_motor_mass_g": 20,
+      "total_mass_kg_excluding_fasteners": 0.3046606631167782,
+      "torque_gain_Nm_per_V": 0.006538982158108593,
+      "geometric_gravity_torque_slope_Nm_per_rad": 0.14793414723815107,
+      "gravity_only_phase_voltage_V": {
+        "1": 0.3948331408660618,
+        "3": 1.184018379235423,
+        "5": 1.9717610735937354,
+        "10": 3.928515854835535,
+        "20": 7.737665743346834
+      },
+      "offline_feedback_candidate": {
+        "uniform_locked_cube_edge_inertia_kg_m2": 0.0009952248328481423,
+        "body_edge_inertia_excluding_controlled_wheel_spin_kg_m2": 0.0009452984951755808,
+        "plant_a_b_c": [
+          156.49463951666783,
+          6.9173728631547595,
+          130.97259809029188
+        ],
+        "firmware_body_direction_assumed": -1,
+        "K_theta": 54.42740285434931,
+        "K_body_rate": 3.2303444595560316,
+        "K_wheel_signed": -0.03375775898618091,
+        "K_integral": 0,
+        "predicted_full_gain_poles": [
+          {
+            "real": -10.0,
+            "imag": 10.000000000000005
+          },
+          {
+            "real": -10.0,
+            "imag": -10.000000000000005
+          },
+          {
+            "real": -1.0000000000000018,
+            "imag": 0.0
+          }
+        ],
+        "applies_after_handover": true,
+        "note": "OFFLINE ONLY: assumes geometric neutral COM and positive body response to positive q voltage. No voltage saturation, friction, sensor delay or current limit. Must not be installed as validated gains."
+      }
+    },
+    {
+      "wheel_case": "hypothetical_center16",
+      "assumed_each_motor_mass_g": 30,
+      "total_mass_kg_excluding_fasteners": 0.3346606631167782,
+      "torque_gain_Nm_per_V": 0.006538982158108593,
+      "geometric_gravity_torque_slope_Nm_per_rad": 0.16250125403737517,
+      "gravity_only_phase_voltage_V": {
+        "1": 0.4337124438413908,
+        "3": 1.3006089197196322,
+        "5": 2.1659208039726408,
+        "10": 4.315357642808312,
+        "20": 8.499595327316225
+      },
+      "offline_feedback_candidate": {
+        "uniform_locked_cube_edge_inertia_kg_m2": 0.0010932248328481423,
+        "body_edge_inertia_excluding_controlled_wheel_spin_kg_m2": 0.0010432984951755809,
+        "plant_a_b_c": [
+          155.75720159552918,
+          6.267604322584709,
+          130.97259809029188
+        ],
+        "firmware_body_direction_assumed": -1,
+        "K_theta": 59.95228515647108,
+        "K_body_rate": 3.5652373623292353,
+        "K_wheel_signed": -0.03380395743754001,
+        "K_integral": 0,
+        "predicted_full_gain_poles": [
+          {
+            "real": -10.000000000000007,
+            "imag": 9.999999999999998
+          },
+          {
+            "real": -10.000000000000007,
+            "imag": -9.999999999999998
+          },
+          {
+            "real": -0.9999999999999986,
+            "imag": 0.0
+          }
+        ],
+        "applies_after_handover": true,
+        "note": "OFFLINE ONLY: assumes geometric neutral COM and positive body response to positive q voltage. No voltage saturation, friction, sensor delay or current limit. Must not be installed as validated gains."
+      }
+    },
+    {
+      "wheel_case": "hypothetical_center16",
+      "assumed_each_motor_mass_g": 40,
+      "total_mass_kg_excluding_fasteners": 0.3646606631167782,
+      "torque_gain_Nm_per_V": 0.006538982158108593,
+      "geometric_gravity_torque_slope_Nm_per_rad": 0.17706836083659921,
+      "gravity_only_phase_voltage_V": {
+        "1": 0.4725917468167198,
+        "3": 1.4171994602038411,
+        "5": 2.3600805343515456,
+        "10": 4.702199430781087,
+        "20": 9.261524911285612
+      },
+      "offline_feedback_candidate": {
+        "uniform_locked_cube_edge_inertia_kg_m2": 0.0011912248328481423,
+        "body_edge_inertia_excluding_controlled_wheel_spin_kg_m2": 0.0011412984951755809,
+        "plant_a_b_c": [
+          155.14640699614563,
+          5.729423271606623,
+          130.97259809029188
+        ],
+        "firmware_body_direction_assumed": -1,
+        "K_theta": 65.47716745859283,
+        "K_body_rate": 3.9001302651024385,
+        "K_wheel_signed": -0.033842554556038434,
+        "K_integral": 0,
+        "predicted_full_gain_poles": [
+          {
+            "real": -10.000000000000005,
+            "imag": 10.000000000000009
+          },
+          {
+            "real": -10.000000000000005,
+            "imag": -10.000000000000009
+          },
+          {
+            "real": -0.9999999999999974,
+            "imag": 0.0
+          }
+        ],
+        "applies_after_handover": true,
+        "note": "OFFLINE ONLY: assumes geometric neutral COM and positive body response to positive q voltage. No voltage saturation, friction, sensor delay or current limit. Must not be installed as validated gains."
+      }
+    }
+  ],
+  "asymmetric_COM_examples": {
+    "assumptions": "Hypothetical center16 CAD wheel, each motor 30g, equal wheel/motor assemblies at face centers 2(-X),3(Y),6(-Z), 50g other mass split between face1(+Z) and geometric center; selected Y edge at +X/-Z.",
+    "examples": [
+      {
+        "assumed_board_mass_on_face1_kg": 0,
+        "remaining_frame_mass_at_center_kg": 0.05,
+        "COM_xz_m": [
+          -0.009923607509666844,
+          -0.009923607509666844
+        ],
+        "modeled_neutral_angle_deg": 60.82971135675601
+      },
+      {
+        "assumed_board_mass_on_face1_kg": 0.02,
+        "remaining_frame_mass_at_center_kg": 0.030000000000000002,
+        "COM_xz_m": [
+          -0.009923607509666844,
+          -0.007831936521267055
+        ],
+        "modeled_neutral_angle_deg": 58.836070834116725
+      },
+      {
+        "assumed_board_mass_on_face1_kg": 0.05,
+        "remaining_frame_mass_at_center_kg": 0.0,
+        "COM_xz_m": [
+          -0.009923607509666844,
+          -0.0046944300386673726
+        ],
+        "modeled_neutral_angle_deg": 55.99630613321512
+      }
+    ],
+    "note": "These are placement examples, not bounds or measured neutral angles. Real motor depth, board/frame distribution and cable loads are unknown; no reference should be programmed from this table alone."
+  },
+  "limitations": [
+    "Frame mass is approximate; motors, spokes, screws and exact mounting positions are not measured.",
+    "Uniform cube inertia and geometric COM height are illustrative; asymmetric wheel placement changes the true COM.",
+    "Gravity-only voltage ignores wheel speed, friction, induction, driver current limits and transient dynamics.",
+    "Same-direction acceleration margin decreases with phase back EMF. Opposite-direction braking requires a separate calculation.",
+    "20 degrees is the configured shutdown threshold; it is not a demonstrated recovery angle."
+  ]
+}
