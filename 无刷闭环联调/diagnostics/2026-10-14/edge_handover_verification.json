@@ -42,5 +42,7 @@
     "imu_calibration": "OK CAL_IMU:DONE",
     "free_balance_verified": false,
     "trip20_hardware_crossing_verified": false
-  }
+  },
+  "is_current_image": false,
+  "superseded_by": "edge_fixture60_verification.json"
 }

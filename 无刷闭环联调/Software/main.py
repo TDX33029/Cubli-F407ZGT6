@@ -2783,7 +2783,7 @@ class MainWindow(QMainWindow):
         btn_dir_one.clicked.connect(self.action_send_edge_direction)
         layout.addWidget(btn_dir_one, 21, 1)
         self.spin_trip_angle = NoWheelDoubleSpinBox()
-        self.spin_trip_angle.setRange(10,25);self.spin_trip_angle.setValue(20);self.spin_trip_angle.setSuffix(' °')
+        self.spin_trip_angle.setRange(10,60);self.spin_trip_angle.setValue(20);self.spin_trip_angle.setSuffix(' °')
         layout.addWidget(QLabel('姿态停机角度'),22,0);layout.addWidget(self.spin_trip_angle,22,1)
         self.btn_trip_angle = QPushButton('设置停机角度（先失能）')
         self.btn_trip_angle.clicked.connect(self.action_set_trip_angle)

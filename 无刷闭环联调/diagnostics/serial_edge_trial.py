@@ -14,12 +14,13 @@ p.add_argument('--wide-window',action='store_true')
 p.add_argument('--update-direction',action='store_true')
 p.add_argument('--voltage',type=float,default=1.5);p.add_argument('--kp',type=float,default=20);p.add_argument('--kd',type=float,default=1.2);p.add_argument('--kw',type=float,default=.02)
 p.add_argument('--wheel-limit',type=float,default=60);p.add_argument('--tilt-bound',type=float,default=8)
+p.add_argument('--trip-angle',type=float,default=20)
 p.add_argument('--zero-offset',type=float,default=0)
 p.add_argument('--reference-json',type=Path)
 p.add_argument('--preserve-fall',action='store_true')
 a=p.parse_args()
 run_limit=45 if a.kp==a.kd==a.kw==0 and a.voltage<=.5 else 15
-if not (0<a.run_seconds<=run_limit and 20<=a.speed_bound<=a.wheel_limit<=120 and 15<=a.wait_seconds<=120 and 0<a.voltage<=4 and 0<=a.kp<=120 and 0<=a.kd<=10 and abs(a.kw)<=.1 and 3<=a.tilt_bound<=20 and abs(a.zero_offset)<=2):raise SystemExit('Fixture trial bounds exceeded')
+if not (0<a.run_seconds<=run_limit and 20<=a.speed_bound<=a.wheel_limit<=120 and 15<=a.wait_seconds<=120 and 0<a.voltage<=4 and 0<=a.kp<=120 and 0<=a.kd<=10 and abs(a.kw)<=.1 and 10<=a.trip_angle<=60 and 3<=a.tilt_bound<=a.trip_angle and abs(a.zero_offset)<=2):raise SystemExit('Fixture trial bounds exceeded')
 folder=Path(__file__).resolve().parent/'2026-10-14'
 log=(folder/(a.tag+'.jsonl')).open('x',encoding='utf-8')
 rows=[];frames=[];buf=bytearray();phase='connect';start=time.monotonic();ping=0;state={};watch=False;last_rx=0;run_started=None;result='incomplete';freq_queried=False
@@ -60,7 +61,8 @@ try:
     if state.get('Aligned','000')[0]!='1' or state.get('Cal')!='1':raise RuntimeError('M1 alignment/static calibration required')
     if a.reuse_reference and not (state.get('Ref')=='1' and state.get('BMode')=='1' and state.get('Axis1')=='2' and (a.update_direction or state.get('D1')==str(a.direction)) and int(state.get('AxisMask',0))&1 and int(state.get('DirMask',0))&1):
         raise RuntimeError('Saved reference/configuration does not match M1 edge')
-    wait(f'U {a.voltage}');wait(f'L {a.wheel_limit}');wait('APP 1');wait('BMODE 1')
+    wait(f'U {a.voltage}');wait(f'L {a.wheel_limit}');wait('APP 1');wait('BMODE 1');wait(f'BTRIP {a.trip_angle}')
+    if abs(float(state.get('TripDeg',-1))-a.trip_angle)>.11:raise RuntimeError('Firmware trip angle readback mismatch')
     if not a.reuse_reference:
         wait('BAXIS1 2');wait(f'BDIR1 {a.direction}')
     elif a.update_direction:wait(f'BDIR1 {a.direction}')

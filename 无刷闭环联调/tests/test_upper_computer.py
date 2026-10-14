@@ -88,6 +88,11 @@ class UpperTests(unittest.TestCase):
         self.assertEqual(self.win.spin_trip_angle.value(),20)
         self.win.btn_trip_angle.click()
         self.assertEqual(self.queued(),['BAL 0','BTRIP 20.0'])
+        self.win.worker.clear_pending()
+        self.win.worker._process_received_line(state.replace('TripDeg:20.0','TripDeg:60.0'))
+        self.assertEqual(self.win.spin_trip_angle.value(),60)
+        self.win.btn_trip_angle.click()
+        self.assertEqual(self.queued(),['BAL 0','BTRIP 60.0'])
         self.win.worker._process_received_line(state.replace('Bal:0','Bal:5'))
         self.assertFalse(self.win.btn_trip_angle.isEnabled())
     def test_stop_discards_queued_speed(self):

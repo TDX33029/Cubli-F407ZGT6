@@ -106,7 +106,8 @@ int main(void) {
  assert(cubli_bal.axes_confirmed_mask==1&&cubli_bal.directions_confirmed_mask==1);
  command("BCAP 11");assert(fabsf(cubli_bal.capture_angle-10*DEG_TO_RAD)<.0001f);
  command("BCAP 8");assert(fabsf(cubli_bal.capture_angle-8*DEG_TO_RAD)<.0001f);command("BCAP 10");
- command("BTRIP 26");assert(fabsf(cubli_bal.max_angle_trip-20*DEG_TO_RAD)<.0001f);
+ command("BTRIP 61");assert(fabsf(cubli_bal.max_angle_trip-20*DEG_TO_RAD)<.0001f);
+ command("BTRIP 60");assert(fabsf(cubli_bal.max_angle_trip-60*DEG_TO_RAD)<.0001f);
  command("BTRIP 18");assert(fabsf(cubli_bal.max_angle_trip-18*DEG_TO_RAD)<.0001f);command("BTRIP 20");
  assert(LQR_AxesConfirmed()&&LQR_DirectionsConfirmed());
  command("BMODE 4");assert(!LQR_AxesConfirmed()&&!LQR_DirectionsConfirmed());command("BMODE 1");
@@ -139,6 +140,18 @@ int main(void) {
  for(i=0;i<621;i++){advance();gravity(0,0,1);LQR_Balance_Loop();assert(!m1_enabled);}
  assert(cubli_bal.state==BAL_STATE_WAIT_POSE);cubli_bal.attitude.gyro_rad[1]=0;
  command("BSTART 3");fake_ms+=1501;Control_SafetyTick();assert(safety_trip==2&&!m1_enabled);
+ /* Fixture threshold remains latched and covers cross-axis falls too. */
+ setup();command("APP 1");command("BAXIS1 2");command("BDIR1 1");cubli_bal.attitude.is_calibrated=true;gravity(0,0,1);
+ command("BTRIP 60");command("BZERO");command("BAL 1");
+ for(i=0;i<22;i++){advance();gravity(0,0,1);LQR_Motor_Loop();LQR_Balance_Loop();}
+ assert(cubli_bal.state==BAL_STATE_BALANCING&&m1_enabled);
+ command("BTRIP 20");assert(fabsf(cubli_bal.max_angle_trip-60*DEG_TO_RAD)<.0001f); /* Active changes rejected. */
+ advance();gravity(-sinf(59*DEG_TO_RAD),0,cosf(59*DEG_TO_RAD));LQR_Balance_Loop();assert(m1_enabled);
+ advance();gravity(-sinf(61*DEG_TO_RAD),0,cosf(61*DEG_TO_RAD));LQR_Balance_Loop();assert(cubli_bal.state==BAL_STATE_FALL_PROTECT&&!m1_enabled);
+ advance();gravity(0,0,1);LQR_Balance_Loop();assert(cubli_bal.state==BAL_STATE_FALL_PROTECT);
+ command("BAL 0");command("BAL 1");
+ for(i=0;i<22;i++){advance();gravity(0,0,1);LQR_Motor_Loop();LQR_Balance_Loop();}
+ advance();gravity(0,sinf(61*DEG_TO_RAD),cosf(61*DEG_TO_RAD));LQR_Balance_Loop();assert(cubli_bal.state==BAL_STATE_FALL_PROTECT&&!m1_enabled);
  /* Torque identification must time out on the MCU, without a host STOP. */
  setup();command("APP 1");cubli_bal.attitude.is_calibrated=true;gravity(0,0,1);
  command("BPROBE 0.75 80");assert(!m1_enabled);command("BAXIS1 2");

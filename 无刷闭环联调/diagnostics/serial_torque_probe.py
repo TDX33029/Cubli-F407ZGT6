@@ -2,7 +2,10 @@
 import argparse,json,time,statistics
 from pathlib import Path
 import serial
-p=argparse.ArgumentParser();p.add_argument('--tag',required=True);a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--tag',required=True)
+p.add_argument('--single-voltage',type=float);p.add_argument('--duration-ms',type=int,default=80);a=p.parse_args()
+if a.single_voltage is not None and not (0<abs(a.single_voltage)<=3 and 20<=a.duration_ms<=120):raise SystemExit('MCU probe bounds exceeded')
+plan=[(a.single_voltage,a.duration_ms)] if a.single_voltage is not None else [(sign*level,duration) for level,duration in [(1,80),(1.5,80),(2,60),(2.5,50)] for sign in (1,-1)]
 folder=Path(__file__).resolve().parent/'2026-10-14'
 log=(folder/(a.tag+'.jsonl')).open('x',encoding='utf-8')
 rows=[];frames=[];buf=bytearray();phase='connect';start=time.monotonic();ping=0;state={};guard=False
@@ -31,22 +34,22 @@ try:
     s.open();wait('PING');wait('STOP');wait('APP 0');wait('MODE 1');wait('U 3');wait('L 90');wait('ACC 400');wait('BAXIS1 2');wait('STATE?')
     if state.get('Cal')!='1' or state.get('Aligned','000')[0]!='1':raise RuntimeError('M1 alignment/static IMU calibration required')
     wait('FAST 1')
-    for level,duration in [(1,80),(1.5,80),(2,60),(2.5,50)]:
-        for sign in (1,-1):
-            phase=f'brake_{level}_{sign}';wait('APP 0');wait('EN1 1');wait('M1 0',.8)
-            latest=next(d for t,p,d in reversed(frames) if 'V1' in d)
-            if abs(float(latest['V1']))>2:raise RuntimeError('Wheel has not stopped')
-            wait('EN1 0');wait('APP 1');wait('BMODE 1');phase=f'baseline_{level}_{sign}';pump(.4)
-            baseline=[float(d['Rate']) for t,p,d in frames if p==phase and 'Rate' in d]
-            phase=f'pulse_{level}_{sign}';guard=True;cmd(f'BPROBE {sign*level} {duration}');pump(.35);guard=False
-            active=[d for t,p,d in frames if p==phase and d.get('Bal')=='7' and 'T' in d]
-            if len(active)<2:raise RuntimeError('Insufficient active probe samples')
-            if state.get('EN')!='000' or state.get('Bal')!='0':raise RuntimeError('MCU did not end probe/disarm')
-            rates=[float(d['Rate']) for d in active]
-            d={'voltage':sign*level,'duration_ms':duration,'samples':len(active),'baseline_rate':statistics.mean(baseline) if baseline else None,
-               'rates':rates,'speed_peak':max(abs(float(d['V1'])) for d in active),
-               'wx':[float(d['Wx']) for d in active],'wy':[float(d['Wy']) for d in active],'wz':[float(d['Wz']) for d in active]}
-            summary['pulses'].append(d);print(json.dumps(d),flush=True)
+    for pulse_voltage,duration in plan:
+        level=abs(pulse_voltage);sign=1 if pulse_voltage>0 else -1
+        phase=f'brake_{level}_{sign}';wait('APP 0');wait('EN1 1');wait('M1 0',.8)
+        latest=next(d for t,p,d in reversed(frames) if 'V1' in d)
+        if abs(float(latest['V1']))>2:raise RuntimeError('Wheel has not stopped')
+        wait('EN1 0');wait('APP 1');wait('BMODE 1');phase=f'baseline_{level}_{sign}';pump(.4)
+        baseline=[float(d['Rate']) for t,p,d in frames if p==phase and 'Rate' in d]
+        phase=f'pulse_{level}_{sign}';guard=True;cmd(f'BPROBE {sign*level} {duration}');pump(.35);guard=False
+        active=[d for t,p,d in frames if p==phase and d.get('Bal')=='7' and 'T' in d]
+        if len(active)<2:raise RuntimeError('Insufficient active probe samples')
+        if state.get('EN')!='000' or state.get('Bal')!='0':raise RuntimeError('MCU did not end probe/disarm')
+        rates=[float(d['Rate']) for d in active]
+        d={'voltage':sign*level,'duration_ms':duration,'samples':len(active),'baseline_rate':statistics.mean(baseline) if baseline else None,
+           'rates':rates,'speed_peak':max(abs(float(d['V1'])) for d in active),
+           'wx':[float(d['Wx']) for d in active],'wy':[float(d['Wy']) for d in active],'wz':[float(d['Wz']) for d in active]}
+        summary['pulses'].append(d);print(json.dumps(d),flush=True)
     summary['result']='completed'
 except BaseException as e:
     summary['result']='stopped';summary['error']=repr(e);print(repr(e),flush=True)
