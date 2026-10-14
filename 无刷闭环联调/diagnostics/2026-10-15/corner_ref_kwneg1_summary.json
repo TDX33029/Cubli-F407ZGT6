@@ -1,0 +1,57 @@
+{
+  "utc_started": "2026-10-14T19:44:29.906611+00:00",
+  "settings": {
+    "port": "COM7",
+    "tag": "corner_ref_kwneg1",
+    "countdown": 8,
+    "duration_minutes": 0,
+    "wait_seconds": 900.0,
+    "voltage": 6,
+    "wheel_limit": 330,
+    "full_speed": 250,
+    "wheel_guard": 360,
+    "tilt_guard": 28,
+    "rate_guard": 4.0,
+    "kp": 80,
+    "kd": 5,
+    "kw": [
+      -0.03,
+      -0.03,
+      -0.03
+    ],
+    "ki": 0.0,
+    "yaw_damping": 3,
+    "tilt_trim": 0.0,
+    "body_axes": [
+      2,
+      3,
+      1
+    ],
+    "directions": [
+      -1,
+      -1,
+      -1
+    ],
+    "reference_gravity": [
+      -0.7020537760704896,
+      0.3969377900398545,
+      0.591236743059363
+    ],
+    "capture_pose": false,
+    "prepare_only": false,
+    "output_dir": "D:\\Document\\tempPrj\\Cubli-F407ZGT6\\\u65e0\u5237\u95ed\u73af\u8054\u8c03\\diagnostics\\2026-10-15",
+    "live_state": "diagnostics\\2026-10-15\\live_pose.json"
+  },
+  "result": "stopped",
+  "reference": null,
+  "attempts": [],
+  "hands_off_verified": false,
+  "cable_free_verified": false,
+  "error": "SerialException(\"could not open port 'COM7': FileNotFoundError(2, '\u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002', None, 2)\")",
+  "last_state": {},
+  "armed_countdown_s": 8,
+  "auto_attempts": 0,
+  "balance_seconds_total": 0,
+  "balance_seconds_longest": 0,
+  "frequency": []
+}
