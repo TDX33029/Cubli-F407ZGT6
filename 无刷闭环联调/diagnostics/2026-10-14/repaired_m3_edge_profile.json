@@ -1,0 +1,48 @@
+{
+  "name": "M3 edge34deg kw030 finite3s and8s",
+  "hardware": {
+    "encoder_map": 2,
+    "encoder_direction": 1,
+    "pole_pairs": 7,
+    "body_axis_command": 1,
+    "body_direction": -1
+  },
+  "reference": {
+    "motor": 3,
+    "body_axis": 1,
+    "body_direction": -1,
+    "gravity": [
+      -0.016349401906493522,
+      0.5591929034707469,
+      0.8288763440738648
+    ],
+    "pitch_deg": 34,
+    "roll_deg": 1.13,
+    "source": "Exploratory neutral estimate from initial zero-output free segment; user caught/returned later, so not a verified neutral",
+    "neutral_verified": false,
+    "balance_verified": false
+  },
+  "runtime_parameters": {
+    "LQR3": [
+      80,
+      5,
+      -0.03,
+      0
+    ],
+    "U": 6,
+    "BU": 6,
+    "L": 160,
+    "host_wheel_limit": 150,
+    "BTRIP": 20,
+    "BSTART_seconds": 8
+  },
+  "user_observations": {
+    "3s": "Normal balance during control; manually corrected after end.",
+    "8s": "Normal balance; no intervention. External battery reported, mounting details pending."
+  },
+  "scope": "Finite single-edge result. External battery changes plant; corner and long-duration momentum stability not verified. Fixture removed; user catches after stop.",
+  "trials": [
+    "repaired_m3_edge34_kw030_trial3s",
+    "repaired_m3_edge34_kw030_trial8s"
+  ]
+}

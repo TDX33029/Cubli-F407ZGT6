@@ -1,0 +1,15 @@
+{
+  "motor": 3,
+  "body_axis": 1,
+  "body_direction": -1,
+  "gravity": [
+    -0.016349401906493522,
+    0.5591929034707469,
+    0.8288763440738648
+  ],
+  "pitch_deg": 34,
+  "roll_deg": 1.13,
+  "source": "Exploratory neutral estimate from initial zero-output free segment; user caught/returned later, so not a verified neutral",
+  "neutral_verified": false,
+  "balance_verified": false
+}

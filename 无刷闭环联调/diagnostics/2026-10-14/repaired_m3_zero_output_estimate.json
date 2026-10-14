@@ -1,0 +1,31 @@
+{
+  "source": "repaired_m3_zero_output_trial1.jsonl",
+  "assumption": "Free motion after .35s, acceleration linear in tilt, no contacts during fit. User observation still required.",
+  "fits": [
+    {
+      "window": 5,
+      "a_rad_s2_per_rad": 136.48149477366402,
+      "neutral_pitch_deg": 33.98046607621131,
+      "rms_rad_s2": 0.03928708279727265
+    },
+    {
+      "window": 7,
+      "a_rad_s2_per_rad": 140.11968809170912,
+      "neutral_pitch_deg": 33.98316957504403,
+      "rms_rad_s2": 0.009666263843722493
+    },
+    {
+      "window": 9,
+      "a_rad_s2_per_rad": 144.51756857335067,
+      "neutral_pitch_deg": 33.97833499459506,
+      "rms_rad_s2": 0.014173798816938104
+    },
+    {
+      "window": 11,
+      "a_rad_s2_per_rad": 148.82746852190076,
+      "neutral_pitch_deg": 33.96106372152757,
+      "rms_rad_s2": 0.021276792341599716
+    }
+  ],
+  "not_verified_neutral": true
+}
