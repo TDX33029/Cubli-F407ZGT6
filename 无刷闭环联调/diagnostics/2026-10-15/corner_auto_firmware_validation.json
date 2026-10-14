@@ -1,0 +1,27 @@
+{
+  "name": "Corner automatic balance firmware (BAUTO corner mode)",
+  "date": "2026-10-15",
+  "variant": "CubeMX-corner-auto",
+  "encoder": "i2c",
+  "input_files": 38,
+  "compile_errors": 0,
+  "compile_warnings": 0,
+  "rom_bytes": 47180,
+  "ram_bytes": 11016,
+  "hex_sha256": "68249f325ab6cbab696662b899d316f04906857e81b7d8b4bd5bad3f4eeb5681",
+  "tests": {
+    "firmware_harness": "passed (corner auto suite: arming prerequisites, entry gates, tilt retry, third-axis full-speed retry, overspeed exit)",
+    "uart_harness": "passed",
+    "quad_tests": "passed",
+    "upper_computer": "passed (38 cases incl. corner profile load and corner auto gating)",
+    "corner_diagnostic": "passed (18 cases incl. 8 simulated auto long-run cases)"
+  },
+  "corner_auto": {
+    "arm": "BAUTO 1 [3..15 seconds]; corner needs all three axes aligned, directions confirmed, reference and L>BFULL",
+    "entry": "pose within 3 deg of the fixed reference, low body rate, all three wheels below 5 rad/s, stable for 1 s, then PG5 countdown",
+    "retry": "tilt beyond 20 deg or any wheel at or above 250 rad/s for 3 s disarms, waits 1 s and re-enters automatically; no run deadline",
+    "hard_exit": "wheel above L (overspeed), body rate above 3 rad/s, sensor/heartbeat/stall faults stop and exit automatic mode",
+    "profile": "LQR each 80/5/-0.030/0, BYAW 3, U=BU=6, L 330, BFULL 250, BTRIP 20, BCAP 2, reference gravity [-0.7028287890572913, 0.3977869310324257, 0.5897433770480731]"
+  },
+  "flashed": false
+}
