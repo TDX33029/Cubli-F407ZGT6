@@ -37,6 +37,10 @@ int main(void) {
     UART_WriteText(",");UART_WriteUInt(UINT32_MAX);UART_WriteText(",");UART_WriteInt(INT32_MIN);UART_WriteText("#");
     uart_tx_buf[uart_tx_head]=0;assert(!strcmp((char*)uart_tx_buf,"$T,-2.35,0.002,4294967295,-2147483648#"));
     uart_tx_head=uart_tx_tail=0;
+    UART_WriteFixed(.000025f,6);UART_WriteText(",");UART_WriteFixed(-.000005f,6);
+    UART_WriteText(",");UART_WriteFixed(.00025f,9); /* bounded to six places */
+    uart_tx_buf[uart_tx_head]=0;assert(!strcmp((char*)uart_tx_buf,"0.000025,-0.000005,0.000250"));
+    uart_tx_head=uart_tx_tail=0;
     for(i=0;i<2000;i++) cubli_fputc('A',NULL);assert(USART_TxFree()==0); /* full TX never blocks */
     puts("PASS: UART bursts, priority STOP/PING, damaged/oversize lines, RX queue overflow, nonblocking TX");
     return 0;

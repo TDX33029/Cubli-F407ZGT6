@@ -1,0 +1,251 @@
+{"t": 0.125, "kind": "tx", "data": "PING"}
+{"t": 0.125, "kind": "tx", "data": "PING"}
+{"t": 0.15599999998812564, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.4,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 0.1879999999946449, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.4,Gz:0.2,Ax:-1.00,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 0.2659999999741558, "kind": "rx", "data": "$STATE,App:0,Dbg:1,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:000,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.82,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.010,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:1,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 0.28099999998812564, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.4,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 0.3129999999946449, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.6,Gy:-0.4,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 0.34399999998277053, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.5,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 0.375, "kind": "tx", "data": "PING"}
+{"t": 0.3909999999741558, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.5,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 0.4379999999946449, "kind": "tx", "data": "STOP"}
+{"t": 0.46899999998277053, "kind": "rx", "data": "$STATE,App:0,Dbg:1,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:000,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.82,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.010,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:1,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 0.46899999998277053, "kind": "rx", "data": "ERR SAFETY_TRIP:1"}
+{"t": 0.48499999998603016, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.6,Gy:-0.4,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 0.5159999999741558, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.4,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 0.5469999999913853, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.4,Gy:-0.7,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 0.5939999999827705, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.4,Gy:-0.4,Gz:0.2,Ax:-1.00,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 0.625, "kind": "tx", "data": "PING"}
+{"t": 0.6719999999913853, "kind": "rx", "data": "$STATE,App:0,Dbg:1,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:000,EN:000,Fault:0,Trip:1,Tilt:0.00,PoseTilt:88.82,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.010,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:1,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 0.6879999999946449, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.4,Gy:-0.5,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.83,Bal:0#"}
+{"t": 0.7029999999795109, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.6,Gy:-0.5,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 0.75, "kind": "tx", "data": "APP 0"}
+{"t": 0.75, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.4,Gy:-0.4,Gz:0.2,Ax:-1.00,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.81,Bal:0#"}
+{"t": 0.75, "kind": "rx", "data": "OK APP:0"}
+{"t": 0.7969999999913853, "kind": "rx", "data": "$STATE,App:0,Dbg:1,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:000,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.82,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.011,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:1,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 0.8129999999946449, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.4,Gz:0.2,Ax:-1.00,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.09,Rol:88.81,Bal:0#"}
+{"t": 0.875, "kind": "tx", "data": "PING"}
+{"t": 0.875, "kind": "rx", "data": "$STATE,App:0,Dbg:1,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:000,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.81,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.007,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:1,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 0.8909999999741558, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.4,Gy:-0.5,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.81,Bal:0#"}
+{"t": 0.9059999999881256, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.5,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.81,Bal:0#"}
+{"t": 0.9529999999795109, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.4,Gy:-0.4,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.81,Bal:0#"}
+{"t": 0.9849999999860302, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.4,Gy:-0.4,Gz:0.1,Ax:-1.00,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.81,Bal:0#"}
+{"t": 1.062999999994645, "kind": "rx", "data": "$STATE,App:0,Dbg:1,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:000,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.82,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.010,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:1,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 1.077999999979511, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.6,Gy:-0.4,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 1.1099999999860302, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.4,Gy:-0.4,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.09,Rol:88.82,Bal:0#"}
+{"t": 1.1409999999741558, "kind": "tx", "data": "PING"}
+{"t": 1.1559999999881256, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.3,Gz:0.4,Ax:-1.00,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.09,Rol:88.82,Bal:0#"}
+{"t": 1.187999999994645, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.4,Gy:-0.5,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.09,Rol:88.82,Bal:0#"}
+{"t": 1.25, "kind": "tx", "data": "DBG 1"}
+{"t": 1.2659999999741558, "kind": "rx", "data": "$STATE,App:0,Dbg:1,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:000,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.83,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.009,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:1,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 1.2659999999741558, "kind": "rx", "data": "OK DBG:1"}
+{"t": 1.2809999999881256, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.5,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.09,Rol:88.82,Bal:0#"}
+{"t": 1.312999999994645, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.4,Gz:0.1,Ax:-1.00,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.10,Rol:88.82,Bal:0#"}
+{"t": 1.3439999999827705, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.6,Gy:-0.6,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.09,Rol:88.83,Bal:0#"}
+{"t": 1.3909999999741558, "kind": "tx", "data": "PING"}
+{"t": 1.3909999999741558, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:6.23,A2:5.61,A3:0.87,Gx:0.5,Gy:-0.3,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:356.9,H2:321.7,H3:49.6,S1:0.00,S2:0.00,S3:0.00,Pit:0.09,Rol:88.83,Bal:0#"}
+{"t": 1.452999999979511, "kind": "tx", "data": "TEST 1"}
+{"t": 1.4689999999827705, "kind": "rx", "data": "$STATE,App:0,Dbg:1,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:000,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.82,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.007,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:1,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 1.4689999999827705, "kind": "rx", "data": "$TEST_STEP,M1#"}
+{"t": 1.6409999999741558, "kind": "tx", "data": "PING"}
+{"t": 1.9219999999913853, "kind": "tx", "data": "PING"}
+{"t": 2.202999999979511, "kind": "tx", "data": "PING"}
+{"t": 2.452999999979511, "kind": "tx", "data": "PING"}
+{"t": 2.75, "kind": "tx", "data": "PING"}
+{"t": 3.0469999999913853, "kind": "tx", "data": "PING"}
+{"t": 3.327999999979511, "kind": "tx", "data": "PING"}
+{"t": 3.4689999999827705, "kind": "rx", "data": "OK MAP M1 -> ENC3, direction=1, travel=343.6deg, reads=99/99"}
+{"t": 3.5939999999827705, "kind": "tx", "data": "PING"}
+{"t": 3.8439999999827705, "kind": "tx", "data": "PING"}
+{"t": 4.125, "kind": "tx", "data": "PING"}
+{"t": 4.421999999991385, "kind": "tx", "data": "PING"}
+{"t": 4.7189999999827705, "kind": "tx", "data": "PING"}
+{"t": 4.73499999998603, "kind": "rx", "data": "$SCAN,M:1,Stage:F,Step:20,Angle:4.8715#"}
+{"t": 4.937999999994645, "kind": "rx", "data": "$SCAN,M:1,Stage:F,Step:40,Angle:5.0073#"}
+{"t": 4.98499999998603, "kind": "tx", "data": "PING"}
+{"t": 5.140999999974156, "kind": "rx", "data": "$SCAN,M:1,Stage:F,Step:60,Angle:5.1641#"}
+{"t": 5.25, "kind": "tx", "data": "PING"}
+{"t": 5.327999999979511, "kind": "rx", "data": "$SCAN,M:1,Stage:F,Step:80,Angle:5.3114#"}
+{"t": 5.515999999974156, "kind": "tx", "data": "PING"}
+{"t": 5.530999999988126, "kind": "rx", "data": "$SCAN,M:1,Stage:F,Step:100,Angle:5.4560#"}
+{"t": 5.73499999998603, "kind": "rx", "data": "$SCAN,M:1,Stage:F,Step:120,Angle:5.6178#"}
+{"t": 5.796999999991385, "kind": "tx", "data": "PING"}
+{"t": 6.0939999999827705, "kind": "tx", "data": "PING"}
+{"t": 6.296999999991385, "kind": "rx", "data": "$SCAN,M:1,Stage:R,Step:100,Angle:5.4360#"}
+{"t": 6.3439999999827705, "kind": "tx", "data": "PING"}
+{"t": 6.5, "kind": "rx", "data": "$SCAN,M:1,Stage:R,Step:80,Angle:5.3103#"}
+{"t": 6.60999999998603, "kind": "tx", "data": "PING"}
+{"t": 6.687999999994645, "kind": "rx", "data": "$SCAN,M:1,Stage:R,Step:60,Angle:5.1737#"}
+{"t": 6.85999999998603, "kind": "tx", "data": "PING"}
+{"t": 6.890999999974156, "kind": "rx", "data": "$SCAN,M:1,Stage:R,Step:40,Angle:5.0023#"}
+{"t": 7.0939999999827705, "kind": "rx", "data": "$SCAN,M:1,Stage:R,Step:20,Angle:4.8462#"}
+{"t": 7.155999999988126, "kind": "tx", "data": "PING"}
+{"t": 7.296999999991385, "kind": "rx", "data": "$SCAN,M:1,Stage:R,Step:0,Angle:4.6994#"}
+{"t": 7.405999999988126, "kind": "tx", "data": "PING"}
+{"t": 7.655999999988126, "kind": "tx", "data": "PING"}
+{"t": 7.655999999988126, "kind": "rx", "data": "[ALIGN] M1 PP_est=6.88 configured=7 fwd=0.907 rev=-0.919"}
+{"t": 7.655999999988126, "kind": "rx", "data": "Align M1 OK (ENC3): Dir=1, PP=7, Zero_Elec=1.4938 rad"}
+{"t": 7.671999999991385, "kind": "rx", "data": "$TEST_REPORT,M1:PASS:100:343.6,M2:SKIP:0:0.0,M3:SKIP:0:0.0,ALL:PASS#"}
+{"t": 7.671999999991385, "kind": "rx", "data": "OK ALIGN"}
+{"t": 7.687999999994645, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.70,A2:5.61,A3:-1.58,Gx:0.4,Gy:-0.4,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.4,H2:321.7,H3:269.3,S1:0.00,S2:0.00,S3:-0.22,Pit:0.08,Rol:88.82,Bal:0#"}
+{"t": 7.702999999979511, "kind": "tx", "data": "DBG 2"}
+{"t": 7.702999999979511, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.70,A2:5.61,A3:-1.58,Gx:0.5,Gy:-0.5,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.6,H2:321.6,H3:269.6,S1:0.19,S2:0.00,S3:0.22,Pit:0.08,Rol:88.96,Bal:0#"}
+{"t": 7.702999999979511, "kind": "rx", "data": "OK DBG:2"}
+{"t": 7.75, "kind": "rx", "data": "$STATE,App:0,Dbg:2,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:100,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.95,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.011,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 7.780999999988126, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:5.61,A3:-1.58,Gx:0.6,Gy:-0.4,Gz:0.3,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.8,H2:321.6,H3:269.8,S1:0.05,S2:0.00,S3:0.07,Pit:0.09,Rol:88.94,Bal:0#"}
+{"t": 7.796999999991385, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:5.61,A3:-1.58,Gx:0.5,Gy:-0.5,Gz:0.2,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:321.6,H3:269.7,S1:-0.06,S2:0.00,S3:-0.06,Pit:0.08,Rol:88.92,Bal:0#"}
+{"t": 7.85999999998603, "kind": "rx", "data": "$STATE,App:0,Dbg:2,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:100,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.91,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.04,Rate:0.009,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 7.875, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:5.61,A3:-1.58,Gx:0.6,Gy:-0.5,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:321.6,H3:269.7,S1:0.04,S2:0.00,S3:0.04,Pit:0.08,Rol:88.90,Bal:0#"}
+{"t": 7.905999999988126, "kind": "tx", "data": "TEST 2"}
+{"t": 7.905999999988126, "kind": "tx", "data": "PING"}
+{"t": 7.905999999988126, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:5.61,A3:-1.58,Gx:0.5,Gy:-0.4,Gz:0.3,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:321.6,H3:269.7,S1:-0.03,S2:0.00,S3:0.00,Pit:0.09,Rol:88.89,Bal:0#"}
+{"t": 7.905999999988126, "kind": "rx", "data": "$TEST_STEP,M2#"}
+{"t": 8.155999999988126, "kind": "tx", "data": "PING"}
+{"t": 8.452999999979511, "kind": "tx", "data": "PING"}
+{"t": 8.73499999998603, "kind": "tx", "data": "PING"}
+{"t": 9.030999999988126, "kind": "tx", "data": "PING"}
+{"t": 9.280999999988126, "kind": "tx", "data": "PING"}
+{"t": 9.530999999988126, "kind": "tx", "data": "PING"}
+{"t": 9.827999999979511, "kind": "tx", "data": "PING"}
+{"t": 9.921999999991385, "kind": "rx", "data": "OK MAP M2 -> ENC1, direction=1, travel=291.3deg, reads=99/99"}
+{"t": 10.09399999998277, "kind": "tx", "data": "PING"}
+{"t": 10.375, "kind": "tx", "data": "PING"}
+{"t": 10.671999999991385, "kind": "tx", "data": "PING"}
+{"t": 10.96899999998277, "kind": "tx", "data": "PING"}
+{"t": 11.25, "kind": "tx", "data": "PING"}
+{"t": 11.5, "kind": "tx", "data": "PING"}
+{"t": 11.5, "kind": "rx", "data": "$SCAN,M:2,Stage:F,Step:20,Angle:4.1483#"}
+{"t": 11.702999999979511, "kind": "rx", "data": "$SCAN,M:2,Stage:F,Step:40,Angle:4.3013#"}
+{"t": 11.765999999974156, "kind": "tx", "data": "PING"}
+{"t": 11.905999999988126, "kind": "rx", "data": "$SCAN,M:2,Stage:F,Step:60,Angle:4.4589#"}
+{"t": 12.015999999974156, "kind": "tx", "data": "PING"}
+{"t": 12.10999999998603, "kind": "rx", "data": "$SCAN,M:2,Stage:F,Step:80,Angle:4.5901#"}
+{"t": 12.280999999988126, "kind": "tx", "data": "PING"}
+{"t": 12.312999999994645, "kind": "rx", "data": "$SCAN,M:2,Stage:F,Step:100,Angle:4.7262#"}
+{"t": 12.5, "kind": "rx", "data": "$SCAN,M:2,Stage:F,Step:120,Angle:4.8930#"}
+{"t": 12.562999999994645, "kind": "tx", "data": "PING"}
+{"t": 12.84399999998277, "kind": "tx", "data": "PING"}
+{"t": 13.062999999994645, "kind": "rx", "data": "$SCAN,M:2,Stage:R,Step:100,Angle:4.7231#"}
+{"t": 13.125, "kind": "tx", "data": "PING"}
+{"t": 13.265999999974156, "kind": "rx", "data": "$SCAN,M:2,Stage:R,Step:80,Angle:4.5958#"}
+{"t": 13.390999999974156, "kind": "tx", "data": "PING"}
+{"t": 13.46899999998277, "kind": "rx", "data": "$SCAN,M:2,Stage:R,Step:60,Angle:4.4470#"}
+{"t": 13.655999999988126, "kind": "tx", "data": "PING"}
+{"t": 13.671999999991385, "kind": "rx", "data": "$SCAN,M:2,Stage:R,Step:40,Angle:4.2783#"}
+{"t": 13.85999999998603, "kind": "rx", "data": "$SCAN,M:2,Stage:R,Step:20,Angle:4.1402#"}
+{"t": 13.937999999994645, "kind": "tx", "data": "PING"}
+{"t": 14.062999999994645, "kind": "rx", "data": "$SCAN,M:2,Stage:R,Step:0,Angle:4.0037#"}
+{"t": 14.187999999994645, "kind": "tx", "data": "PING"}
+{"t": 14.421999999991385, "kind": "rx", "data": "[ALIGN] M2 PP_est=7.19 configured=7 fwd=0.868 rev=-0.881"}
+{"t": 14.437999999994645, "kind": "tx", "data": "PING"}
+{"t": 14.437999999994645, "kind": "rx", "data": "Align M2 OK (ENC1): Dir=1, PP=7, Zero_Elec=2.8824 rad"}
+{"t": 14.437999999994645, "kind": "rx", "data": "$TEST_REPORT,M1:SKIP:0:0.0,M2:PASS:100:291.3,M3:SKIP:0:0.0,ALL:PASS#"}
+{"t": 14.437999999994645, "kind": "rx", "data": "OK ALIGN"}
+{"t": 14.452999999979511, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.00,A3:-1.58,Gx:0.4,Gy:-0.3,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:229.3,H3:269.7,S1:0.00,S2:0.00,S3:0.00,Pit:0.09,Rol:88.89,Bal:0#"}
+{"t": 14.48499999998603, "kind": "tx", "data": "DBG 3"}
+{"t": 14.48499999998603, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.01,A3:-1.58,Gx:0.6,Gy:-0.4,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:230.0,H3:269.7,S1:0.00,S2:0.39,S3:0.00,Pit:-0.16,Rol:88.69,Bal:0#"}
+{"t": 14.48499999998603, "kind": "rx", "data": "OK DBG:3"}
+{"t": 14.530999999988126, "kind": "rx", "data": "$STATE,App:0,Dbg:3,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:110,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.69,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.009,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 14.562999999994645, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.05,A3:-1.58,Gx:0.4,Gy:-0.4,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.9,H3:269.7,S1:0.00,S2:0.26,S3:0.00,Pit:-0.09,Rol:88.73,Bal:0#"}
+{"t": 14.59399999998277, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.05,A3:-1.58,Gx:0.6,Gy:-0.4,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:232.0,H3:269.7,S1:0.00,S2:-0.01,S3:0.00,Pit:-0.06,Rol:88.75,Bal:0#"}
+{"t": 14.640999999974156, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:-1.58,Gx:0.4,Gy:-0.4,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:269.7,S1:0.00,S2:-0.16,S3:0.00,Pit:-0.04,Rol:88.76,Bal:0#"}
+{"t": 14.671999999991385, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:-1.58,Gx:0.5,Gy:-0.5,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.3,H3:269.7,S1:0.00,S2:-0.10,S3:0.00,Pit:-0.02,Rol:88.77,Bal:0#"}
+{"t": 14.702999999979511, "kind": "tx", "data": "TEST 3"}
+{"t": 14.702999999979511, "kind": "tx", "data": "PING"}
+{"t": 14.75, "kind": "rx", "data": "$STATE,App:0,Dbg:3,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:110,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.79,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.010,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 14.75, "kind": "rx", "data": "$TEST_STEP,M3#"}
+{"t": 15.0, "kind": "tx", "data": "PING"}
+{"t": 15.296999999991385, "kind": "tx", "data": "PING"}
+{"t": 15.60999999998603, "kind": "tx", "data": "PING"}
+{"t": 15.890999999974156, "kind": "tx", "data": "PING"}
+{"t": 16.171999999991385, "kind": "tx", "data": "PING"}
+{"t": 16.46899999998277, "kind": "tx", "data": "PING"}
+{"t": 16.73499999998603, "kind": "tx", "data": "PING"}
+{"t": 16.73499999998603, "kind": "rx", "data": "OK MAP M3 -> ENC2, direction=1, travel=232.2deg, reads=99/99"}
+{"t": 17.030999999988126, "kind": "tx", "data": "PING"}
+{"t": 17.32799999997951, "kind": "tx", "data": "PING"}
+{"t": 17.60999999998603, "kind": "tx", "data": "PING"}
+{"t": 17.890999999974156, "kind": "tx", "data": "PING"}
+{"t": 17.905999999988126, "kind": "rx", "data": "$SCAN,M:3,Stage:F,Step:20,Angle:3.8342#"}
+{"t": 18.10999999998603, "kind": "rx", "data": "$SCAN,M:3,Stage:F,Step:40,Angle:3.9803#"}
+{"t": 18.171999999991385, "kind": "tx", "data": "PING"}
+{"t": 18.312999999994645, "kind": "rx", "data": "$SCAN,M:3,Stage:F,Step:60,Angle:4.1406#"}
+{"t": 18.437999999994645, "kind": "tx", "data": "PING"}
+{"t": 18.515999999974156, "kind": "rx", "data": "$SCAN,M:3,Stage:F,Step:80,Angle:4.2913#"}
+{"t": 18.70299999997951, "kind": "tx", "data": "PING"}
+{"t": 18.70299999997951, "kind": "rx", "data": "$SCAN,M:3,Stage:F,Step:100,Angle:4.4305#"}
+{"t": 18.905999999988126, "kind": "rx", "data": "$SCAN,M:3,Stage:F,Step:120,Angle:4.5920#"}
+{"t": 18.96899999998277, "kind": "tx", "data": "PING"}
+{"t": 19.25, "kind": "tx", "data": "PING"}
+{"t": 19.46899999998277, "kind": "rx", "data": "$SCAN,M:3,Stage:R,Step:100,Angle:4.4217#"}
+{"t": 19.530999999988126, "kind": "tx", "data": "PING"}
+{"t": 19.671999999991385, "kind": "rx", "data": "$SCAN,M:3,Stage:R,Step:80,Angle:4.2925#"}
+{"t": 19.780999999988126, "kind": "tx", "data": "PING"}
+{"t": 19.875, "kind": "rx", "data": "$SCAN,M:3,Stage:R,Step:60,Angle:4.1375#"}
+{"t": 20.046999999991385, "kind": "tx", "data": "PING"}
+{"t": 20.062999999994645, "kind": "rx", "data": "$SCAN,M:3,Stage:R,Step:40,Angle:3.9719#"}
+{"t": 20.265999999974156, "kind": "rx", "data": "$SCAN,M:3,Stage:R,Step:20,Angle:3.8242#"}
+{"t": 20.32799999997951, "kind": "tx", "data": "PING"}
+{"t": 20.46899999998277, "kind": "rx", "data": "$SCAN,M:3,Stage:R,Step:0,Angle:3.6593#"}
+{"t": 20.57799999997951, "kind": "tx", "data": "PING"}
+{"t": 20.82799999997951, "kind": "tx", "data": "PING"}
+{"t": 20.82799999997951, "kind": "rx", "data": "[ALIGN] M3 PP_est=6.87 configured=7 fwd=0.905 rev=-0.924"}
+{"t": 20.82799999997951, "kind": "rx", "data": "Align M3 OK (ENC2): Dir=1, PP=7, Zero_Elec=0.5149 rad"}
+{"t": 20.84399999998277, "kind": "rx", "data": "$TEST_REPORT,M1:SKIP:0:0.0,M2:SKIP:0:0.0,M3:PASS:100:232.2,ALL:PASS#"}
+{"t": 20.84399999998277, "kind": "rx", "data": "OK ALIGN"}
+{"t": 20.85999999998603, "kind": "tx", "data": "STATE?"}
+{"t": 20.85999999998603, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.66,Gx:0.6,Gy:-0.4,Gz:0.1,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:231.4,H3:209.9,S1:0.00,S2:0.00,S3:0.00,Pit:0.00,Rol:88.79,Bal:0#"}
+{"t": 20.905999999988126, "kind": "rx", "data": "$STATE,App:0,Dbg:3,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:111,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.96,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.007,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:2,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 20.921999999991385, "kind": "tx", "data": "CAL_IMU"}
+{"t": 20.921999999991385, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.4,Gz:0.3,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.08,Pit:0.05,Rol:88.96,Bal:0#"}
+{"t": 20.937999999994645, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.4,Gz:0.3,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.1,S1:0.00,S2:0.00,S3:0.01,Pit:0.07,Rol:88.94,Bal:0#"}
+{"t": 20.95299999997951, "kind": "rx", "data": "OK CAL_IMU:START"}
+{"t": 20.96899999998277, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.6,Gy:-0.6,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:-0.02,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.030999999988126, "kind": "rx", "data": "$STATE,App:0,Dbg:3,Mode:1,BMode:1,Bal:1,Cal:0,IMU:1,Aligned:111,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.93,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.006,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:2,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 21.046999999991385, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.3,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.07799999997951, "kind": "tx", "data": "PING"}
+{"t": 21.07799999997951, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.4,Gz:0.1,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.125, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.5,Gy:-0.5,Gz:0.2,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.155999999988126, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.5,Gy:-0.5,Gz:0.1,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.23499999998603, "kind": "rx", "data": "$STATE,App:0,Dbg:3,Mode:1,BMode:1,Bal:1,Cal:0,IMU:1,Aligned:111,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.93,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.006,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:2,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 21.25, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.4,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.280999999988126, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.6,Gy:-0.3,Gz:0.4,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.32799999997951, "kind": "tx", "data": "PING"}
+{"t": 21.32799999997951, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.3,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.35999999998603, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.6,Gy:-0.4,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.437999999994645, "kind": "rx", "data": "$STATE,App:0,Dbg:3,Mode:1,BMode:1,Bal:1,Cal:0,IMU:1,Aligned:111,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.93,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.006,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:2,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 21.45299999997951, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.5,Gy:-0.5,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.48499999998603, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.4,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.515999999974156, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.4,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.562999999994645, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.6,Gy:-0.4,Gz:0.1,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.59399999998277, "kind": "tx", "data": "PING"}
+{"t": 21.640999999974156, "kind": "rx", "data": "$STATE,App:0,Dbg:3,Mode:1,BMode:1,Bal:1,Cal:0,IMU:1,Aligned:111,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.93,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.006,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:2,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 21.655999999988126, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.4,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.671999999991385, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.5,Gz:0.2,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.71899999998277, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.4,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.765999999974156, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.6,Gy:-0.6,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.84399999998277, "kind": "tx", "data": "PING"}
+{"t": 21.84399999998277, "kind": "rx", "data": "$STATE,App:0,Dbg:3,Mode:1,BMode:1,Bal:1,Cal:0,IMU:1,Aligned:111,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.93,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.006,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:2,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 21.85999999998603, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.4,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.875, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.5,Gy:-0.4,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.921999999991385, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.6,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.93,Bal:1#"}
+{"t": 21.921999999991385, "kind": "rx", "data": "OK CAL_IMU:DONE"}
+{"t": 21.96899999998277, "kind": "tx", "data": "STATE?"}
+{"t": 21.96899999998277, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.4,Gz:0.1,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.09,Rol:88.91,Bal:0#"}
+{"t": 22.015999999974156, "kind": "rx", "data": "$STATE,App:0,Dbg:3,Mode:1,BMode:1,Bal:0,Cal:1,IMU:1,Aligned:111,EN:000,Fault:0,Trip:0,Tilt:0.00,PoseTilt:88.91,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.000,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:2,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 22.030999999988126, "kind": "tx", "data": "STOP"}
+{"t": 22.046999999991385, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.5,Gz:0.1,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.07,Rol:88.91,Bal:0#"}
+{"t": 22.046999999991385, "kind": "rx", "data": "ERR SAFETY_TRIP:1"}
+{"t": 22.07799999997951, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.6,Gy:-0.4,Gz:0.1,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.06,Rol:88.92,Bal:0#"}
+{"t": 22.10999999998603, "kind": "tx", "data": "PING"}
+{"t": 22.125, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.6,Gy:-0.4,Gz:0.4,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.06,Rol:88.93,Bal:0#"}
+{"t": 22.155999999988126, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.5,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:-0.01,Pit:0.05,Rol:88.93,Bal:0#"}
+{"t": 22.23499999998603, "kind": "rx", "data": "$STATE,App:0,Dbg:3,Mode:1,BMode:1,Bal:0,Cal:1,IMU:1,Aligned:111,EN:000,Fault:0,Trip:1,Tilt:0.00,PoseTilt:88.93,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.000,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:2,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 22.25, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.6,Gy:-0.4,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.05,Rol:88.92,Bal:0#"}
+{"t": 22.280999999988126, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.4,Gz:0.3,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.05,Rol:88.93,Bal:0#"}
+{"t": 22.32799999997951, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.4,Gy:-0.5,Gz:0.2,Ax:-1.00,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.05,Rol:88.93,Bal:0#"}
+{"t": 22.34399999998277, "kind": "tx", "data": "STATE?"}
+{"t": 22.35999999998603, "kind": "tx", "data": "PING"}
+{"t": 22.35999999998603, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.6,Gy:-0.5,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.05,Rol:88.93,Bal:0#"}
+{"t": 22.437999999994645, "kind": "rx", "data": "$STATE,App:0,Dbg:3,Mode:1,BMode:1,Bal:0,Cal:1,IMU:1,Aligned:111,EN:000,Fault:0,Trip:1,Tilt:0.00,PoseTilt:88.93,Angle:0.00,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:-0.001,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:2,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 22.45299999997951, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:4.71,A2:4.04,A3:3.67,Gx:0.6,Gy:-0.4,Gz:0.2,Ax:-1.01,Ay:0.00,Az:0.02,H1:269.7,H2:231.5,H3:210.0,S1:0.00,S2:0.00,S3:0.00,Pit:0.04,Rol:88.93,Bal:0#"}

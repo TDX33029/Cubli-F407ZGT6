@@ -73,7 +73,8 @@ void UART_WriteInt(int32_t value) {
 void UART_WriteFixed(float value,uint8_t decimals) {
     uint32_t scale=1,mag,fraction,divisor;int32_t fixed;uint8_t i;
     if(!isfinite(value)) {UART_WriteText("nan");return;}
-    if(decimals>3) decimals=3;
+    /* Tiny slow-loop gains need six places; retain bounded integer conversion. */
+    if(decimals>6) decimals=6;
     for(i=0;i<decimals;i++) scale*=10U;
     value=value*(float)scale+(value<0?-0.5f:0.5f);
     if(value>2147483520.0f) value=2147483520.0f;
