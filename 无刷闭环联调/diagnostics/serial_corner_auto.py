@@ -16,6 +16,7 @@ from pathlib import Path
 
 import serial
 from live_pose import PosePublisher
+from serial_monitor_handoff import SerialMonitorHandoff
 
 VERIFIED_REFERENCE = [-0.7028287890572913, 0.3977869310324257, 0.5897433770480731]
 
@@ -297,8 +298,9 @@ def still_corner():
 recent_frames = []
 
 
+handoff = SerialMonitorHandoff(args.port)
 try:
-    link.open()
+    handoff.open(link)
     command('PING')
     command('STOP')
     command('FAST 0')
@@ -409,6 +411,7 @@ finally:
             record('error', repr(error))
         finally:
             link.close()
+    handoff.release()
     summary['last_state'] = state
     summary['armed_countdown_s'] = args.countdown
     summary['auto_attempts'] = len(segments)

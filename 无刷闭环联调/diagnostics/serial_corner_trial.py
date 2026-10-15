@@ -13,6 +13,7 @@ from pathlib import Path
 
 import serial
 from live_pose import PosePublisher
+from serial_monitor_handoff import SerialMonitorHandoff
 
 
 def gravity(data):
@@ -201,8 +202,9 @@ def still_corner():
     return True
 
 
+handoff = SerialMonitorHandoff(args.port)
 try:
-    link.open()
+    handoff.open(link)
     command('PING')
     command('STOP')
     command('FAST 0')
@@ -310,6 +312,7 @@ finally:
             record('error', repr(error))
         finally:
             link.close()
+    handoff.release()
     summary['last_state'] = state
     summary['active_samples'] = len(active)
     if active:

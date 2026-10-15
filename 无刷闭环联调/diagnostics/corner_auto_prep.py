@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import serial
+from serial_monitor_handoff import SerialMonitorHandoff
 
 # A partial boot/UART frame may contain replacement characters. Logging it
 # must not abort preparation (or its STOP cleanup) on a Windows GBK console.
@@ -97,8 +98,9 @@ def confirm(predicate, label, timeout=2):
     raise RuntimeError(label + ': fresh STATE confirmation failed')
 
 
+handoff = SerialMonitorHandoff(args.port)
 try:
-    link.open()
+    handoff.open(link)
     print('已连接', args.port, '；下发 PING/STOP/APP 0（复位停机锁存）', flush=True)
     send('PING')
     pump(.3)
@@ -144,6 +146,7 @@ finally:
             print('退出前失能确认失败：' + repr(error), flush=True)
         finally:
             link.close()
+    handoff.release()
     log.close()
 if fatal is not None:
     raise SystemExit(2)

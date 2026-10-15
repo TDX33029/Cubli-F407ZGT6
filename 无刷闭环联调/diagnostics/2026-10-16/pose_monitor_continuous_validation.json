@@ -1,0 +1,21 @@
+{
+  "date_local": "2026-10-16",
+  "result": "passed",
+  "monitor_pid": 21652,
+  "motor_motion_commanded": false,
+  "serial_commands_sent_by_handoff_check": 0,
+  "actual_port_handoff_verified": true,
+  "automatic_refresh_resumed": true,
+  "readings_continued_after_resume": true,
+  "initial_timestamp": 1792085148.7947829,
+  "resumed_timestamp": 1792085149.77634,
+  "later_timestamp": 1792085150.8044822,
+  "device_state": {
+    "EN": "000",
+    "Bal": "0",
+    "Fault": "0",
+    "Aligned": "111",
+    "Cal": "1"
+  },
+  "simulation_tests": "9 pose monitor tests and23 corner diagnostic tests passed; includes simulated3601s reader lifetime, USB reconnect, no monitor writes, concurrent diagnostic rejection, stale diagnostic recovery, and display freshness."
+}
