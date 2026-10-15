@@ -84,6 +84,8 @@ class Device:
             if self.fault != 'capture_not_applied':
                 self.state['CapDeg'] = parts[1]
         elif name == 'FAST':
+            if parts[1] == '0' and self.fast and self.state['Bal'] == '3' and self.fault == 'probe_stale_tele':
+                self.pending.append('$FAST,V1:0,V2:0,V3:0,Wx:0,Wy:0,Wz:0,Pit:23.56,Rol:46.79,Bal:3#\n')
             self.fast = parts[1] == '7'
         elif name == 'BSTART':
             self.state.update(Bal='5', EN='000')
@@ -93,7 +95,9 @@ class Device:
         elif name == 'BPROBE' and self.fault != 'missing_probe':
             self.probe_voltage = float(parts[1])
             self.probe_until = self.now + int(parts[2])/1000
-            self.state.update(Bal='7', EN='010' if self.fault == 'probe_wrong_enable' else '100')
+            motor = int(self.state['BMode'])
+            mask = ''.join('1' if i == motor else '0' for i in (1,2,3))
+            self.state.update(Bal='7', EN=('010' if motor != 2 else '100') if self.fault == 'probe_wrong_enable' else mask)
         if name == 'STATE?':
             self.pending.append(self.state_frame())
         return len(raw)
@@ -113,6 +117,8 @@ class Device:
                     Gx='100' if active and self.fault == 'gyro' else '.5', Gy='-.4', Gz='.2',
                     S1='0', S2='101' if active and self.fault == 'M2_speed' else
                     ('400' if active and self.fault == 'wheel_guard' else '0'), S3='0')
+        if self.fault == 'probe_stale_tele' and not self.had_active:
+            data.update(Pit='0',Rol='90')
         if self.fault == 'off_target_before_arm' and not active and (
                 self.arm_at is None or self.now < self.arm_at - 1):
             data.update(Pit='0', Rol='90', Gx='120')
@@ -125,11 +131,12 @@ class Device:
                 data.update(NPit='23.8', NRol='46.5')
                 if self.fault == 'neutral_out_of_bounds':
                     data['NPit'] = '30'
-            if self.state['BMode'] != '4' and self.fault in ('probe_edge', 'missing_probe', 'probe_wrong_enable'):
+            if self.state['BMode'] != '4' and self.fault in ('probe_edge', 'missing_probe', 'probe_wrong_enable','probe_stale_tele'):
                 data.pop('Pit'); data.pop('Rol')
                 if self.state['Bal'] == '7':
-                    data.update(U1=str(self.probe_voltage), V1=str(self.probe_voltage*5),
-                                Wy=str(self.probe_voltage/10))
+                    motor = int(self.state['BMode'])
+                    data.update({f'U{motor}':str(self.probe_voltage), f'V{motor}':str(self.probe_voltage*5),
+                                 {1:'Wy',2:'Wz',3:'Wx'}[motor]:str(self.probe_voltage/10)})
                 else:
                     for key in ('Wx', 'Wy', 'Wz'):
                         data.pop(key)
@@ -138,7 +145,8 @@ class Device:
 
 
 class CornerDiagnosticTests(unittest.TestCase):
-    def run_trial(self, fault=None, prepare=False, saved=False, yaw=None, probe=None, live=False, neutral=False):
+    def run_trial(self, fault=None, prepare=False, saved=False, yaw=None, probe=None, live=False, neutral=False,
+                  probe_motor=1, probe_delay=.35):
         if probe is not None:
             saved = True
             fault = fault or 'probe_edge'
@@ -155,7 +163,8 @@ class CornerDiagnosticTests(unittest.TestCase):
             if yaw is not None:
                 argv += ['--yaw-damping', str(yaw)]
             if probe is not None:
-                argv += ['--probe-motor','1','--probe-voltage',str(probe),'--probe-ms','80',
+                argv += ['--probe-motor',str(probe_motor),'--probe-voltage',str(probe),'--probe-ms','80',
+                         '--probe-delay',str(probe_delay),
                          '--kp','0','--kd','0','--kw','0','0','0','--yaw-damping','0',
                          '--voltage','3','--wheel-bound','60','--seconds','1']
             if live:
@@ -301,6 +310,20 @@ class CornerDiagnosticTests(unittest.TestCase):
         _, result, code = self.run_trial(probe=-3)
         self.assertEqual(code, 0)
         self.assertTrue(all(float(d['Wy']) < 0 for d in result['probe']['samples']))
+
+    def test_remaining_motor_probes_use_only_selected_axis(self):
+        for motor, axis in ((2,'Wz'),(3,'Wx')):
+            for volts in (3,-3):
+                device, result, code = self.run_trial(probe=volts, probe_motor=motor, probe_delay=.15)
+                self.assertEqual(code, 0)
+                self.assertEqual(result['probe']['motor'], motor)
+                self.assertTrue(all(float(d[axis])*volts > 0 for d in result['probe']['samples']))
+                self.assertIn(f'BMODE {motor}', device.commands)
+
+    def test_probe_keeps_corner_fast_pose_while_switching_modes(self):
+        _, result, code = self.run_trial(fault='probe_stale_tele', probe=3, probe_delay=.15)
+        self.assertEqual(code, 0)
+        self.assertEqual(result['result'], 'probe_completed')
     def test_missing_probe_response_is_not_direction_evidence(self):
         _, result, code = self.run_trial(fault='missing_probe', probe=3)
         self.assertEqual(code, 2)

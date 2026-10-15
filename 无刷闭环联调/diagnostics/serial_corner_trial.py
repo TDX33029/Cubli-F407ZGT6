@@ -52,6 +52,7 @@ parser.add_argument('--live-state',type=Path)
 parser.add_argument('--probe-motor', type=int, choices=(1, 2, 3), help='Zero-output release then one MCU-timed motor pulse')
 parser.add_argument('--probe-voltage', type=float, default=3)
 parser.add_argument('--probe-ms', type=int, default=80)
+parser.add_argument('--probe-delay', type=float, default=.35, help='Zero-output release interval before timed probe, .1.. .35s')
 args = parser.parse_args()
 if not (0 < args.seconds <= 15 and 10 <= args.wait_seconds <= 600 and 2 <= args.countdown <= 15 and .5 <= args.capture_angle <= 3
         and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 250
@@ -63,6 +64,7 @@ if args.yaw_damping is not None and not 0 <= args.yaw_damping <= 10:
 if args.probe_motor and not (args.reference_gravity is not None and args.kp == 0 and args.kd == 0
         and all(v == 0 for v in args.kw) and args.yaw_damping == 0 and 0 < abs(args.probe_voltage) <= 3
         and abs(args.probe_voltage) <= args.voltage and 20 <= args.probe_ms <= 80
+        and .1 <= args.probe_delay <= .35
         and args.wheel_bound <= 60 and .5 <= args.seconds <= 1.5):
     parser.error('Probe requires fixed reference, all gains/yaw zero, <=3V/80ms and wheel guard <=60rad/s')
 expected = json.loads(args.expected_pose.read_text(encoding='utf-8'))
@@ -108,6 +110,8 @@ reference = None
 watch = False
 run_started = None
 last_tele = 0
+last_pose = None
+last_pose_time = 0
 
 
 def record(kind, data):
@@ -122,7 +126,7 @@ def send(command):
 
 
 def pump(duration):
-    global buffer, next_ping, state, revision, tele, last_tele, run_started, phase
+    global buffer, next_ping, state, revision, tele, last_tele, run_started, phase, last_pose, last_pose_time
     deadline = time.monotonic() + duration
     while time.monotonic() < deadline:
         now = time.monotonic()
@@ -142,6 +146,9 @@ def pump(duration):
             if not line.startswith(('$STATE,', '$TELE,', '$FAST,')) or not line.endswith('#'):
                 continue
             data = dict(item.split(':', 1) for item in line.split(',', 1)[1][:-1].split(','))
+            if 'Pit' in data and 'Rol' in data:
+                last_pose = {key:data[key] for key in ('Pit','Rol')}
+                last_pose_time = now
             target_vector = reference or args.reference_gravity or expected_g
             publisher.target=[math.degrees(math.asin(target_vector[1])),math.degrees(math.atan2(-target_vector[0],target_vector[2]))]
             publisher.remaining_s = (max(0, args.seconds - (now-run_started)) if run_started is not None
@@ -169,8 +176,13 @@ def pump(duration):
                 required = ('V1','V2','V3','Wx','Wy','Wz','Bal') if probing else ('V1','V2','V3','Pit','Rol','Wx','Wy','Wz','Bal')
                 if not all(k in data for k in required):
                     raise RuntimeError('Incomplete corner FAST attitude')
-                if probing:
-                    data['Pit'], data['Rol'] = tele['Pit'], tele['Rol']
+                if probing and not all(k in data for k in ('Pit','Rol')):
+                    # Corner FAST can still be queued while switching to edge
+                    # probe mode. Preserve its actual pose; never overwrite it
+                    # with a TELE frame from before the supported-corner entry.
+                    if last_pose is None or now-last_pose_time > .2:
+                        raise RuntimeError('Timed probe pose telemetry timeout')
+                    data.update(last_pose)
                 last_tele = now
                 for i, key in enumerate(('Wx','Wy','Wz'), 1):
                     data[f'S{i}'] = data[f'V{i}']
@@ -342,7 +354,7 @@ try:
             if run_started is None and time.monotonic() >= deadline:
                 raise RuntimeError('Corner takeover not achieved')
             pump(.01)
-            if args.probe_motor and run_started is not None and time.monotonic() - run_started >= .35:
+            if args.probe_motor and run_started is not None and time.monotonic() - run_started >= args.probe_delay:
                 summary['probe_baseline'] = [dict(d) for d in active[-6:]]
                 phase = 'probe_prepare'
                 command('FAST 0', .03)
