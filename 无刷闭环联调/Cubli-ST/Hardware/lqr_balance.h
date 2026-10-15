@@ -29,10 +29,12 @@ typedef struct {
     float K_yaw_damping;
     Attitude_t attitude;
     float wheel_int[3], control_u[3];
-    /* Corner only: integral of the tilt error (angle*s, clamped). Lets the cube
-       settle at its own center-of-mass neutral pose so the wheels stop charging;
-       zero effect while K_tilt_trim is 0 or in edge modes. */
+    /* Experimental tilt-error integral, not a center-of-mass estimator. */
     float tilt_int[3], K_tilt_trim;
+    /* Optional slow corner reference search. Original reference remains the
+       safety anchor; STOP retains the bounded offset, configuration resets it. */
+    bool neutral_enabled;
+    float neutral_rotation[3], neutral_spin_filt[3], neutral_reference[3];
     /* M1/M2/M3 axes must be IMU body X/Y/Z; signs describe mechanical installation,
        independently of encoder sensor_direction. */
     int body_direction[3];
@@ -82,4 +84,7 @@ void LQR_SetGains(uint8_t idx, float kp, float kd, float kw, float ki);
 void LQR_SetZeroAngle(uint8_t idx, float angle_deg);
 void LQR_SetMaxVoltage(float max_v);
 void LQR_SetTiltTrim(float k); /* corner tilt-error integral gain, 0..10 V/(rad*s) */
+void LQR_ResetNeutralLearning(void);
+bool LQR_SetNeutralLearning(bool enabled);
+const float *LQR_GetControlReference(void);
 #endif

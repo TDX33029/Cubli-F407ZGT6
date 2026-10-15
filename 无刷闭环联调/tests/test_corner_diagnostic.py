@@ -33,6 +33,8 @@ class Device:
         if fault != 'legacy':
             self.state['CornerStart'] = '1'
             self.state.update(YawTune='1', YawD='3.00', TrimTune='1', BTrim='2.0', CapDeg='2.0')
+            if fault != 'no_neutral':
+                self.state.update(NTune='1', NOn='1', NLimit='2.0', NRate='0.5')
 
     def open(self):
         self.is_open = True
@@ -73,6 +75,9 @@ class Device:
         elif name == 'BTRIM':
             if self.fault != 'trim_not_applied':
                 self.state['BTrim'] = parts[1]
+        elif name == 'BNEUTRAL':
+            if self.fault != 'neutral_not_applied':
+                self.state['NOn'] = parts[1]
         elif name == 'BCAP':
             if self.fault != 'capture_not_applied':
                 self.state['CapDeg'] = parts[1]
@@ -114,6 +119,10 @@ class Device:
         if self.fast:
             data.update(V1=data['S1'], V2=data['S2'], V3=data['S3'],
                         Wx='1.746' if active and self.fault == 'gyro' else '0', Wy='0', Wz='0')
+            if self.state.get('NOn') == '1' and self.fault != 'no_neutral_fast':
+                data.update(NPit='23.8', NRol='46.5')
+                if self.fault == 'neutral_out_of_bounds':
+                    data['NPit'] = '30'
             if self.state['BMode'] != '4' and self.fault in ('probe_edge', 'missing_probe', 'probe_wrong_enable'):
                 data.pop('Pit'); data.pop('Rol')
                 if self.state['Bal'] == '7':
@@ -127,7 +136,7 @@ class Device:
 
 
 class CornerDiagnosticTests(unittest.TestCase):
-    def run_trial(self, fault=None, prepare=False, saved=False, yaw=None, probe=None, live=False):
+    def run_trial(self, fault=None, prepare=False, saved=False, yaw=None, probe=None, live=False, neutral=False):
         if probe is not None:
             saved = True
             fault = fault or 'probe_edge'
@@ -149,6 +158,8 @@ class CornerDiagnosticTests(unittest.TestCase):
                          '--voltage','3','--wheel-bound','60','--seconds','1']
             if live:
                 argv += ['--live-state', str(folder/'live.json')]
+            if neutral:
+                argv += ['--neutral-learning']
             code = 0
             with patch.object(sys, 'argv', argv), patch('serial.Serial', return_value=device), \
                     patch('time.monotonic', side_effect=lambda: device.now), \
@@ -164,6 +175,38 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertEqual(device.state['EN'], '000')
         self.assertGreaterEqual(device.commands.count('STOP'), 2)
         return device, result, code
+
+    def test_neutral_baseline_explicitly_disabled(self):
+        device, result, code = self.run_trial()
+        self.assertEqual(code, 0)
+        self.assertIn('BNEUTRAL 0', device.commands)
+        self.assertNotIn('BNEUTRAL 1', device.commands)
+
+    def test_neutral_enabled_after_reference_and_published(self):
+        device, result, code = self.run_trial(saved=True, neutral=True, live=True)
+        self.assertEqual(code, 0)
+        self.assertLess(next(i for i,c in enumerate(device.commands) if c.startswith('BREF ')),
+                        device.commands.index('BNEUTRAL 1'))
+        self.assertLess(device.commands.index('BNEUTRAL 1'), device.commands.index('BSTART 2'))
+        self.assertEqual(result['learned_reference']['pitch_deg'], 23.8)
+        self.assertEqual(result['_published_live_state']['target'], [23.8, 46.5])
+        self.assertIn('effective_tilt_deg_max', result)
+
+    def test_neutral_requires_firmware_and_readback(self):
+        for fault in ('no_neutral', 'neutral_not_applied'):
+            device, result, code = self.run_trial(fault=fault, saved=True, neutral=True)
+            self.assertEqual(code, 2)
+            self.assertNotIn('BSTART 2', device.commands)
+
+    def test_neutral_missing_fast_reference_disarms(self):
+        device, result, code = self.run_trial(fault='no_neutral_fast', saved=True, neutral=True)
+        self.assertEqual(code, 2)
+        self.assertIn('learned reference telemetry', result['error'])
+
+    def test_neutral_target_bound_disarms(self):
+        device, result, code = self.run_trial(fault='neutral_out_of_bounds', saved=True, neutral=True)
+        self.assertEqual(code, 2)
+        self.assertIn('Neutral reference bound', result['error'])
 
     def test_prepare_never_arms(self):
         device, result, code = self.run_trial(prepare=True)

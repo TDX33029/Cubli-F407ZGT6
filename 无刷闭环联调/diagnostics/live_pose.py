@@ -16,6 +16,8 @@ class PosePublisher:
         self.state = {}
         self.remaining_s = None
         self.outcome_text = None
+        self.neutral_enabled = False
+        self.neutral_target = None
 
     def update(self, data):
         if not self.path:
@@ -25,13 +27,28 @@ class PosePublisher:
             self.pose_time = time.time()
         if 'App' in data:
             self.state = dict(data)
+        if 'NOn' in data:
+            self.neutral_enabled = data['NOn'] == '1'
+            if not self.neutral_enabled:
+                self.neutral_target = None
+        if 'NPit' in data and 'NRol' in data:
+            candidate = [float(data['NPit']), float(data['NRol'])]
+            if all(math.isfinite(v) for v in candidate):
+                if 'NOn' not in data:
+                    self.neutral_enabled = True  # FAST includes these only when enabled.
+                if self.neutral_enabled:
+                    self.neutral_target = candidate
+                elif 'NOn' in data:
+                    self.target = candidate
         if not self.pose or time.monotonic() - self.last_write < .1:
             return
         self.last_write = time.monotonic()
         payload = {'timestamp': self.pose_time, 'pitch': float(self.pose['Pit']),
                    'roll': float(self.pose['Rol']), 'bal': int(data.get('Bal', self.state.get('Bal', 0))),
                    'count_ms': (int(data.get('CountMs', self.state.get('CountMs', 0)))
-                                if int(data.get('Bal', self.state.get('Bal', 0))) == 5 else 0), 'target': self.target,
+                                if int(data.get('Bal', self.state.get('Bal', 0))) == 5 else 0),
+                   'target': self.neutral_target if self.neutral_enabled and self.neutral_target else self.target,
+                   'neutral_enabled': self.neutral_enabled,
                    'capture_angle': float(self.capture_angle if self.capture_angle is not None else self.state.get('CapDeg', 2)),
                    'remaining_s': self.remaining_s,
                    'outcome_text': self.outcome_text,

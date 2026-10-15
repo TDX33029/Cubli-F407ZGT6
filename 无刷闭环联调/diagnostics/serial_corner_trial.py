@@ -44,6 +44,7 @@ parser.add_argument('--directions', type=int, nargs=3, choices=(-1, 1), required
 parser.add_argument('--expected-pose', type=Path, required=True, help='Disabled passive pose summary JSON')
 parser.add_argument('--reference-gravity', type=float, nargs=3, help='Saved normalized corner target; requires CornerStart firmware')
 parser.add_argument('--prepare-only', action='store_true', help='Capture/configure, then STOP without arming')
+parser.add_argument('--neutral-learning', action='store_true', help='Bounded slow corner reference search, updated firmware required')
 parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent / '2026-10-14')
 parser.add_argument('--live-state',type=Path)
 parser.add_argument('--probe-motor', type=int, choices=(1, 2, 3), help='Zero-output release then one MCU-timed motor pulse')
@@ -63,6 +64,8 @@ if args.probe_motor and not (args.reference_gravity is not None and args.kp == 0
         and args.wheel_bound <= 60 and .5 <= args.seconds <= 1.5):
     parser.error('Probe requires fixed reference, all gains/yaw zero, <=3V/80ms and wheel guard <=60rad/s')
 expected = json.loads(args.expected_pose.read_text(encoding='utf-8'))
+if args.neutral_learning and (args.reference_gravity is None or args.probe_motor):
+    parser.error('Neutral search requires a saved base reference and cannot be combined with a probe')
 expected_g = gravity({key: expected['ranges'][key]['median'] for key in ('Pit', 'Rol')})
 publisher=PosePublisher(args.live_state, capture_angle=args.capture_angle)
 if min(abs(v) for v in expected_g) < .25:
@@ -150,6 +153,11 @@ def pump(duration):
                 while recent and now - recent[0][0] > 1:
                     recent.pop(0)
             else:
+                if watch and args.neutral_learning and not all(k in data and math.isfinite(float(data[k])) for k in ('NPit','NRol')):
+                    raise RuntimeError('Missing/non-finite learned reference telemetry')
+                if watch and args.neutral_learning and tilt(reference, gravity({'Pit':data['NPit'],'Rol':data['NRol']}))>2.03:
+                    summary['guard_frame'] = data
+                    raise RuntimeError('Neutral reference bound')
                 probing = args.probe_motor is not None and (phase.startswith('probe_') or phase == 'finish')
                 if probing and data.get('Bal') == '0':
                     # Disabled edge FAST has no full gyro; TELE still supplies pose.
@@ -245,6 +253,11 @@ try:
     confirm(lambda d: d.get('Aligned') == '111' and d.get('Cal') == '1'
             and d.get('IMU') == '1' and d.get('EN') == '000' and d.get('Fault') == '0',
             'Three alignments/static IMU calibration')
+    if args.neutral_learning and state.get('NTune') != '1':
+        raise RuntimeError('Neutral search requires updated firmware (NTune)')
+    if state.get('NTune') == '1':
+        command('BNEUTRAL 0')
+        confirm(lambda d: d.get('NOn') == '0', 'Neutral search disabled before configuration')
     for text in ('APP 1', 'BMODE 4', 'BAXIS ' + ' '.join(map(str, args.body_axes)),
                  'BDIR ' + ' '.join(map(str, args.directions)), f'U {args.voltage}',
                  f'L {args.wheel_bound + 20}', f'BU {args.voltage}', 'BTRIP 20', f'BCAP {args.capture_angle:g}', 'FREQ 7'):
@@ -292,6 +305,11 @@ try:
                             'pitch_deg': math.degrees(math.asin(reference[1])),
                             'roll_deg': math.degrees(math.atan2(-reference[0],reference[2])),
                             'neutral_verified': False}
+    if args.neutral_learning:
+        command('BNEUTRAL 1')
+        confirm(lambda d: d.get('NTune') == '1' and d.get('NOn') == '1'
+                and abs(float(d.get('NLimit', -1))-2) < .011
+                and abs(float(d.get('NRate', -1))-.5) < .011, 'Bounded neutral search enabled')
     if args.prepare_only:
         summary['result'] = 'prepared_disabled'
     else:
@@ -397,6 +415,16 @@ finally:
                             'direction_verified': False}
     if active:
         summary['tilt_deg_max'] = max(tilt(gravity(d), reference) for d in active)
+        if args.neutral_learning:
+            learned = [d for d in active if 'NPit' in d and 'NRol' in d]
+            if learned:
+                effective = lambda d: gravity({'Pit': d['NPit'], 'Rol': d['NRol']})
+                summary['effective_tilt_deg_max'] = max(tilt(gravity(d), effective(d)) for d in learned)
+                summary['neutral_offset_deg_max'] = max(tilt(reference, effective(d)) for d in learned)
+                summary['learned_reference'] = {'gravity': effective(learned[-1]),
+                                               'pitch_deg': float(learned[-1]['NPit']),
+                                               'roll_deg': float(learned[-1]['NRol']),
+                                               'neutral_verified': False}
         summary['wheel_ranges'] = {f'M{i}': [min(float(d[f'S{i}']) for d in active),
                                             max(float(d[f'S{i}']) for d in active)] for i in (1, 2, 3)}
     summary['frequency'] = [line for line in messages if line.startswith('$FREQ,')]

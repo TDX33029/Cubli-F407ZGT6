@@ -49,6 +49,24 @@ class Link:
 
 
 class StreamTests(unittest.TestCase):
+    def test_dynamic_neutral_target_and_baseline_reset(self):
+        from live_pose import PosePublisher
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder)/'live.json'
+            pub = PosePublisher(path, [24.7,49.72], 1)
+            pub.update({'Pit':'24.7','Rol':'49.72','Bal':'3','NPit':'24.5','NRol':'49.5'})
+            self.assertEqual(json.loads(path.read_text())['target'], [24.5,49.5])
+            # A caller may continue assigning the original anchor on every frame.
+            pub.target = [24.7,49.72]
+            pub.last_write = -1
+            pub.update({'Pit':'24.5','Rol':'49.5','Bal':'3'})
+            self.assertEqual(json.loads(path.read_text())['target'], [24.5,49.5])
+            pub.last_write = -1
+            pub.update({'App':'1','NOn':'0','NPit':'24.7','NRol':'49.72','Bal':'0'})
+            data = json.loads(path.read_text())
+            self.assertFalse(data['neutral_enabled'])
+            self.assertEqual(data['target'], [24.7,49.72])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

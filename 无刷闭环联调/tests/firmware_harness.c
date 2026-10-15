@@ -345,6 +345,102 @@ static void test_corner_tight_entry(void) {
  corner_auto_ticks(1,.6f*DEG_TO_RAD,0,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
  command("STOP");
 }
+static void setup_neutral(void) {
+ int i;
+ setup_corner_auto();command("BAUTO 0");command("U 6");command("BU 6");
+ for(i=0;i<3;i++) LQR_SetGains(i,0,0,0,0);
+ command("BNEUTRAL 1");assert(cubli_bal.neutral_enabled);
+ command("BSTART 2");corner_auto_ticks(500,0,0,0,0);
+ assert(cubli_bal.state==BAL_STATE_BALANCING);
+}
+static void neutral_tick(float w0,float w1,float w2) {
+ const float *r=LQR_GetControlReference();float g[3];
+ memcpy(g,r,sizeof(g));advance();gravity(g[0],g[1],g[2]);
+ shaft_velocity[0]=w0;shaft_velocity[1]=w1;shaft_velocity[2]=w2;
+ LQR_Balance_Loop();
+}
+static void test_neutral_search(void) {
+ int i;float saved[3],previous[3],positive[3],*base,n;
+ setup();assert(!cubli_bal.neutral_enabled);
+ command("BNEUTRAL 1");assert(!cubli_bal.neutral_enabled);
+ setup_corner_auto();command("BAUTO 0");
+ command("BNEUTRAL 1");assert(!cubli_bal.neutral_enabled); /* default Ki conflicts */
+ for(i=0;i<3;i++) LQR_SetGains(i,0,0,0,0);
+ cubli_bal.attitude.is_calibrated=false;command("BNEUTRAL 1");assert(!cubli_bal.neutral_enabled);
+ cubli_bal.attitude.is_calibrated=true;command("BTRIM 1");command("BNEUTRAL 1");assert(!cubli_bal.neutral_enabled);
+ command("BTRIM 0");command("BNEUTRAL 1");assert(cubli_bal.neutral_enabled);
+ command("LQR1 80 8 -.04 .01");assert(cubli_bal.corner_gains[0].K_i==0);
+ command("BTRIM 1");assert(cubli_bal.K_tilt_trim==0);
+ setup_neutral();command("BNEUTRAL 0");assert(cubli_bal.neutral_enabled); /* disarm-only */
+ /* Release transient does not move the target. */
+ neutral_tick(200,0,0);assert(norm3(cubli_bal.neutral_rotation)==0);
+ for(i=0;i<1200;i++) {
+  memcpy(previous,cubli_bal.neutral_rotation,sizeof(previous));neutral_tick(200,0,0);
+  for(int j=0;j<3;j++) saved[j]=cubli_bal.neutral_rotation[j]-previous[j];
+  assert(norm3(saved)<=.5f*DEG_TO_RAD*.005f+1e-7f);
+  assert(norm3(cubli_bal.neutral_rotation)<=2*DEG_TO_RAD+1e-7f);
+  assert(fabsf(norm3(LQR_GetControlReference())-1)<1e-6f);
+ }
+ assert(fabsf(norm3(cubli_bal.neutral_rotation)-2*DEG_TO_RAD)<1e-6f);
+ memcpy(positive,cubli_bal.neutral_rotation,sizeof(positive));
+ assert(positive[1]>0); /* M1/IMU Y, direction -1 */
+ base=cubli_bal.reference[3];assert(fabsf(dot3(positive,base))<1e-6f);
+ /* Freeze on body rate, saturation, or excessive tracking error. */
+ memcpy(saved,positive,sizeof(saved));cubli_bal.attitude.gyro_rad[0]=.6f;
+ neutral_tick(-200,0,0);assert(memcmp(saved,cubli_bal.neutral_rotation,sizeof(saved))==0);
+ cubli_bal.attitude.gyro_rad[0]=0;cubli_bal.control_u[0]=5.8f;
+ neutral_tick(-200,0,0);assert(memcmp(saved,cubli_bal.neutral_rotation,sizeof(saved))==0);
+ advance();gravity(1,0,0);LQR_Balance_Loop();assert(memcmp(saved,cubli_bal.neutral_rotation,sizeof(saved))==0);
+ assert(!m1_enabled&&!m2_enabled&&!m3_enabled);
+ /* STOP retains learning; BREF and configuration changes reset it. */
+ command("STOP");assert(cubli_bal.neutral_enabled&&memcmp(saved,cubli_bal.neutral_rotation,sizeof(saved))==0);
+ command("BREF -.683937788 .460044825 .566204788");assert(!cubli_bal.neutral_enabled&&norm3(cubli_bal.neutral_rotation)==0);
+ setup_neutral();for(i=0;i<100;i++) neutral_tick(100,0,0);
+ memcpy(saved,cubli_bal.neutral_rotation,sizeof(saved));sensor_valid[0]=false;
+ neutral_tick(100,0,0);assert(memcmp(saved,cubli_bal.neutral_rotation,sizeof(saved))==0&&!m1_enabled);
+ setup_neutral();for(i=0;i<100;i++) neutral_tick(100,0,0);
+ memcpy(saved,cubli_bal.neutral_rotation,sizeof(saved));advance();cubli_bal.attitude.last_sample_ms=fake_ms-31;
+ LQR_Balance_Loop();assert(memcmp(saved,cubli_bal.neutral_rotation,sizeof(saved))==0&&!m1_enabled);
+ setup_neutral();for(i=0;i<300;i++) neutral_tick(-100,0,0);
+ assert(dot3(cubli_bal.neutral_rotation,positive)<0);
+ setup_neutral();cubli_bal.body_direction[0]=1;
+ for(i=0;i<300;i++) neutral_tick(100,0,0);
+ assert(dot3(cubli_bal.neutral_rotation,positive)<0);
+ /* Vertical signed wheel spin alone cannot move the tilt target. */
+ setup_neutral();base=cubli_bal.reference[3];
+ for(i=0;i<1000;i++) neutral_tick(100*base[1],100*base[2],100*base[0]);
+ assert(norm3(cubli_bal.neutral_rotation)<1e-7f);
+ /* Once filtered spin has decayed inside the deadband the target holds. */
+ for(i=0;i<100;i++) neutral_tick(100,0,0);
+ for(i=0;i<400;i++) neutral_tick(0,0,0);
+ memcpy(saved,cubli_bal.neutral_rotation,sizeof(saved));
+ for(i=0;i<200;i++) neutral_tick(0,0,0);
+ assert(memcmp(saved,cubli_bal.neutral_rotation,sizeof(saved))==0);
+ /* A learned 2deg target outside the 0.5deg base entry is allowed on retry. */
+ for(i=0;i<1500;i++) neutral_tick(200,0,0);
+ memcpy(saved,LQR_GetControlReference(),sizeof(saved));command("BAL 0");command("BCAP .5");command("BAUTO 1 2");
+ for(i=0;i<850;i++) {advance();gravity(saved[0],saved[1],saved[2]);shaft_velocity[0]=shaft_velocity[1]=shaft_velocity[2]=0;LQR_Balance_Loop();}
+ assert(cubli_bal.state==BAL_STATE_BALANCING&&m1_enabled);
+ /* Base fall protection cannot be moved by the learned 2deg target. */
+ n=norm3(cubli_bal.neutral_rotation);
+ for(i=0;i<3;i++) previous[i]=cubli_bal.neutral_rotation[i]/n;
+ cross3(base,previous,saved);
+ for(i=0;i<3;i++) saved[i]=base[i]*cosf(21*DEG_TO_RAD)+saved[i]*sinf(21*DEG_TO_RAD);
+ advance();gravity(saved[0],saved[1],saved[2]);LQR_Balance_Loop();
+ assert(cubli_bal.stop_reason==BAL_STOP_ANGLE&&!m1_enabled);
+ /* Production packet budgets, with large signed values and countdown field. */
+ setup_neutral();fast_mask=7;cubli_bal.state=BAL_STATE_COUNTDOWN;
+ cubli_bal.countdown_deadline_ms=fake_ms+15000;
+ for(i=0;i<3;i++) {shaft_velocity[i]=-600;shaft_velocity_sp[i]=-600;voltage[i].q=-12;cubli_bal.attitude.gyro_rad[i]=-3;}
+ cubli_bal.tilt_deg=cubli_bal.signed_tilt_deg=180;
+ uart_bytes=0;Control_FastTelemetry();assert(uart_bytes<280);
+ uart_bytes=0;Control_Status();assert(uart_bytes<900);
+ command("BAL 0");command("BMODE 1");assert(!cubli_bal.neutral_enabled);
+ setup_neutral();command("BAL 0");command("CAL_IMU");assert(!cubli_bal.neutral_enabled);
+ setup_neutral();command("BAL 0");command("BAXIS 1 2 3");assert(!cubli_bal.neutral_enabled);
+ setup_neutral();command("BAL 0");command("BDIR 1 1 1");assert(!cubli_bal.neutral_enabled);
+ setup_neutral();command("BAL 0");LQR_InvalidateMotorCalibration(0);assert(!cubli_bal.neutral_enabled);
+}
 int main(void) {
  int i;float u;uint32_t saved;
  setvbuf(stdout,NULL,_IONBF,0);
@@ -355,6 +451,7 @@ int main(void) {
  test_corner_verified_control_law();
  test_corner_immediate_feedback();
  test_corner_tight_entry();
+ test_neutral_search();
  setup();command("DBG 2");command("EN1 1");command("EN2 1");command("EN3 1");assert(m1_enabled&&m2_enabled&&m3_enabled);
  command("M1 20");command("M2 -30");command("M3 40");assert(target_m1==20&&target_m2==-30&&target_m3==40);
  command("M 180 -180 0");assert(target_m1==180&&target_m2==-180&&target_m3==0);

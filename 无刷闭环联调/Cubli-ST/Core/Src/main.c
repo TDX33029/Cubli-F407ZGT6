@@ -545,9 +545,15 @@ static void Control_FastTelemetry(void) {
         if(cubli_bal.mode==BAL_MODE_CORNER) {
             report_float("Pit",cubli_bal.attitude.pitch_deg,2);
             report_float("Rol",cubli_bal.attitude.roll_deg,2);
-            report_float("T1",cubli_bal.tilt_int[0],3);
-            report_float("T2",cubli_bal.tilt_int[1],3);
-            report_float("T3",cubli_bal.tilt_int[2],3);
+            if(cubli_bal.neutral_enabled) {
+                const float *ref=LQR_GetControlReference();
+                report_float("NPit",atan2f(ref[1],sqrtf(ref[0]*ref[0]+ref[2]*ref[2]))*RAD_TO_DEG,2);
+                report_float("NRol",atan2f(-ref[0],ref[2])*RAD_TO_DEG,2);
+            } else {
+                report_float("T1",cubli_bal.tilt_int[0],3);
+                report_float("T2",cubli_bal.tilt_int[1],3);
+                report_float("T3",cubli_bal.tilt_int[2],3);
+            }
         }
     }
     UART_WriteText("#\r\n");
@@ -613,6 +619,14 @@ void Control_Status(void) {
     report_float("YawD",cubli_bal.K_yaw_damping,2);report_int("YawTune",1);
     report_float("Trim1",cubli_bal.tilt_int[0],3);report_float("Trim2",cubli_bal.tilt_int[1],3);
     report_float("Trim3",cubli_bal.tilt_int[2],3);report_float("BTrim",cubli_bal.K_tilt_trim,1);report_int("TrimTune",1);
+    report_int("NTune",1);report_int("NOn",cubli_bal.neutral_enabled);
+    if(cubli_bal.mode==BAL_MODE_CORNER && cubli_bal.reference_valid[3]) {
+        const float *ref=LQR_GetControlReference(),*r=cubli_bal.neutral_rotation;
+        report_float("NPit",atan2f(ref[1],sqrtf(ref[0]*ref[0]+ref[2]*ref[2]))*RAD_TO_DEG,2);
+        report_float("NRol",atan2f(-ref[0],ref[2])*RAD_TO_DEG,2);
+        report_float("NOff",sqrtf(r[0]*r[0]+r[1]*r[1]+r[2]*r[2])*RAD_TO_DEG,3);
+        report_float("NLimit",2,1);report_float("NRate",0.5f,1);
+    }
     report_float("U1",voltage[0].q,2);
     report_float("U2",voltage[1].q,2);
     report_float("U3",voltage[2].q,2);
@@ -659,6 +673,7 @@ void commander_run(void) {
                "M1/M2/M3 speed independently; EN1/EN2/EN3 0/1; ACC rad/s^2; STOP; PING (every 250ms)\r\n"
                "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BREF gx gy gz; BAXIS1/2/3 1..3; BDIR1/2/3 +/-1; BAL 0/1; BSTART 2..15 seconds; BAUTO 0/1 [2..15 seconds]; BFULL speed; BCAP 0.5..10 deg; BTRIP 10..60 deg; BYAW 0..10; BTRIM 0..10; BPROBE volts ms\r\n"
                "LQR1/2/3 [Kp Kd Kw Ki]; ZERO1/2/3 deg (edge); BU volts; U volts; L rad/s; PID1/2/3 [P I D]; TF seconds\r\n"
+               "BNEUTRAL 0/1: disarmed corner reference search, 2deg total / 0.5deg/s, Ki/BTRIM=0\r\n"
                "FF[1/2/3] [coulomb_V bemf_V_per_rad_s]; STATE?\r\n"); Control_Status();
     } else if(!strcmp(name,"APP") && n==1 && (v[0]==0 || v[0]==1)) {
         Control_Stop(); app_mode=(uint8_t)v[0]; if(!control_reset_latch()) return; printf("OK APP:%d\r\n",app_mode);
@@ -704,8 +719,14 @@ void commander_run(void) {
     } else if(!strcmp(name,"BYAW") && n==1 && v[0]>=0 && v[0]<=10) {
         if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
         cubli_bal.K_yaw_damping=v[0];printf("OK BYAW\r\n");
+    } else if(!strcmp(name,"BNEUTRAL") && n==1 && (v[0]==0 || v[0]==1)) {
+        if(m1_enabled || m2_enabled || m3_enabled || !LQR_SetNeutralLearning(v[0]!=0)) {
+            printf("ERR BNEUTRAL (disarm, corner reference/calibration and Ki/BTRIM=0 required)\r\n");return;
+        }
+        printf("OK BNEUTRAL\r\n");
     } else if(!strcmp(name,"BTRIM") && n==1 && v[0]>=0 && v[0]<=10) {
         if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
+        if(cubli_bal.neutral_enabled && v[0]!=0) {printf("ERR NEUTRAL_INTEGRAL_CONFLICT\r\n");return;}
         LQR_SetTiltTrim(v[0]);printf("OK BTRIM\r\n");
     } else if(!strcmp(name,"BREF") && n==3) {
         float norm=sqrtf(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);int m=(int)cubli_bal.mode;
@@ -714,6 +735,7 @@ void commander_run(void) {
            (m<3 && fabsf(v[cubli_bal.body_axis[m]])/norm>0.25f)) {printf("ERR BREF (normalized saved reference required)\r\n");return;}
         for(i=0;i<3;i++) cubli_bal.reference[m][i]=v[i]/norm;
         cubli_bal.reference_valid[m]=true;
+        LQR_ResetNeutralLearning();
         if(m<3) cubli_bal.gains[m].theta_0=0;
         else for(i=0;i<3;i++) cubli_bal.corner_gains[i].theta_0=0;
         printf("OK BREF\r\n");
@@ -736,10 +758,11 @@ void commander_run(void) {
         Control_Stop();for(i=0;i<3;i++) cubli_bal.body_axis[i]=(uint8_t)v[i]-1;
         cubli_bal.axes_confirmed_mask=7;cubli_bal.directions_confirmed_mask=0;
         memset(cubli_bal.reference_valid,0,sizeof(cubli_bal.reference_valid));
+        LQR_ResetNeutralLearning();
         printf("OK BAXIS (BDIR and BZERO required)\r\n");
     } else if(!strcmp(name,"BDIR") && n==3) {
         for(i=0;i<3;i++) if(v[i]!=1 && v[i]!=-1) {printf("ERR BDIR\r\n");return;}
-        Control_Stop(); for(i=0;i<3;i++) cubli_bal.body_direction[i]=(int)v[i]; cubli_bal.directions_confirmed_mask=7; printf("OK BDIR\r\n");
+        Control_Stop(); LQR_ResetNeutralLearning();for(i=0;i<3;i++) cubli_bal.body_direction[i]=(int)v[i]; cubli_bal.directions_confirmed_mask=7; printf("OK BDIR\r\n");
     } else if(!strcmp(name,"MODE") && n==1 && (v[0]==0 || v[0]==1)) {
         if(app_mode) {printf("ERR DEBUG_ONLY\r\n");return;}
         Control_Stop(); controller=v[0]?Type_velocity:Type_velocity_openloop; printf("OK MODE:%d\r\n",(int)v[0]);
@@ -833,6 +856,7 @@ void commander_run(void) {
             } else if(lqr) {
                 LQR_Gains_t *g=LQR_GetGains(i);
                 if(n && (n<3 || n>4 || v[0]<0 || v[0]>200 || v[1]<0 || v[1]>50 || v[2]<-5 || v[2]>5 || (n==4 && (v[3]<-5 || v[3]>5)))) {printf("ERR LQR_RANGE\r\n");return;}
+                if(n && cubli_bal.neutral_enabled && (n==4?v[3]:g->K_i)!=0) {printf("ERR NEUTRAL_INTEGRAL_CONFLICT\r\n");return;}
                 if(n) LQR_SetGains(i,v[0],v[1],v[2],n==4?v[3]:g->K_i);
                 printf("OK LQR%d: P=%.3f, D=%.3f, W=%.4f, I=%.4f\r\n",i+1,g->K_theta,g->K_dtheta,g->K_w,g->K_i);
             } else if(zero) {

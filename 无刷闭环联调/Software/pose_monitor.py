@@ -76,7 +76,8 @@ class PoseMonitor(QWidget):
         self.angles.setText(f"Pitch {data['pitch']:+.2f}°     Roll {data['roll']:+.2f}°")
         target = data.get('target')
         if target:
-            self.target.setText(f'目标 {target[0]:+.2f}° / {target[1]:+.2f}°')
+            label = '自动寻点目标' if data.get('neutral_enabled') else '目标'
+            self.target.setText(f'{label} {target[0]:+.2f}° / {target[1]:+.2f}°')
             g, ref = gravity(data['pitch'], data['roll']), gravity(*target)
             angle = math.degrees(math.acos(max(-1, min(1, sum(a*b for a, b in zip(g, ref))))))
             self.error.setText(f"偏差 {angle:.2f}°    入位范围 {data.get('capture_angle',1):g}°")

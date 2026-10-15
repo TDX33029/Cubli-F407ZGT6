@@ -1,0 +1,18 @@
+{
+  "date_local": "2026-10-16",
+  "encoder": "I2C absolute",
+  "change": "Opt-in bounded neutral reference search; excludes yaw wheel spin; 2deg total, 0.5deg/s; fast inner controller and base-reference protections retained.",
+  "hex_sha256": "3248db58ec10fbced736e1751b2bf177c60afa462b541a53328433e4971e10a6",
+  "hex_data_bytes": 52052,
+  "build_inputs": 38,
+  "armcc_errors": 0,
+  "armcc_warnings": 0,
+  "tests": [
+    "Production C control and UART harness",
+    "35 corner diagnostic tests",
+    "10 persistent pose monitor tests"
+  ],
+  "flashed": false,
+  "balance_validation": "Not tested on hardware yet",
+  "source_file_sha256": "058c269bbf7fdf520228b4e19a0d68a777e9eec91bb9e2b374be3ca4434333a6"
+}
