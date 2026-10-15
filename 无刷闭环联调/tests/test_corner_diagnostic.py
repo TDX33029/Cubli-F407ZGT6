@@ -24,6 +24,8 @@ class Device:
         self.fault = fault
         self.fast = False
         self.arm_at = None
+        self.probe_until = None
+        self.probe_voltage = 0
         self.state = dict(App='0', BMode='1', Bal='0', EN='000', Fault='0', Trip='0',
                           Aligned='111', Cal='0' if fault == 'uncalibrated' else '1', IMU='1',
                           AxisMask='0', DirMask='0', Ref='0', VLimit='5', SLimit='180', TripDeg='20.0')
@@ -77,6 +79,10 @@ class Device:
             self.arm_at = self.now + float(parts[1])
         elif command == 'BAL 1':
             self.state.update(Bal='3', EN='111')
+        elif name == 'BPROBE' and self.fault != 'missing_probe':
+            self.probe_voltage = float(parts[1])
+            self.probe_until = self.now + int(parts[2])/1000
+            self.state.update(Bal='7', EN='010' if self.fault == 'probe_wrong_enable' else '100')
         if name == 'STATE?':
             self.pending.append(self.state_frame())
         return len(raw)
@@ -85,6 +91,9 @@ class Device:
         self.now += .02
         if self.arm_at is not None and self.now >= self.arm_at:
             self.state.update(Bal='3', EN='111')
+        if self.probe_until is not None and self.now >= self.probe_until:
+            self.state.update(Bal='0', EN='000')
+            self.probe_until = None
         if self.pending:
             return self.pending.pop(0).encode()
         active = self.state['Bal'] == '3'
@@ -100,12 +109,23 @@ class Device:
         if self.fast:
             data.update(V1=data['S1'], V2=data['S2'], V3=data['S3'],
                         Wx='1.746' if active and self.fault == 'gyro' else '0', Wy='0', Wz='0')
+            if self.state['BMode'] != '4' and self.fault in ('probe_edge', 'missing_probe', 'probe_wrong_enable'):
+                data.pop('Pit'); data.pop('Rol')
+                if self.state['Bal'] == '7':
+                    data.update(U1=str(self.probe_voltage), V1=str(self.probe_voltage*5),
+                                Wy=str(self.probe_voltage/10))
+                else:
+                    for key in ('Wx', 'Wy', 'Wz'):
+                        data.pop(key)
             return ('$FAST,' + ','.join(f'{k}:{v}' for k, v in data.items()) + '#\n').encode()
         return ('$TELE,' + ','.join(f'{k}:{v}' for k, v in data.items()) + '#\n').encode()
 
 
 class CornerDiagnosticTests(unittest.TestCase):
-    def run_trial(self, fault=None, prepare=False, saved=False, yaw=None):
+    def run_trial(self, fault=None, prepare=False, saved=False, yaw=None, probe=None):
+        if probe is not None:
+            saved = True
+            fault = fault or 'probe_edge'
         device = Device(fault)
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
@@ -118,6 +138,10 @@ class CornerDiagnosticTests(unittest.TestCase):
                 argv += ['--reference-gravity', '-.668', '.4', '.627']
             if yaw is not None:
                 argv += ['--yaw-damping', str(yaw)]
+            if probe is not None:
+                argv += ['--probe-motor','1','--probe-voltage',str(probe),'--probe-ms','80',
+                         '--kp','0','--kd','0','--kw','0','0','0','--yaw-damping','0',
+                         '--voltage','3','--wheel-bound','60','--seconds','1']
             code = 0
             with patch.object(sys, 'argv', argv), patch('serial.Serial', return_value=device), \
                     patch('time.monotonic', side_effect=lambda: device.now), \
@@ -197,6 +221,27 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertEqual(result['result'], 'bounded_run_completed')
         self.assertIn('BSTART 2', device.commands)
         self.assertNotIn('BZERO', device.commands)
+    def test_timed_probe_waits_for_release_and_disarms_before_pulse(self):
+        device, result, code = self.run_trial(probe=3)
+        self.assertEqual(code, 0)
+        self.assertEqual(result['result'], 'probe_completed')
+        self.assertGreaterEqual(len(result['probe']['samples']), 3)
+        i = device.commands.index('BPROBE 3 80')
+        self.assertIn('BAL 0', device.commands[:i])
+        self.assertLess(device.commands.index('BSTART 2'), i)
+        self.assertTrue(all(float(d['Wy']) > 0 for d in result['probe']['samples']))
+    def test_negative_timed_probe_records_full_gyro_in_edge_mode(self):
+        _, result, code = self.run_trial(probe=-3)
+        self.assertEqual(code, 0)
+        self.assertTrue(all(float(d['Wy']) < 0 for d in result['probe']['samples']))
+    def test_missing_probe_response_is_not_direction_evidence(self):
+        _, result, code = self.run_trial(fault='missing_probe', probe=3)
+        self.assertEqual(code, 2)
+        self.assertIn('Insufficient timed probe', result['error'])
+    def test_probe_rejects_unexpected_enabled_motor(self):
+        _, result, code = self.run_trial(fault='probe_wrong_enable', probe=3)
+        self.assertEqual(code, 2)
+        self.assertIn('Partial three-axis enable', result['error'])
     def test_legacy_uses_host_wait_without_fast(self):
         device, result, code = self.run_trial(fault='legacy')
         self.assertEqual(code, 0)

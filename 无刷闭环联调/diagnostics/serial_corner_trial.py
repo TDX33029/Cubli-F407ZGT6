@@ -46,6 +46,9 @@ parser.add_argument('--reference-gravity', type=float, nargs=3, help='Saved norm
 parser.add_argument('--prepare-only', action='store_true', help='Capture/configure, then STOP without arming')
 parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent / '2026-10-14')
 parser.add_argument('--live-state',type=Path)
+parser.add_argument('--probe-motor', type=int, choices=(1, 2, 3), help='Zero-output release then one MCU-timed motor pulse')
+parser.add_argument('--probe-voltage', type=float, default=3)
+parser.add_argument('--probe-ms', type=int, default=80)
 args = parser.parse_args()
 if not (0 < args.seconds <= 15 and 10 <= args.wait_seconds <= 600 and 2 <= args.countdown <= 15 and .5 <= args.capture_angle <= 3
         and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 250
@@ -54,6 +57,11 @@ if not (0 < args.seconds <= 15 and 10 <= args.wait_seconds <= 600 and 2 <= args.
     parser.error('Corner diagnostic bounds exceeded')
 if args.yaw_damping is not None and not 0 <= args.yaw_damping <= 10:
     parser.error('Yaw damping must be 0..10')
+if args.probe_motor and not (args.reference_gravity is not None and args.kp == 0 and args.kd == 0
+        and all(v == 0 for v in args.kw) and args.yaw_damping == 0 and 0 < abs(args.probe_voltage) <= 3
+        and abs(args.probe_voltage) <= args.voltage and 20 <= args.probe_ms <= 80
+        and args.wheel_bound <= 60 and .5 <= args.seconds <= 1.5):
+    parser.error('Probe requires fixed reference, all gains/yaw zero, <=3V/80ms and wheel guard <=60rad/s')
 expected = json.loads(args.expected_pose.read_text(encoding='utf-8'))
 expected_g = gravity({key: expected['ranges'][key]['median'] for key in ('Pit', 'Rol')})
 publisher=PosePublisher(args.live_state, capture_angle=args.capture_angle)
@@ -87,6 +95,7 @@ revision = 0
 tele = {}
 recent = []
 active = []
+probe_samples = []
 messages = []
 reference = None
 watch = False
@@ -139,16 +148,29 @@ def pump(duration):
                 while recent and now - recent[0][0] > 1:
                     recent.pop(0)
             else:
-                if not all(k in data for k in ('V1','V2','V3','Pit','Rol','Wx','Wy','Wz','Bal')):
+                probing = args.probe_motor is not None and (phase.startswith('probe_') or phase == 'finish')
+                if probing and data.get('Bal') == '0':
+                    # Disabled edge FAST has no full gyro; TELE still supplies pose.
+                    continue
+                required = ('V1','V2','V3','Wx','Wy','Wz','Bal') if probing else ('V1','V2','V3','Pit','Rol','Wx','Wy','Wz','Bal')
+                if not all(k in data for k in required):
                     raise RuntimeError('Incomplete corner FAST attitude')
+                if probing:
+                    data['Pit'], data['Rol'] = tele['Pit'], tele['Rol']
                 last_tele = now
                 for i, key in enumerate(('Wx','Wy','Wz'), 1):
                     data[f'S{i}'] = data[f'V{i}']
                     data[('Gx','Gy','Gz')[i-1]] = str(float(data[key]) * 180 / math.pi)
+                if probing and data.get('Bal') == '7':
+                    probe_samples.append(dict(data))
             if watch:
                 if int(data.get('Fault', 0)) or int(data.get('Trip', 0)) or data.get('Bal') == '4':
                     raise RuntimeError('Firmware protection: ' + line)
-                if data.get('EN', '000') not in ('000', '111'):
+                allowed_en = ('000', '111')
+                if args.probe_motor and phase.startswith('probe_'):
+                    mask = ''.join('1' if i == args.probe_motor else '0' for i in (1, 2, 3))
+                    allowed_en = ('000', mask, '111') if phase == 'probe_prepare' else ('000', mask)
+                if data.get('EN', '000') not in allowed_en:
                     raise RuntimeError('Partial three-axis enable: ' + line)
                 if line.startswith(('$TELE,', '$FAST,')):
                     if not all(math.isfinite(float(data[k])) for k in ('Pit','Rol','Gx','Gy','Gz','S1','S2','S3')):
@@ -160,7 +182,7 @@ def pump(duration):
                     rate = math.sqrt(sum(float(data[k]) ** 2 for k in ('Gx', 'Gy', 'Gz'))) * math.pi / 180
                     # Moving a disabled cube towards the target is expected.
                     # The MCU owns pose/stillness checks during its countdown.
-                    if (data.get('Bal') == '3' or data.get('EN') == '111') and (rate > 1.5 or tilt(gravity(data), reference) > 10):
+                    if (data.get('Bal') in ('3', '7') or data.get('EN') == '111') and (rate > 1.5 or tilt(gravity(data), reference) > 10):
                         summary['guard_frame']=data
                         raise RuntimeError('Corner body rate/tilt bound')
                     if data.get('Bal') == '3':
@@ -295,7 +317,24 @@ try:
             if run_started is None and time.monotonic() >= deadline:
                 raise RuntimeError('Corner takeover not achieved')
             pump(.01)
-        summary['result'] = 'bounded_run_completed'
+            if args.probe_motor and run_started is not None and time.monotonic() - run_started >= .35:
+                summary['probe_baseline'] = [dict(d) for d in active[-6:]]
+                phase = 'probe_prepare'
+                command('FAST 0', .03)
+                command('BAL 0', .03)
+                command(f'BMODE {args.probe_motor}', .03)
+                confirm(lambda d: d.get('EN') == '000' and d.get('Bal') == '0'
+                        and d.get('BMode') == str(args.probe_motor), 'Disarm before timed probe')
+                command('FAST 7', .03)
+                phase = 'probe_pulse'
+                command(f'BPROBE {args.probe_voltage:g} {args.probe_ms}', (args.probe_ms + 40)/1000)
+                pump(.1)
+                if len(probe_samples) < 3:
+                    raise RuntimeError('Insufficient timed probe gyro samples')
+                summary['result'] = 'probe_completed'
+                break
+        if not args.probe_motor:
+            summary['result'] = 'bounded_run_completed'
         summary['run_duration_s'] = time.monotonic() - run_started
 except BaseException as error:
     summary['result'] = 'stopped'
@@ -324,6 +363,11 @@ finally:
     handoff.release()
     summary['last_state'] = state
     summary['active_samples'] = len(active)
+    if args.probe_motor:
+        summary['probe'] = {'motor': args.probe_motor, 'voltage': args.probe_voltage,
+                            'duration_ms': args.probe_ms, 'samples': probe_samples,
+                            'body_axis': args.body_axes[args.probe_motor-1],
+                            'direction_verified': False}
     if active:
         summary['tilt_deg_max'] = max(tilt(gravity(d), reference) for d in active)
         summary['wheel_ranges'] = {f'M{i}': [min(float(d[f'S{i}']) for d in active),
@@ -332,5 +376,5 @@ finally:
     (folder / (args.tag + '_summary.json')).write_text(json.dumps(summary, indent=2) + '\n', encoding='utf-8')
     log.close()
     print(json.dumps(summary), flush=True)
-if summary['result'] not in ('bounded_run_completed', 'prepared_disabled'):
+if summary['result'] not in ('bounded_run_completed', 'prepared_disabled', 'probe_completed'):
     raise SystemExit(2)

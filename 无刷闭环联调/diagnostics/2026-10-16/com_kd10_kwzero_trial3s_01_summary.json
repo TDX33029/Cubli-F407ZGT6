@@ -48,8 +48,8 @@
     "roll_deg": 50.00000003017076,
     "neutral_verified": false
   },
-  "hands_off_verified": false,
-  "cable_free_verified": false,
+  "hands_off_verified": true,
+  "cable_free_verified": true,
   "active_samples": 53,
   "guard_frame": {
     "T": "3040569743",
@@ -183,5 +183,13 @@
       "seconds": 3,
       "rationale": "Return to damping8; compare higher angle gain against the80/8 run, with6V cap and original protections. Not a validated setting."
     }
+  },
+  "operator_feedback": {
+    "applies_to_three_gain_trials": true,
+    "reply": "效果一样烂 直接一边倒 没有外界干扰",
+    "sideways_fall": true,
+    "no_external_interference": true,
+    "no_obvious_improvement": true,
+    "release_protocol": "Standing PG6-release instructions; no repeated request for identical conditions."
   }
 }

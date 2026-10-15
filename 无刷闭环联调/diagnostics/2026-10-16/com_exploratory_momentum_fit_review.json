@@ -1,0 +1,318 @@
+{
+  "method": "Exploratory integrated rigid-body angular momentum equation about a fixed contact point; J and gravity first moment fit jointly, rotor directions from independently verified mapping.",
+  "assumptions": [
+    "Fixed contact with no sliding or extra support torque.",
+    "Motor rotation axes are negative of mapped positive IMU axes, as historical positive-voltage body response implies.",
+    "Equal rotor spin inertia; measured encoder speed represents relative wheel speed.",
+    "No hand torque after0.25s; current trials have no new independent field confirmation.",
+    "Sparse FAST gyro and filtered wheel speeds introduce integration/sampling errors."
+  ],
+  "fit": {
+    "rows": 4563,
+    "column_normalized_condition": 41.386187872970666,
+    "J_over_Jw": [
+      [
+        19.238702516805827,
+        9.09873283206458,
+        7.666092547002467
+      ],
+      [
+        9.09873283206458,
+        13.589608157446103,
+        6.582471022963624
+      ],
+      [
+        7.666092547002467,
+        6.582471022963624,
+        7.274603734055644
+      ]
+    ],
+    "J_eigenvalues": [
+      2.7578145796857494,
+      6.998628556362557,
+      30.34647127225927
+    ],
+    "gravity_moment_over_Jw": [
+      -3597.8003037241538,
+      2070.9518097495784,
+      3106.6693581090612
+    ],
+    "candidate_pitch_deg": 23.541349412874634,
+    "candidate_roll_deg": 49.18967627387837,
+    "residual_rms": 3.9442321290729625,
+    "relative_residual_norm": 0.29921419879704003,
+    "inertia_triangle_inequality_ok": false
+  },
+  "leave_one_trial_out": [
+    {
+      "rows": 4266,
+      "column_normalized_condition": 51.183668792789234,
+      "J_over_Jw": [
+        [
+          12.722005338960184,
+          8.72480942528459,
+          5.609134220503421
+        ],
+        [
+          8.72480942528459,
+          17.495090690050368,
+          6.113333807224081
+        ],
+        [
+          5.609134220503421,
+          6.113333807224081,
+          7.05323826902192
+        ]
+      ],
+      "J_eigenvalues": [
+        3.5226526004642267,
+        6.2500757498919794,
+        27.497605947676252
+      ],
+      "gravity_moment_over_Jw": [
+        -3958.4807825751222,
+        2269.3383257939404,
+        3399.3569121660094
+      ],
+      "candidate_pitch_deg": 23.50539561912379,
+      "candidate_roll_deg": 49.345568498986175,
+      "residual_rms": 3.581978485182499,
+      "relative_residual_norm": 0.3017719176663008,
+      "left_out": "com_candidate_trial5s_cap1_01",
+      "holdout_relative_error": 0.33602738815786865,
+      "inertia_triangle_inequality_ok": false
+    },
+    {
+      "rows": 4113,
+      "column_normalized_condition": 41.35454351524721,
+      "J_over_Jw": [
+        [
+          19.218560417860946,
+          9.922226946556554,
+          8.177448939019417
+        ],
+        [
+          9.922226946556554,
+          12.285815554336073,
+          6.923563243682758
+        ],
+        [
+          8.177448939019417,
+          6.923563243682758,
+          7.240553162668837
+        ]
+      ],
+      "J_eigenvalues": [
+        2.223751043847194,
+        5.466242273875299,
+        31.054935817143367
+      ],
+      "gravity_moment_over_Jw": [
+        -3613.700482122887,
+        2079.356966008802,
+        3119.704325791913
+      ],
+      "candidate_pitch_deg": 23.5358069055989,
+      "candidate_roll_deg": 49.19598670577024,
+      "residual_rms": 4.091941675885835,
+      "relative_residual_norm": 0.3179269930662706,
+      "left_out": "com_oldref_comparison_trial5s_01",
+      "holdout_relative_error": 0.13981653558233403,
+      "inertia_triangle_inequality_ok": false
+    },
+    {
+      "rows": 4185,
+      "column_normalized_condition": 41.59511087375312,
+      "J_over_Jw": [
+        [
+          20.00027252704808,
+          8.990945111469165,
+          7.412698082024288
+        ],
+        [
+          8.990945111469165,
+          9.891252434431733,
+          7.746373265170739
+        ],
+        [
+          7.412698082024288,
+          7.746373265170739,
+          6.2886381510109155
+        ]
+      ],
+      "J_eigenvalues": [
+        0.13287552815109382,
+        6.207202070901292,
+        29.84008551343834
+      ],
+      "gravity_moment_over_Jw": [
+        -3642.7291041705603,
+        2097.2480128573147,
+        3144.867297025704
+      ],
+      "candidate_pitch_deg": 23.547399387441704,
+      "candidate_roll_deg": 49.19506217527231,
+      "residual_rms": 3.9875065327441894,
+      "relative_residual_norm": 0.309204698335283,
+      "left_out": "com_kwzero_trial3s_01",
+      "holdout_relative_error": 0.22275782533576385,
+      "inertia_triangle_inequality_ok": false
+    },
+    {
+      "rows": 3789,
+      "column_normalized_condition": 39.773884705459906,
+      "J_over_Jw": [
+        [
+          20.98155315235845,
+          9.87972351713314,
+          7.675648415252823
+        ],
+        [
+          9.87972351713314,
+          12.906664434776351,
+          5.834423146360659
+        ],
+        [
+          7.675648415252823,
+          5.834423146360659,
+          8.313901080982994
+        ]
+      ],
+      "J_eigenvalues": [
+        4.203491801324119,
+        6.400873785219384,
+        31.59775308157429
+      ],
+      "gravity_moment_over_Jw": [
+        -3507.9979289677867,
+        2016.55751284268,
+        3035.738370320949
+      ],
+      "candidate_pitch_deg": 23.49372208053638,
+      "candidate_roll_deg": 49.12786317181616,
+      "residual_rms": 3.9014051220846704,
+      "relative_residual_norm": 0.288787038474517,
+      "left_out": "com_kd8_kwzero_trial3s_02",
+      "holdout_relative_error": 0.3720118928838919,
+      "inertia_triangle_inequality_ok": false
+    },
+    {
+      "rows": 4284,
+      "column_normalized_condition": 41.52095647340449,
+      "J_over_Jw": [
+        [
+          20.43672443524337,
+          9.717425646508644,
+          7.5029618928043265
+        ],
+        [
+          9.717425646508644,
+          13.745829331530562,
+          6.52514321627503
+        ],
+        [
+          7.5029618928043265,
+          6.52514321627503,
+          7.710313097818544
+        ]
+      ],
+      "J_eigenvalues": [
+        3.3648555844901304,
+        7.034308940580113,
+        31.493702339522216
+      ],
+      "gravity_moment_over_Jw": [
+        -3556.5211354646312,
+        2045.086890044486,
+        3067.644729849923
+      ],
+      "candidate_pitch_deg": 23.529642129037377,
+      "candidate_roll_deg": 49.22088842092492,
+      "residual_rms": 3.8305377005920747,
+      "relative_residual_norm": 0.3031160126840326,
+      "left_out": "com_kd10_kwzero_trial3s_01",
+      "holdout_relative_error": 0.28101320016083714,
+      "inertia_triangle_inequality_ok": false
+    },
+    {
+      "rows": 4266,
+      "column_normalized_condition": 40.86006671210664,
+      "J_over_Jw": [
+        [
+          18.003777644113867,
+          8.63158007160461,
+          8.535686080862623
+        ],
+        [
+          8.63158007160461,
+          11.387192078692335,
+          7.588996275576194
+        ],
+        [
+          8.535686080862623,
+          7.588996275576194,
+          7.405304011057968
+        ]
+      ],
+      "J_eigenvalues": [
+        1.2621981412219594,
+        5.816635629847041,
+        29.717439962795154
+      ],
+      "gravity_moment_over_Jw": [
+        -3529.5677116947613,
+        2030.8435903840036,
+        3044.4474481782863
+      ],
+      "candidate_pitch_deg": 23.542464520949817,
+      "candidate_roll_deg": 49.220412342452235,
+      "residual_rms": 3.8393268200177317,
+      "relative_residual_norm": 0.3040383029935804,
+      "left_out": "com_kp120_kd8_kwzero_trial3s_01",
+      "holdout_relative_error": 0.279072749925015,
+      "inertia_triangle_inequality_ok": false
+    },
+    {
+      "rows": 2475,
+      "column_normalized_condition": 39.15583787480147,
+      "J_over_Jw": [
+        [
+          19.785678625876827,
+          6.018095739592644,
+          7.906007591228209
+        ],
+        [
+          6.018095739592644,
+          23.9166280120298,
+          0.24545003675111526
+        ],
+        [
+          7.906007591228209,
+          0.24545003675111526,
+          9.315693093135568
+        ]
+      ],
+      "J_eigenvalues": [
+        4.677776332793792,
+        18.805623018464164,
+        29.53460037978424
+      ],
+      "gravity_moment_over_Jw": [
+        -3403.0538929372474,
+        1982.4009744978157,
+        2973.9976371561334
+      ],
+      "candidate_pitch_deg": 23.684061092196156,
+      "candidate_roll_deg": 48.8491329245712,
+      "residual_rms": 4.005456913589456,
+      "relative_residual_norm": 0.23435330000743948,
+      "left_out": "review_baseline_battery02_trial5s_01",
+      "holdout_relative_error": 0.826014048723066,
+      "inertia_triangle_inequality_ok": false
+    }
+  ],
+  "use_for_tuning": false,
+  "interpretation": "Exploratory only. Reject for tuning if inertia is not positive definite, contact/hand assumptions fail, residuals are large or leave-one-trial-out reference is unstable. Do not replace the static COM candidate with this fit.",
+  "rejected_for_tuning": true,
+  "rejection_reason": "Fitted inertia violates physical principal-moment triangle inequality (largest moment exceeds sum of other two); leave-one-trial-out holdout error reaches0.826. A positive-definite matrix alone is insufficient to represent a realizable inertia. Fitted COM angles must not be used as a control target."
+}

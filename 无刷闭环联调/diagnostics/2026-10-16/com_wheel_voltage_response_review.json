@@ -1,0 +1,222 @@
+{
+  "method": "Exploratory integrated wheel response: delta_speed = a*integral(Uq)+b*integral(speed)+c*dt+d*integral(sign(speed));0.08s windows.",
+  "results": [
+    {
+      "source": "com_oldref_comparison_trial5s_01",
+      "fits": [
+        {
+          "motor": 1,
+          "input_gain_rad_s2_per_V": 161.09821257175128,
+          "speed_term_per_s": -4.476036076594043,
+          "equivalent_speed_voltage_V_per_rad_s": 0.02778451731486759,
+          "offset_acceleration": 1.3636340660438988,
+          "direction_friction": -16.394277948441843,
+          "relative_residual": 0.11339267036133448,
+          "condition": 638.9848391824092
+        },
+        {
+          "motor": 2,
+          "input_gain_rad_s2_per_V": 98.12273702415428,
+          "speed_term_per_s": -1.1653877822911816,
+          "equivalent_speed_voltage_V_per_rad_s": 0.011876837292097805,
+          "offset_acceleration": 5.467413027599439,
+          "direction_friction": -15.052165701499842,
+          "relative_residual": 0.2375989140463736,
+          "condition": 47.24240835463784
+        },
+        {
+          "motor": 3,
+          "input_gain_rad_s2_per_V": 116.30612394119012,
+          "speed_term_per_s": -2.7693957466548045,
+          "equivalent_speed_voltage_V_per_rad_s": 0.02381126335235058,
+          "offset_acceleration": 1.3607886105436957,
+          "direction_friction": -1.3607886105436957,
+          "relative_residual": 0.08542490480021213,
+          "condition": 4.7916336315983206e+17
+        }
+      ]
+    },
+    {
+      "source": "com_kwzero_trial3s_01",
+      "fits": [
+        {
+          "motor": 1,
+          "input_gain_rad_s2_per_V": 149.44701576280735,
+          "speed_term_per_s": -4.271525148619675,
+          "equivalent_speed_voltage_V_per_rad_s": 0.02858220438070951,
+          "offset_acceleration": -15.256991315032767,
+          "direction_friction": -19.01850314570468,
+          "relative_residual": 0.09656617787425682,
+          "condition": 301.4259601362815
+        },
+        {
+          "motor": 2,
+          "input_gain_rad_s2_per_V": 105.81036407498577,
+          "speed_term_per_s": -2.0502762937904406,
+          "equivalent_speed_voltage_V_per_rad_s": 0.019376894803399877,
+          "offset_acceleration": 3.285087755168462,
+          "direction_friction": -7.877066508610534,
+          "relative_residual": 0.2215385328349889,
+          "condition": 52.27332365824506
+        },
+        {
+          "motor": 3,
+          "input_gain_rad_s2_per_V": 114.61059989196613,
+          "speed_term_per_s": -2.7403296012251754,
+          "equivalent_speed_voltage_V_per_rad_s": 0.023909914124943556,
+          "offset_acceleration": -8.065744285625167,
+          "direction_friction": -9.222504594751099,
+          "relative_residual": 0.06289512619262683,
+          "condition": 109.91070706894436
+        }
+      ]
+    },
+    {
+      "source": "com_kd8_kwzero_trial3s_02",
+      "fits": [
+        {
+          "motor": 1,
+          "input_gain_rad_s2_per_V": 135.7585615275583,
+          "speed_term_per_s": -3.89523085639991,
+          "equivalent_speed_voltage_V_per_rad_s": 0.02869234037670028,
+          "offset_acceleration": -7.3831282630093655,
+          "direction_friction": 1.670863196166648,
+          "relative_residual": 0.08955331613405204,
+          "condition": 317.0330573019798
+        },
+        {
+          "motor": 2,
+          "input_gain_rad_s2_per_V": 112.34485676258869,
+          "speed_term_per_s": -2.407502033707281,
+          "equivalent_speed_voltage_V_per_rad_s": 0.021429570548075053,
+          "offset_acceleration": 1.1114280516762178,
+          "direction_friction": -10.07894562652875,
+          "relative_residual": 0.2008592373126085,
+          "condition": 77.70573488545087
+        },
+        {
+          "motor": 3,
+          "input_gain_rad_s2_per_V": 113.72141875585781,
+          "speed_term_per_s": -2.5410135552058177,
+          "equivalent_speed_voltage_V_per_rad_s": 0.022344194989872387,
+          "offset_acceleration": -4.361267452185343,
+          "direction_friction": -14.78486997260371,
+          "relative_residual": 0.0842908610908428,
+          "condition": 86.19595346505122
+        }
+      ]
+    },
+    {
+      "source": "com_kd10_kwzero_trial3s_01",
+      "fits": [
+        {
+          "motor": 1,
+          "input_gain_rad_s2_per_V": 123.05932222384416,
+          "speed_term_per_s": -3.440200889210354,
+          "equivalent_speed_voltage_V_per_rad_s": 0.02795563007370258,
+          "offset_acceleration": -16.0111846822052,
+          "direction_friction": 11.491368483730787,
+          "relative_residual": 0.07014843352789736,
+          "condition": 310.9574890995443
+        },
+        {
+          "motor": 2,
+          "input_gain_rad_s2_per_V": 86.265132489227,
+          "speed_term_per_s": -1.496430182113407,
+          "equivalent_speed_voltage_V_per_rad_s": 0.01734687166104202,
+          "offset_acceleration": 9.921722114755102,
+          "direction_friction": 0.7607469103380433,
+          "relative_residual": 0.18491982341005575,
+          "condition": 158.59057748658387
+        },
+        {
+          "motor": 3,
+          "input_gain_rad_s2_per_V": 115.81434576668296,
+          "speed_term_per_s": -2.9433209256805233,
+          "equivalent_speed_voltage_V_per_rad_s": 0.025414130746894456,
+          "offset_acceleration": -5.377581362279637,
+          "direction_friction": -10.776664226690654,
+          "relative_residual": 0.0903033801417235,
+          "condition": 70.53767846787002
+        }
+      ]
+    },
+    {
+      "source": "com_kp120_kd8_kwzero_trial3s_01",
+      "fits": [
+        {
+          "motor": 1,
+          "input_gain_rad_s2_per_V": 141.98805007239415,
+          "speed_term_per_s": -4.074783202014099,
+          "equivalent_speed_voltage_V_per_rad_s": 0.02869807142176068,
+          "offset_acceleration": 1.3526137875155824,
+          "direction_friction": 2.282447271520397,
+          "relative_residual": 0.07901633616401872,
+          "condition": 340.2059922918224
+        },
+        {
+          "motor": 2,
+          "input_gain_rad_s2_per_V": 114.01006119425593,
+          "speed_term_per_s": -1.1634686144288122,
+          "equivalent_speed_voltage_V_per_rad_s": 0.010204964388594069,
+          "offset_acceleration": 6.726276312553088,
+          "direction_friction": -17.997613303618405,
+          "relative_residual": 0.23400679784437356,
+          "condition": 30.918217865542022
+        },
+        {
+          "motor": 3,
+          "input_gain_rad_s2_per_V": 101.07988043444101,
+          "speed_term_per_s": -2.578189636725652,
+          "equivalent_speed_voltage_V_per_rad_s": 0.025506457127220578,
+          "offset_acceleration": -18.286778746399328,
+          "direction_friction": -2.227120271667786,
+          "relative_residual": 0.05215561840683911,
+          "condition": 147.29306690390334
+        }
+      ]
+    },
+    {
+      "source": "review_baseline_battery02_trial5s_01",
+      "fits": [
+        {
+          "motor": 1,
+          "input_gain_rad_s2_per_V": 122.36194299432097,
+          "speed_term_per_s": -2.7939886504741978,
+          "equivalent_speed_voltage_V_per_rad_s": 0.022833804221332705,
+          "offset_acceleration": -0.3661678856338943,
+          "direction_friction": -14.237526226404349,
+          "relative_residual": 0.5254904085905944,
+          "condition": 350.7533124555871
+        },
+        {
+          "motor": 2,
+          "input_gain_rad_s2_per_V": 114.25433829678082,
+          "speed_term_per_s": -2.542644937547226,
+          "equivalent_speed_voltage_V_per_rad_s": 0.022254252883970066,
+          "offset_acceleration": -4.4928980699808365,
+          "direction_friction": -6.672014561501938,
+          "relative_residual": 0.39949368844306044,
+          "condition": 96.71705429253156
+        },
+        {
+          "motor": 3,
+          "input_gain_rad_s2_per_V": 123.33848488414365,
+          "speed_term_per_s": -2.9145620912799513,
+          "equivalent_speed_voltage_V_per_rad_s": 0.023630597489645716,
+          "offset_acceleration": -1.0957249254956336,
+          "direction_friction": -12.690079687400843,
+          "relative_residual": 0.1186167657347862,
+          "condition": 70.78341851316935
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Voltage feedback is command, not phase-current measurement.",
+    "Speed is filtered; samples50Hz, voltage/control phase latency and cogging are unmodeled.",
+    "Fits are observational and differ by run; effective speed-voltage ratio is not a calibrated motor constant.",
+    "Do not infer a safe voltage/current limit or exact torque from this model."
+  ],
+  "next_candidate_rationale": "Compare restoring the historical Kw=-0.03 with Kp80/Kd8, as the algebraically additive speed-voltage term also partly compensates back EMF. No claim this is a pure momentum feedback or proven stable setting."
+}
