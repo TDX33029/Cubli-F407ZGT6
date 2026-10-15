@@ -1,0 +1,220 @@
+{
+  "utc_started": "2026-10-15T16:50:45.657206+00:00",
+  "settings": {
+    "port": "COM7",
+    "tag": "com_candidate_trial5s_01",
+    "seconds": 5.0,
+    "countdown": 2,
+    "capture_angle": 0.5,
+    "voltage": 6.0,
+    "wheel_bound": 220.0,
+    "kp": 80,
+    "kd": 5,
+    "kw": [
+      -0.03,
+      -0.03,
+      -0.03
+    ],
+    "yaw_damping": 3.0,
+    "body_axes": [
+      2,
+      3,
+      1
+    ],
+    "directions": [
+      -1,
+      -1,
+      -1
+    ],
+    "expected_pose": "\u65e0\u5237\u95ed\u73af\u8054\u8c03\\diagnostics\\2026-10-14\\repaired_corner_hand_pose_still_summary.json",
+    "reference_gravity": [
+      -0.6930374040189499,
+      0.417914490743475,
+      0.587406703279165
+    ],
+    "prepare_only": false,
+    "output_dir": "\u65e0\u5237\u95ed\u73af\u8054\u8c03\\diagnostics\\2026-10-16",
+    "live_state": ".codex-debug\\20261016-com-validation\\live.json"
+  },
+  "result": "stopped",
+  "reference": {
+    "gravity": [
+      -0.6930374040189499,
+      0.417914490743475,
+      0.587406703279165
+    ],
+    "pitch_deg": 24.702990422491794,
+    "roll_deg": 49.71595731897284,
+    "neutral_verified": false
+  },
+  "hands_off_verified": false,
+  "cable_free_verified": false,
+  "active_samples": 0,
+  "error": "RuntimeError('Corner takeover not achieved')",
+  "last_state": {
+    "App": "1",
+    "Dbg": "3",
+    "Mode": "1",
+    "BMode": "4",
+    "Bal": "0",
+    "Cal": "1",
+    "IMU": "1",
+    "Aligned": "111",
+    "EN": "000",
+    "Fault": "0",
+    "Trip": "1",
+    "Tilt": "0.86",
+    "PoseTilt": "0.86",
+    "Angle": "0.86",
+    "TripDeg": "20.0",
+    "CapDeg": "0.50",
+    "Auto": "0",
+    "BReason": "0",
+    "FullSpeed": "250.0",
+    "FullMs": "0",
+    "RetryMs": "0",
+    "EdgeReady": "0",
+    "Wheel": "0.00",
+    "Rate": "0.037",
+    "YawD": "3.00",
+    "YawTune": "1",
+    "Trim1": "0.000",
+    "Trim2": "0.000",
+    "Trim3": "0.000",
+    "BTrim": "0.0",
+    "TrimTune": "1",
+    "U1": "0.00",
+    "U2": "0.00",
+    "U3": "0.00",
+    "D1": "-1",
+    "D2": "-1",
+    "D3": "-1",
+    "Enc": "111",
+    "VLimit": "2.50",
+    "SLimit": "15.00",
+    "EncType": "0",
+    "C1": "16384",
+    "C2": "16384",
+    "C3": "16384",
+    "Map1": "3",
+    "Map2": "1",
+    "Map3": "2",
+    "PP1": "7",
+    "PP2": "7",
+    "PP3": "7",
+    "Dir1": "1",
+    "Dir2": "1",
+    "Dir3": "1",
+    "Ref": "1",
+    "Axis1": "2",
+    "Axis2": "3",
+    "Axis3": "1",
+    "AxesOK": "1",
+    "DirOK": "1",
+    "AxisMask": "7",
+    "DirMask": "7",
+    "CountMs": "0",
+    "CornerStart": "1"
+  },
+  "frequency": [
+    "$FREQ,M:1,Map:3,PP:7,Hz:333,GapUs:3255,ReadUs:126,Errors:0#",
+    "$FREQ,M:2,Map:1,PP:7,Hz:333,GapUs:3110,ReadUs:125,Errors:0#",
+    "$FREQ,M:3,Map:2,PP:7,Hz:333,GapUs:3319,ReadUs:124,Errors:0#"
+  ],
+  "entry_review": {
+    "state_frame_counts": {
+      "0": 121,
+      "6": 2772,
+      "5": 348
+    },
+    "countdown_episodes": [
+      {
+        "start_t": 21.405999999988126,
+        "initial_remaining_ms": 1990,
+        "minimum_remaining_ms": 1510,
+        "end_t": 21.905999999988126
+      },
+      {
+        "start_t": 22.046999999991385,
+        "initial_remaining_ms": 1995,
+        "minimum_remaining_ms": 595,
+        "end_t": 23.46899999998277
+      },
+      {
+        "start_t": 30.905999999988126,
+        "initial_remaining_ms": 1990,
+        "minimum_remaining_ms": 1970,
+        "end_t": 30.937999999994645
+      },
+      {
+        "start_t": 31.125,
+        "initial_remaining_ms": 1990,
+        "minimum_remaining_ms": 1870,
+        "end_t": 31.23499999998603
+      },
+      {
+        "start_t": 31.530999999988126,
+        "initial_remaining_ms": 1990,
+        "minimum_remaining_ms": 1870,
+        "end_t": 31.640999999974156
+      },
+      {
+        "start_t": 32.640999999974156,
+        "initial_remaining_ms": 1980,
+        "minimum_remaining_ms": 980,
+        "end_t": 33.640999999974156
+      },
+      {
+        "start_t": 34.421999999991385,
+        "initial_remaining_ms": 1995,
+        "minimum_remaining_ms": 1915,
+        "end_t": 34.530999999988126
+      },
+      {
+        "start_t": 36.84399999998277,
+        "initial_remaining_ms": 1980,
+        "minimum_remaining_ms": 680,
+        "end_t": 38.171999999991385
+      },
+      {
+        "start_t": 38.280999999988126,
+        "initial_remaining_ms": 1990,
+        "minimum_remaining_ms": 1550,
+        "end_t": 38.70299999997951
+      },
+      {
+        "start_t": 39.905999999988126,
+        "initial_remaining_ms": 1990,
+        "minimum_remaining_ms": 1870,
+        "end_t": 40.015999999974156
+      },
+      {
+        "start_t": 42.98499999998603,
+        "initial_remaining_ms": 1990,
+        "minimum_remaining_ms": 1890,
+        "end_t": 43.07799999997951
+      },
+      {
+        "start_t": 43.265999999974156,
+        "initial_remaining_ms": 1985,
+        "minimum_remaining_ms": 1725,
+        "end_t": 43.562999999994645
+      },
+      {
+        "start_t": 73.26599999997416,
+        "initial_remaining_ms": 1980,
+        "minimum_remaining_ms": 1700,
+        "end_t": 73.53099999998813
+      },
+      {
+        "start_t": 75.29699999999139,
+        "initial_remaining_ms": 1985,
+        "minimum_remaining_ms": 1205,
+        "end_t": 76.07799999997951
+      }
+    ],
+    "motor_balancing_started": false,
+    "required_record_button": false,
+    "operator_workflow": "Read-only guide; hold near fixed reference and signal readiness, no capture-button click needed."
+  }
+}
