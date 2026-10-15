@@ -1,0 +1,111 @@
+{
+  "method": "Exploratory joint integrated motor-speed response over0.2s windows, first0.4s and body rate>0.5 excluded. dV=a*integral(U)+b*integral(V)+c*dt+d*integral(sign(V)). Leave-one-run-out validation. Not calibrated torque or a full balance model.",
+  "fits": [
+    {
+      "motor": 1,
+      "windows": 86,
+      "input_gain": 123.01273285562394,
+      "equivalent_ke": 0.023927973438656887,
+      "speed_term": -2.943445404385965,
+      "condition": 250.57596443364005,
+      "residual_rms_delta": 1.2384803376166484,
+      "validation": [
+        {
+          "held_out": "corner_immediate_comref_kd8_kw040_yaw6_trial8s_01",
+          "rmse_delta_rad_s": 1.1768452754722898,
+          "heldout_delta_rms": 6.722834577907206,
+          "ke_fitted_on_other_runs": 0.02397896154329394
+        },
+        {
+          "held_out": "corner_immediate_comref_kd8_kw040_yaw6_trial5s_01",
+          "rmse_delta_rad_s": 0.9153134597023176,
+          "heldout_delta_rms": 5.8762380749118295,
+          "ke_fitted_on_other_runs": 0.02397749012433215
+        },
+        {
+          "held_out": "corner_neutral_comref_kd8_kw040_yaw6_trial5s_01",
+          "rmse_delta_rad_s": 1.497810349745633,
+          "heldout_delta_rms": 10.747108655096236,
+          "ke_fitted_on_other_runs": 0.0240414520519905
+        },
+        {
+          "held_out": "corner_neutral_slow_comref_kd8_kw040_yaw6_trial8s_02",
+          "rmse_delta_rad_s": 1.890339169471163,
+          "heldout_delta_rms": 8.341530634921465,
+          "ke_fitted_on_other_runs": 0.023270614232775794
+        }
+      ]
+    },
+    {
+      "motor": 2,
+      "windows": 86,
+      "input_gain": 109.60567272144479,
+      "equivalent_ke": 0.023455661872305477,
+      "speed_term": -2.570873598640785,
+      "condition": 233.0125905373335,
+      "residual_rms_delta": 1.9598004245436635,
+      "validation": [
+        {
+          "held_out": "corner_immediate_comref_kd8_kw040_yaw6_trial8s_01",
+          "rmse_delta_rad_s": 1.6006252077864895,
+          "heldout_delta_rms": 6.379380474473618,
+          "ke_fitted_on_other_runs": 0.023472908745907108
+        },
+        {
+          "held_out": "corner_immediate_comref_kd8_kw040_yaw6_trial5s_01",
+          "rmse_delta_rad_s": 1.988172079311416,
+          "heldout_delta_rms": 5.891358815727674,
+          "ke_fitted_on_other_runs": 0.023421964191350737
+        },
+        {
+          "held_out": "corner_neutral_comref_kd8_kw040_yaw6_trial5s_01",
+          "rmse_delta_rad_s": 1.928995845783154,
+          "heldout_delta_rms": 11.747168453149325,
+          "ke_fitted_on_other_runs": 0.023545589684435538
+        },
+        {
+          "held_out": "corner_neutral_slow_comref_kd8_kw040_yaw6_trial8s_02",
+          "rmse_delta_rad_s": 2.389962293250041,
+          "heldout_delta_rms": 5.951341935507767,
+          "ke_fitted_on_other_runs": 0.023398991896049832
+        }
+      ]
+    },
+    {
+      "motor": 3,
+      "windows": 86,
+      "input_gain": 111.52259594345401,
+      "equivalent_ke": 0.02622687841190906,
+      "speed_term": -2.924889563989431,
+      "condition": 307.4981879647952,
+      "residual_rms_delta": 2.6434997734105536,
+      "validation": [
+        {
+          "held_out": "corner_immediate_comref_kd8_kw040_yaw6_trial8s_01",
+          "rmse_delta_rad_s": 3.6223427674914026,
+          "heldout_delta_rms": 10.490920110357564,
+          "ke_fitted_on_other_runs": 0.026336348623323316
+        },
+        {
+          "held_out": "corner_immediate_comref_kd8_kw040_yaw6_trial5s_01",
+          "rmse_delta_rad_s": 2.3124647018675186,
+          "heldout_delta_rms": 11.506568634442262,
+          "ke_fitted_on_other_runs": 0.026587474278193027
+        },
+        {
+          "held_out": "corner_neutral_comref_kd8_kw040_yaw6_trial5s_01",
+          "rmse_delta_rad_s": 4.284469380434019,
+          "heldout_delta_rms": 12.272026455860226,
+          "ke_fitted_on_other_runs": 0.025608042648769862
+        },
+        {
+          "held_out": "corner_neutral_slow_comref_kd8_kw040_yaw6_trial8s_02",
+          "rmse_delta_rad_s": 2.4642788233325073,
+          "heldout_delta_rms": 13.951598474726831,
+          "ke_fitted_on_other_runs": 0.026421276471301186
+        }
+      ]
+    }
+  ],
+  "conclusion": "Effective speed-voltage coefficients differ by axis; equality of motor labels does not justify identical effective voltage feedback. These observational fits only motivate bounded controller checks and do not establish a neutral pose or physical inertia."
+}
