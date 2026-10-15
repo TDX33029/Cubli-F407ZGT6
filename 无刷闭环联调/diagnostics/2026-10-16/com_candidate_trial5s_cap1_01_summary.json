@@ -26,14 +26,14 @@
       -1,
       -1
     ],
-    "expected_pose": "\u65e0\u5237\u95ed\u73af\u8054\u8c03\\diagnostics\\2026-10-14\\repaired_corner_hand_pose_still_summary.json",
+    "expected_pose": "无刷闭环联调\\diagnostics\\2026-10-14\\repaired_corner_hand_pose_still_summary.json",
     "reference_gravity": [
       -0.6930374040189499,
       0.417914490743475,
       0.587406703279165
     ],
     "prepare_only": false,
-    "output_dir": "\u65e0\u5237\u95ed\u73af\u8054\u8c03\\diagnostics\\2026-10-16",
+    "output_dir": "无刷闭环联调\\diagnostics\\2026-10-16",
     "live_state": ".codex-debug\\20261016-com-validation\\live.json"
   },
   "result": "stopped",
@@ -47,8 +47,8 @@
     "roll_deg": 49.71595731897284,
     "neutral_verified": false
   },
-  "hands_off_verified": false,
-  "cable_free_verified": false,
+  "hands_off_verified": true,
+  "cable_free_verified": true,
   "active_samples": 55,
   "guard_frame": {
     "T": "572374667",
@@ -199,8 +199,14 @@
     "guard_type": "body angular-rate bound 1.5 rad/s exceeded",
     "speed_guard_triggered": false,
     "reference_verified": false,
-    "physical_observation": "awaiting operator feedback",
+    "physical_observation": "Operator confirmed immediate release, no external interference, fall to one side.",
     "stop_confirmed": true,
     "note": "Three outputs reached the 6V trial limit before stop. No standalone conclusion on COM reference or cause from this short run."
+  },
+  "operator_feedback": {
+    "immediate_release_at_PG6": true,
+    "no_external_interference": true,
+    "observation": "向一侧倾倒",
+    "autonomous_balance_completed": false
   }
 }

@@ -1,0 +1,279 @@
+{
+  "source": "com_candidate_trial5s_cap1_01",
+  "operator_feedback": {
+    "immediate_release_at_PG6": true,
+    "no_external_interference": true,
+    "observation": "向一侧倾倒",
+    "autonomous_balance_completed": false
+  },
+  "sampled_trajectory": [
+    {
+      "time_s": 0.0,
+      "pitch_deg": 25.15,
+      "roll_deg": 48.85,
+      "tilt_deg": 0.9036011149240072,
+      "error_vector_imu_deg": [
+        0.04073534865169929,
+        -0.7121313184531551,
+        0.5547112686256733
+      ],
+      "gyro_imu_rad_s": [
+        -0.04,
+        -0.006,
+        -0.062
+      ],
+      "yaw_rate_rad_s": -0.011205206387011082,
+      "U": [
+        1.01,
+        -0.48,
+        0.16
+      ],
+      "wheel_rad_s": [
+        0.5,
+        -0.12,
+        0.0
+      ]
+    },
+    {
+      "time_s": 0.11,
+      "pitch_deg": 25.03,
+      "roll_deg": 49.02,
+      "tilt_deg": 0.7110857771014649,
+      "error_vector_imu_deg": [
+        0.011438059840327947,
+        -0.5728898035540866,
+        0.4210812583894507
+      ],
+      "gyro_imu_rad_s": [
+        -0.021,
+        -0.013,
+        0.009
+      ],
+      "yaw_rate_rad_s": 0.01440755743424526,
+      "U": [
+        0.88,
+        -0.62,
+        0.07
+      ],
+      "wheel_rad_s": [
+        9.48,
+        -5.8,
+        0.31
+      ]
+    },
+    {
+      "time_s": 0.25,
+      "pitch_deg": 24.86,
+      "roll_deg": 49.07,
+      "tilt_deg": 0.6071256665894096,
+      "error_vector_imu_deg": [
+        -0.08443848429110823,
+        -0.5324638600821615,
+        0.2792023551273511
+      ],
+      "gyro_imu_rad_s": [
+        0.023,
+        -0.001,
+        0.003
+      ],
+      "yaw_rate_rad_s": -0.014595554673341827,
+      "U": [
+        0.73,
+        -0.42,
+        0.02
+      ],
+      "wheel_rad_s": [
+        14.64,
+        -9.21,
+        -0.08
+      ]
+    },
+    {
+      "time_s": 0.5,
+      "pitch_deg": 26.63,
+      "roll_deg": 50.88,
+      "tilt_deg": 2.1940776572970666,
+      "error_vector_imu_deg": [
+        1.5806818208046798,
+        0.9455011978705056,
+        1.192245458139064
+      ],
+      "gyro_imu_rad_s": [
+        0.084,
+        0.045,
+        -0.001
+      ],
+      "yaw_rate_rad_s": -0.03999639655741458,
+      "U": [
+        -1.58,
+        -1.71,
+        -2.58
+      ],
+      "wheel_rad_s": [
+        -8.78,
+        -29.38,
+        -34.59
+      ]
+    },
+    {
+      "time_s": 0.75,
+      "pitch_deg": 27.46,
+      "roll_deg": 52.74,
+      "tilt_deg": 3.8698243587142995,
+      "error_vector_imu_deg": [
+        2.6581466215064755,
+        2.438493183646506,
+        1.4012666053188365
+      ],
+      "gyro_imu_rad_s": [
+        0.072,
+        0.095,
+        0.102
+      ],
+      "yaw_rate_rad_s": 0.04971866726574056,
+      "U": [
+        -4.47,
+        -2.91,
+        -4.99
+      ],
+      "wheel_rad_s": [
+        -74.68,
+        -59.44,
+        -100.67
+      ]
+    },
+    {
+      "time_s": 1.0,
+      "pitch_deg": 28.18,
+      "roll_deg": 53.69,
+      "tilt_deg": 4.974277021079961,
+      "error_vector_imu_deg": [
+        3.3997365817149627,
+        3.1838682857465708,
+        1.7459111650970058
+      ],
+      "gyro_imu_rad_s": [
+        0.378,
+        0.15,
+        -0.143
+      ],
+      "yaw_rate_rad_s": -0.28328012367656236,
+      "U": [
+        -6.0,
+        -3.29,
+        -6.0
+      ],
+      "wheel_rad_s": [
+        -139.84,
+        -85.63,
+        -156.86
+      ]
+    }
+  ],
+  "first_voltage_limit_s": {
+    "M1": 0.938,
+    "M2": 1.11,
+    "M3": 0.907
+  },
+  "guard_frame": {
+    "T": "572374667",
+    "R1": "0.00",
+    "V1": "-165.61",
+    "U1": "-6.00",
+    "R2": "0.00",
+    "V2": "-108.59",
+    "U2": "-6.00",
+    "R3": "0.00",
+    "V3": "-176.03",
+    "U3": "-6.00",
+    "Tilt": "9.75",
+    "Angle": "9.75",
+    "Rate": "1.512",
+    "Bal": "3",
+    "Wx": "0.305",
+    "Wy": "1.451",
+    "Wz": "0.298",
+    "Pit": "30.38",
+    "Rol": "58.67",
+    "T1": "0.000",
+    "T2": "0.000",
+    "T3": "0.000",
+    "S1": "-165.61",
+    "Gx": "17.47521275149011",
+    "S2": "-108.59",
+    "Gy": "83.13617607348246",
+    "S3": "-176.03",
+    "Gz": "17.074142294898532"
+  },
+  "historical_success": {
+    "source": "无刷闭环联调\\diagnostics\\2026-10-15\\review_baseline_battery02_trial5s_01_summary.json",
+    "reference": {
+      "gravity": [
+        -0.7028287890572913,
+        0.397786931032426,
+        0.589743377048073
+      ],
+      "pitch_deg": 23.439901557157288,
+      "roll_deg": 50.00000003017076,
+      "neutral_verified": false
+    },
+    "result": "bounded_run_completed",
+    "run_duration_s": 5.0,
+    "tilt_deg_max": 2.0246014215258854,
+    "wheel_ranges": {
+      "M1": [
+        -157.11,
+        30.21
+      ],
+      "M2": [
+        -35.51,
+        43.21
+      ],
+      "M3": [
+        -33.58,
+        20.56
+      ]
+    },
+    "settings": {
+      "port": "COM7",
+      "tag": "review_baseline_battery02_trial5s_01",
+      "seconds": 5.0,
+      "voltage": 6.0,
+      "wheel_bound": 220.0,
+      "kp": 80,
+      "kd": 5,
+      "kw": [
+        -0.03,
+        -0.03,
+        -0.03
+      ],
+      "yaw_damping": 3.0,
+      "body_axes": [
+        2,
+        3,
+        1
+      ],
+      "directions": [
+        -1,
+        -1,
+        -1
+      ],
+      "expected_pose": "无刷闭环联调\\diagnostics\\2026-10-14\\repaired_corner_hand_pose_still_summary.json",
+      "reference_gravity": [
+        -0.7028287890572913,
+        0.397786931032426,
+        0.589743377048073
+      ],
+      "prepare_only": false,
+      "output_dir": "无刷闭环联调\\diagnostics\\2026-10-15",
+      "live_state": ".codex-debug\\20261015-review\\baseline_live_battery02.json"
+    }
+  },
+  "conclusions": [
+    "1-degree capture permitted takeover; run failed after 1.11s following fully hands-off release.",
+    "Angular-rate bound stopped the run; not wheel-speed protection.",
+    "Voltage saturation alone cannot distinguish reference bias, incorrect actuator response, gravity demand or gain issue.",
+    "Static suspension residual 1.185mm at 59.43mm support-to-COM distance corresponds to about 1.14 degrees as a length/angle scale, not a confidence interval.",
+    "Next useful comparison: same 1-degree entry and controls, historical 23.4399/50 reference, bounded 5s; requires fresh operator positioning."
+  ]
+}

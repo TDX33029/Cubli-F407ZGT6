@@ -71,6 +71,24 @@
     "BSTART": 2,
     "run_seconds": 5,
     "hardware_preparation_required": true,
-    "started": false
-  }
+    "started": true
+  },
+  "validation_attempts": [
+    {
+      "source": "com_candidate_trial5s_01_summary.json",
+      "capture_angle_deg": 0.5,
+      "takeover": false,
+      "outcome": "entry_timeout"
+    },
+    {
+      "source": "com_candidate_trial5s_cap1_01_summary.json",
+      "capture_angle_deg": 1,
+      "takeover": true,
+      "run_duration_s": 1.11,
+      "hands_off_verified": true,
+      "cable_free_verified": true,
+      "completed_requested_duration": false,
+      "outcome": "sideways_fall; host angular-rate protection"
+    }
+  ]
 }
