@@ -1,0 +1,147 @@
+{
+  "result": "trial_not_started_preparation_lost",
+  "motor_motion_commanded": false,
+  "balancing_started": false,
+  "passive_state_transitions": [
+    {
+      "t": 0.046999999991385266,
+      "state": {
+        "Aligned": "111",
+        "Cal": "1",
+        "Map1": "3",
+        "Map2": "1",
+        "Map3": "2",
+        "EN": "000",
+        "Fault": "0"
+      }
+    },
+    {
+      "t": 46.780999999988126,
+      "state": {
+        "Aligned": null,
+        "Cal": "1",
+        "Map1": null,
+        "Map2": null,
+        "Map3": null,
+        "EN": null,
+        "Fault": null
+      }
+    },
+    {
+      "t": 47.265999999974156,
+      "state": {
+        "Aligned": "000",
+        "Cal": "0",
+        "Map1": "1",
+        "Map2": "2",
+        "Map3": "3",
+        "EN": "000",
+        "Fault": "0"
+      }
+    }
+  ],
+  "boot_messages": [
+    {
+      "t": 46.780999999988126,
+      "line": "--- STM32F407 System Clock: 168000000 Hz ---"
+    },
+    {
+      "t": 46.780999999988126,
+      "line": "--- APB1 Timer Clock: 84000000 Hz ---"
+    },
+    {
+      "t": 46.780999999988126,
+      "line": "--- APB2 Timer Clock: 168000000 Hz ---"
+    },
+    {
+      "t": 46.96899999998277,
+      "line": "3 motors initialized and IDLE (Safe Lock Mode)."
+    },
+    {
+      "t": 46.96899999998277,
+      "line": "Init LSM6DSRTR on SPI2 (PB12=CS, PB13=SCK, PB14=MISO, PB15=MOSI)..."
+    },
+    {
+      "t": 47.062999999994645,
+      "line": "LSM6DSRTR ready! WHO_AM_I=0x6B"
+    },
+    {
+      "t": 47.062999999994645,
+      "line": "Encoder mode: I2C absolute (I2C1 PB6/PB7, I2C2 PF1/PF0, I2C3 PA8/PC9)"
+    },
+    {
+      "t": 47.062999999994645,
+      "line": "MT6701: M1=ONLINE(82.2 deg), M2=ONLINE(87.6 deg), M3=ONLINE(119.7 deg)"
+    },
+    {
+      "t": 47.07799999997951,
+      "line": "System initialized. Motors idle, waiting for UpperComputer Self-Test (TEST)..."
+    }
+  ],
+  "current_state": {
+    "App": "0",
+    "Dbg": "1",
+    "Mode": "1",
+    "BMode": "1",
+    "Bal": "0",
+    "Cal": "0",
+    "IMU": "1",
+    "Aligned": "000",
+    "EN": "000",
+    "Fault": "0",
+    "Trip": "1",
+    "Tilt": "15.32",
+    "PoseTilt": "90.34",
+    "Angle": "15.32",
+    "TripDeg": "20.0",
+    "CapDeg": "10.00",
+    "Auto": "0",
+    "BReason": "0",
+    "FullSpeed": "250.0",
+    "FullMs": "0",
+    "RetryMs": "0",
+    "EdgeReady": "0",
+    "Wheel": "0.00",
+    "Rate": "0.011",
+    "YawD": "3.00",
+    "YawTune": "1",
+    "Trim1": "0.000",
+    "Trim2": "0.000",
+    "Trim3": "0.000",
+    "BTrim": "0.0",
+    "TrimTune": "1",
+    "U1": "0.00",
+    "U2": "0.00",
+    "U3": "0.00",
+    "D1": "1",
+    "D2": "1",
+    "D3": "1",
+    "Enc": "111",
+    "VLimit": "5.00",
+    "SLimit": "180.00",
+    "EncType": "0",
+    "C1": "16384",
+    "C2": "16384",
+    "C3": "16384",
+    "Map1": "1",
+    "Map2": "2",
+    "Map3": "3",
+    "PP1": "7",
+    "PP2": "7",
+    "PP3": "7",
+    "Dir1": "1",
+    "Dir2": "1",
+    "Dir3": "1",
+    "Ref": "0",
+    "Axis1": "1",
+    "Axis2": "2",
+    "Axis3": "3",
+    "AxesOK": "0",
+    "DirOK": "0",
+    "AxisMask": "0",
+    "DirMask": "0",
+    "CountMs": "0",
+    "CornerStart": "1"
+  },
+  "next_action": "Operator place frame steadily with all flywheels clear; repeat three-axis alignment and static IMU calibration before any corner trial."
+}
