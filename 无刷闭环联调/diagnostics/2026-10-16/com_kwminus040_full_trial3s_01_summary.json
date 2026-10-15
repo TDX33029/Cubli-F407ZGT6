@@ -1,0 +1,177 @@
+{
+  "utc_started": "2026-10-15T18:01:09.160409+00:00",
+  "settings": {
+    "port": "COM7",
+    "tag": "com_kwminus040_full_trial3s_01",
+    "seconds": 3.0,
+    "wait_seconds": 180.0,
+    "countdown": 2,
+    "capture_angle": 1.0,
+    "voltage": 6.0,
+    "wheel_bound": 220.0,
+    "kp": 80.0,
+    "kd": 5.0,
+    "kw": [
+      -0.04,
+      -0.04,
+      -0.04
+    ],
+    "yaw_damping": 3.0,
+    "body_axes": [
+      2,
+      3,
+      1
+    ],
+    "directions": [
+      -1,
+      -1,
+      -1
+    ],
+    "expected_pose": "无刷闭环联调\\diagnostics\\2026-10-14\\repaired_corner_hand_pose_still_summary.json",
+    "reference_gravity": [
+      -0.7028287890572913,
+      0.397786931032426,
+      0.589743377048073
+    ],
+    "prepare_only": false,
+    "output_dir": "无刷闭环联调\\diagnostics\\2026-10-16",
+    "live_state": ".codex-debug\\20261016-com-validation\\live.json",
+    "probe_motor": null,
+    "probe_voltage": 3,
+    "probe_ms": 80
+  },
+  "result": "bounded_run_completed",
+  "reference": {
+    "gravity": [
+      -0.7028287890572913,
+      0.397786931032426,
+      0.589743377048073
+    ],
+    "pitch_deg": 23.439901557157288,
+    "roll_deg": 50.00000003017076,
+    "neutral_verified": false
+  },
+  "hands_off_verified": true,
+  "cable_free_verified": true,
+  "active_samples": 151,
+  "run_duration_s": 3.0,
+  "last_state": {
+    "App": "1",
+    "Dbg": "3",
+    "Mode": "1",
+    "BMode": "4",
+    "Bal": "0",
+    "Cal": "1",
+    "IMU": "1",
+    "Aligned": "111",
+    "EN": "000",
+    "Fault": "0",
+    "Trip": "1",
+    "Tilt": "34.73",
+    "PoseTilt": "34.73",
+    "Angle": "34.73",
+    "TripDeg": "20.0",
+    "CapDeg": "1.00",
+    "Auto": "0",
+    "BReason": "0",
+    "FullSpeed": "250.0",
+    "FullMs": "0",
+    "RetryMs": "0",
+    "EdgeReady": "0",
+    "Wheel": "60.80",
+    "Rate": "2.234",
+    "YawD": "3.00",
+    "YawTune": "1",
+    "Trim1": "0.000",
+    "Trim2": "0.000",
+    "Trim3": "0.000",
+    "BTrim": "0.0",
+    "TrimTune": "1",
+    "U1": "0.00",
+    "U2": "0.00",
+    "U3": "0.00",
+    "D1": "-1",
+    "D2": "-1",
+    "D3": "-1",
+    "Enc": "111",
+    "VLimit": "2.50",
+    "SLimit": "15.00",
+    "EncType": "0",
+    "C1": "16384",
+    "C2": "16384",
+    "C3": "16384",
+    "Map1": "3",
+    "Map2": "1",
+    "Map3": "2",
+    "PP1": "7",
+    "PP2": "7",
+    "PP3": "7",
+    "Dir1": "1",
+    "Dir2": "1",
+    "Dir3": "1",
+    "Ref": "1",
+    "Axis1": "2",
+    "Axis2": "3",
+    "Axis3": "1",
+    "AxesOK": "1",
+    "DirOK": "1",
+    "AxisMask": "7",
+    "DirMask": "7",
+    "CountMs": "0",
+    "CornerStart": "1"
+  },
+  "tilt_deg_max": 1.541510441748457,
+  "wheel_ranges": {
+    "M1": [
+      -77.04,
+      7.95
+    ],
+    "M2": [
+      -13.67,
+      13.54
+    ],
+    "M3": [
+      -30.54,
+      69.83
+    ]
+  },
+  "frequency": [
+    "$FREQ,M:1,Map:3,PP:7,Hz:2115,GapUs:3213,ReadUs:125,Errors:0#",
+    "$FREQ,M:2,Map:1,PP:7,Hz:2116,GapUs:3106,ReadUs:125,Errors:0#",
+    "$FREQ,M:3,Map:2,PP:7,Hz:2116,GapUs:3104,ReadUs:125,Errors:0#"
+  ],
+  "operator_feedback": {
+    "reply": "这一组效果比较不错 没有外界干扰 平衡状态不错",
+    "autonomous_balance_verified_for_completed_run": true
+  },
+  "review": {
+    "settings_change_from_historical_full_loop": "Only Kw-.030->-.040; Kp80/Kd5, BYAW3, BTRIM0, same reference and protection. Entry1degree/2s retained.",
+    "peak_body_rate_rad_s": 0.28678563422877373,
+    "last_active_frame": {
+      "T": "294287552",
+      "R1": "0.00",
+      "V1": "-66.06",
+      "U1": "-1.65",
+      "R2": "0.00",
+      "V2": "0.36",
+      "U2": "-0.14",
+      "R3": "0.00",
+      "V3": "72.25",
+      "U3": "2.37",
+      "Tilt": "0.57",
+      "Angle": "0.57",
+      "Rate": "0.225",
+      "Bal": "3",
+      "Wx": "0.161",
+      "Wy": "-0.109",
+      "Wz": "-0.112",
+      "Pit": "23.69",
+      "Rol": "49.44",
+      "T1": "0.000",
+      "T2": "0.000",
+      "T3": "0.000"
+    },
+    "timed_stop": true,
+    "next_validation": "Same parameters, bounded5s, not long-run proof"
+  }
+}

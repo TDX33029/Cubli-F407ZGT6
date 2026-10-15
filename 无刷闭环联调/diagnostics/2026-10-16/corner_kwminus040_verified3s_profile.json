@@ -1,0 +1,27 @@
+{
+  "status": "user_confirmed_autonomous3s_only",
+  "source": "com_kwminus040_full_trial3s_01",
+  "reference_gravity": [
+    -0.7028287890572913,
+    0.397786931032426,
+    0.589743377048073
+  ],
+  "LQR_each": [
+    80,
+    5,
+    -0.04,
+    0
+  ],
+  "BYAW": 3,
+  "BTRIM": 0,
+  "U": 6,
+  "L": 240,
+  "BCAP": 1,
+  "BSTART": 2,
+  "host_wheel_guard": 220,
+  "host_body_rate_guard": 1.5,
+  "host_tilt_guard_deg": 10,
+  "firmware_fall_deg": 20,
+  "next_step": "5s same-parameter validation",
+  "production_defaults_updated": false
+}
