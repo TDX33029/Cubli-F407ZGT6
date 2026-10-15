@@ -189,6 +189,12 @@
       "seconds": 5,
       "reason": "Change only M3 wheel coefficient after M3 momentum/voltage accumulation; no protection changes"
     },
-    "long_term_verified": false
+    "long_term_verified": false,
+    "guard_rate_decomposition": {
+      "vertical_spin_rad_s": -1.3815132587036143,
+      "tilt_plane_rate_rad_s": 0.7932024432804784,
+      "norm_rad_s": 1.5930313870103125,
+      "using": "Fixed reference unit gravity"
+    }
   }
 }

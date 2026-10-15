@@ -1,0 +1,195 @@
+{
+  "utc_started": "2026-10-15T18:24:33.948979+00:00",
+  "settings": {
+    "port": "COM7",
+    "tag": "corner_immediate_kw040_040_050_trial5s_01",
+    "seconds": 5.0,
+    "wait_seconds": 180.0,
+    "countdown": 2,
+    "capture_angle": 1.0,
+    "voltage": 6.0,
+    "wheel_bound": 220.0,
+    "kp": 80.0,
+    "kd": 5.0,
+    "kw": [
+      -0.04,
+      -0.04,
+      -0.05
+    ],
+    "yaw_damping": 3.0,
+    "body_axes": [
+      2,
+      3,
+      1
+    ],
+    "directions": [
+      -1,
+      -1,
+      -1
+    ],
+    "expected_pose": "无刷闭环联调\\diagnostics\\2026-10-14\\repaired_corner_hand_pose_still_summary.json",
+    "reference_gravity": [
+      -0.7028287890572913,
+      0.397786931032426,
+      0.589743377048073
+    ],
+    "prepare_only": false,
+    "output_dir": "无刷闭环联调\\diagnostics\\2026-10-16",
+    "live_state": ".codex-debug\\20261016-com-validation\\live.json",
+    "probe_motor": null,
+    "probe_voltage": 3,
+    "probe_ms": 80
+  },
+  "result": "stopped",
+  "reference": {
+    "gravity": [
+      -0.7028287890572913,
+      0.397786931032426,
+      0.589743377048073
+    ],
+    "pitch_deg": 23.439901557157288,
+    "roll_deg": 50.00000003017076,
+    "neutral_verified": false
+  },
+  "hands_off_verified": false,
+  "cable_free_verified": false,
+  "active_samples": 160,
+  "guard_frame": {
+    "T": "678123729",
+    "R1": "0.00",
+    "V1": "-73.69",
+    "U1": "-3.44",
+    "R2": "0.00",
+    "V2": "54.18",
+    "U2": "0.49",
+    "R3": "0.00",
+    "V3": "-189.91",
+    "U3": "-6.00",
+    "Tilt": "2.71",
+    "Angle": "2.71",
+    "Rate": "1.669",
+    "Bal": "3",
+    "Wx": "1.550",
+    "Wy": "-0.248",
+    "Wz": "-0.566",
+    "Pit": "26.11",
+    "Rol": "50.45",
+    "T1": "0.000",
+    "T2": "0.000",
+    "T3": "0.000",
+    "S1": "-73.69",
+    "Gx": "88.8084582452776",
+    "S2": "54.18",
+    "Gy": "-14.209353319244416",
+    "S3": "-189.91",
+    "Gz": "-32.429411204404595"
+  },
+  "error": "RuntimeError('Corner body rate/tilt bound')",
+  "run_duration_s": 3.2030000000086147,
+  "last_state": {
+    "App": "1",
+    "Dbg": "3",
+    "Mode": "1",
+    "BMode": "4",
+    "Bal": "0",
+    "Cal": "1",
+    "IMU": "1",
+    "Aligned": "111",
+    "EN": "000",
+    "Fault": "0",
+    "Trip": "1",
+    "Tilt": "55.92",
+    "PoseTilt": "55.92",
+    "Angle": "55.92",
+    "TripDeg": "20.0",
+    "CapDeg": "1.00",
+    "Auto": "0",
+    "BReason": "0",
+    "FullSpeed": "250.0",
+    "FullMs": "0",
+    "RetryMs": "0",
+    "EdgeReady": "0",
+    "Wheel": "170.33",
+    "Rate": "3.631",
+    "YawD": "3.00",
+    "YawTune": "1",
+    "Trim1": "0.000",
+    "Trim2": "0.000",
+    "Trim3": "0.000",
+    "BTrim": "0.0",
+    "TrimTune": "1",
+    "U1": "0.00",
+    "U2": "0.00",
+    "U3": "0.00",
+    "D1": "-1",
+    "D2": "-1",
+    "D3": "-1",
+    "Enc": "111",
+    "VLimit": "2.50",
+    "SLimit": "15.00",
+    "EncType": "0",
+    "C1": "16384",
+    "C2": "16384",
+    "C3": "16384",
+    "Map1": "3",
+    "Map2": "1",
+    "Map3": "2",
+    "PP1": "7",
+    "PP2": "7",
+    "PP3": "7",
+    "Dir1": "1",
+    "Dir2": "1",
+    "Dir3": "1",
+    "Ref": "1",
+    "Axis1": "2",
+    "Axis2": "3",
+    "Axis3": "1",
+    "AxesOK": "1",
+    "DirOK": "1",
+    "AxisMask": "7",
+    "DirMask": "7",
+    "CountMs": "0",
+    "CornerStart": "1"
+  },
+  "tilt_deg_max": 2.871892816068035,
+  "wheel_ranges": {
+    "M1": [
+      -136.32,
+      29.1
+    ],
+    "M2": [
+      -21.4,
+      73.14
+    ],
+    "M3": [
+      -189.21,
+      0.71
+    ]
+  },
+  "frequency": [
+    "$FREQ,M:1,Map:3,PP:7,Hz:2139,GapUs:3108,ReadUs:125,Errors:0#",
+    "$FREQ,M:2,Map:1,PP:7,Hz:2139,GapUs:3108,ReadUs:125,Errors:0#",
+    "$FREQ,M:3,Map:2,PP:7,Hz:2139,GapUs:3108,ReadUs:124,Errors:0#"
+  ],
+  "review": {
+    "guard_rate_decomposition": {
+      "vertical_spin_rad_s": -1.5218305333440525,
+      "tilt_plane_rate_rad_s": 0.6843915748909809,
+      "norm_rad_s": 1.668640164924721,
+      "using": "Fixed reference unit gravity"
+    },
+    "outcome": "M3-.05 did not improve this repeat;3.203s body-rate guard. No autonomous longer-duration verification.",
+    "next_candidate": {
+      "kp": 80,
+      "kd": 5,
+      "kw": [
+        -0.04,
+        -0.04,
+        -0.04
+      ],
+      "yaw_damping": 6,
+      "seconds": 5,
+      "reason": "Restore previous uniform wheel term; isolate higher independent vertical-spin damping, guard dominated by yaw"
+    }
+  }
+}
