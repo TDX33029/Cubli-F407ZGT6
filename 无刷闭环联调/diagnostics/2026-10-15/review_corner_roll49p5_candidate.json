@@ -1,0 +1,44 @@
+{
+  "name": "Experimental Roll49.5deg reference, other control settings unchanged",
+  "reference": {
+    "pitch_deg": 23.439901557157267,
+    "roll_deg": 49.5,
+    "gravity": [
+      -0.6976556106620866,
+      0.3977869310324257,
+      0.5958541821717083
+    ],
+    "neutral_verified": false
+  },
+  "runtime": {
+    "LQR_each": [
+      80,
+      5,
+      -0.03,
+      0
+    ],
+    "BYAW": 3,
+    "BTRIM": 0,
+    "BCAP": 0.5,
+    "BSTART": 2,
+    "U": 6,
+    "BU": 6,
+    "L": 240,
+    "host_wheel_bound": 220,
+    "host_tilt_bound_deg": 10,
+    "host_gyro_norm_bound_rad_s": 1.5,
+    "run_seconds": 8
+  },
+  "body_axes": [
+    2,
+    3,
+    1
+  ],
+  "body_directions": [
+    -1,
+    -1,
+    -1
+  ],
+  "balance_verified": false,
+  "hypothesis": "Reducing the Roll reference by0.5deg may reduce sustained M1 acceleration; the neutral pose has not been identified."
+}
