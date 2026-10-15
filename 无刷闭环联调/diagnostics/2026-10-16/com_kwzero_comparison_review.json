@@ -1,0 +1,106 @@
+{
+  "comparisons": [
+    {
+      "source": "com_candidate_trial5s_cap1_01",
+      "reference": {
+        "gravity": [
+          -0.6930374040189499,
+          0.417914490743475,
+          0.587406703279165
+        ],
+        "pitch_deg": 24.702990422491794,
+        "roll_deg": 49.71595731897284,
+        "neutral_verified": false
+      },
+      "kw": [
+        -0.03,
+        -0.03,
+        -0.03
+      ],
+      "duration_s": 1.110000000015134,
+      "guard_tilt_deg": "9.75",
+      "guard_rate_rad_s": "1.512",
+      "guard_wheels_rad_s": [
+        "-165.61",
+        "-108.59",
+        "-176.03"
+      ],
+      "guard_U_V": [
+        "-6.00",
+        "-6.00",
+        "-6.00"
+      ],
+      "final_disabled": true,
+      "hands_off_verified": true
+    },
+    {
+      "source": "com_oldref_comparison_trial5s_01",
+      "reference": {
+        "gravity": [
+          -0.7028287890572913,
+          0.397786931032426,
+          0.589743377048073
+        ],
+        "pitch_deg": 23.439901557157288,
+        "roll_deg": 50.00000003017076,
+        "neutral_verified": false
+      },
+      "kw": [
+        -0.03,
+        -0.03,
+        -0.03
+      ],
+      "duration_s": 1.4839999999967404,
+      "guard_tilt_deg": "6.57",
+      "guard_rate_rad_s": "1.613",
+      "guard_wheels_rad_s": [
+        "-197.45",
+        "19.27",
+        "-129.10"
+      ],
+      "guard_U_V": [
+        "-6.00",
+        "-0.44",
+        "-6.00"
+      ],
+      "final_disabled": true,
+      "hands_off_verified": true
+    },
+    {
+      "source": "com_kwzero_trial3s_01",
+      "reference": {
+        "gravity": [
+          -0.7028287890572913,
+          0.397786931032426,
+          0.589743377048073
+        ],
+        "pitch_deg": 23.439901557157288,
+        "roll_deg": 50.00000003017076,
+        "neutral_verified": false
+      },
+      "kw": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "duration_s": 1.2660000000032596,
+      "guard_tilt_deg": "7.87",
+      "guard_rate_rad_s": "1.652",
+      "guard_wheels_rad_s": [
+        "-167.22",
+        "39.37",
+        "-75.00"
+      ],
+      "guard_U_V": [
+        "-6.00",
+        "0.63",
+        "-4.78"
+      ],
+      "final_disabled": true,
+      "hands_off_verified": false
+    }
+  ],
+  "production_defaults_changed": false,
+  "conclusion": "Neither swapping reference nor removing wheel-speed feedback recovered corner balance. Need separate passive gravity response from actuator influence; no evidence warrants raising protection bounds.",
+  "next_step": "Bounded zero-output release for up to1s: all LQR gains0, BYAW0, BTRIM0. Reuse countdown/entry/guards, observe gravity response at actual contact point. Fresh positioning required."
+}
