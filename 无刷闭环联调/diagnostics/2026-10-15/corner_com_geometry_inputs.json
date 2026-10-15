@@ -1,0 +1,19 @@
+{
+  "cube_side_mm": 70,
+  "coordinate_definition": "Projections on the outward normals of motor faces M1, M2, M3; body center is origin. This is not an assertion about IMU signs or handedness.",
+  "support_corner_motor_face_mm": [35, 35, -35],
+  "support_evidence": "User: intersection of M1 and M2 faces, end away from M3; mainboard opposite M2.",
+  "mainboard_outward_motor_face": [0, -1, 0],
+  "battery_direction_motor_face": [1, 0, 0],
+  "battery_evidence": "User: very light, outside along the M1 rotation axis; mass and exact COM position unknown.",
+  "frame_and_mainboard_mass_kg_approx": 0.05,
+  "each_wheel_annuli_mass_kg_estimate": 0.05913682960236808,
+  "mass_limitations": "Annuli estimate excludes spokes/fasteners/rotor; total mass and component centers are unmeasured. Static suspension does not need these masses.",
+  "unsigned_imu_axes_M1_M2_M3": [2, 3, 1],
+  "signed_motor_face_normals_imu": null,
+  "suspension_observations": [],
+  "observation_format": {
+    "point_motor_face_mm": "Known suspension corner, e.g. [35,35,35]; use the actual attachment point",
+    "gravity_up_imu": "Averaged normalized accelerometer direction while freely suspended, stationary, motors disabled and cables slack"
+  }
+}

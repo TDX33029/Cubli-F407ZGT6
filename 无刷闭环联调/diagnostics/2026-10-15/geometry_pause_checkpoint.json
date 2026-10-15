@@ -1,0 +1,34 @@
+{
+  "task_state": "paused_by_user",
+  "user_request": "无法静态悬挂 先中断任务等待恢复",
+  "last_confirmed_device_state": {
+    "source": "com_face_m3_up_01_summary.json",
+    "EN": "000",
+    "Auto": "0",
+    "Bal": "0",
+    "Fault": "0"
+  },
+  "pause_stop_sent": true,
+  "pause_stop_acknowledged": false,
+  "pause_serial_observation": "COM7 opened, STOP was written, but no RX frames received in the two bounded readbacks; do not claim a fresh device confirmation.",
+  "owned_helpers_stopped": true,
+  "wheel_feedback_minus04_experiment_started": false,
+  "last_trial_runtime_reference": {
+    "pitch_deg": 23.43990155713207,
+    "roll_deg": 49.499999999982634,
+    "LQR_each": [
+      80,
+      5,
+      -0.03,
+      0
+    ]
+  },
+  "actual_com_measured": false,
+  "hanging_capture_started": false,
+  "confirmed_face_directions": {
+    "M1": "IMU -Y",
+    "M3": "IMU -X"
+  },
+  "M2_face_reading": "Moved during capture; unsuitable for a static measurement. Opposite-mainboard installation is known, signed static confirmation is incomplete.",
+  "resume": "First check connection and disabled state. Agree on a feasible COM measurement method before any motor trial. Prior readiness answers are superseded by this pause."
+}

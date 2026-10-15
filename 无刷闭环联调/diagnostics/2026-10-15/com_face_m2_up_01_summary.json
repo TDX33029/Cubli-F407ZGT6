@@ -1,0 +1,113 @@
+{
+  "motor_motion_commanded": false,
+  "neutral_verified": false,
+  "samples": 79,
+  "last_state": {
+    "App": "1",
+    "Dbg": "3",
+    "Mode": "1",
+    "BMode": "4",
+    "Bal": "0",
+    "Cal": "1",
+    "IMU": "1",
+    "Aligned": "111",
+    "EN": "000",
+    "Fault": "0",
+    "Trip": "1",
+    "Tilt": "85.15",
+    "PoseTilt": "85.15",
+    "Angle": "85.15",
+    "TripDeg": "20.0",
+    "CapDeg": "0.50",
+    "Auto": "0",
+    "BReason": "0",
+    "FullSpeed": "250.0",
+    "FullMs": "0",
+    "RetryMs": "0",
+    "EdgeReady": "0",
+    "Wheel": "0.30",
+    "Rate": "0.758",
+    "YawD": "3.00",
+    "YawTune": "1",
+    "Trim1": "0.000",
+    "Trim2": "0.000",
+    "Trim3": "0.000",
+    "BTrim": "0.0",
+    "TrimTune": "1",
+    "U1": "0.00",
+    "U2": "0.00",
+    "U3": "0.00",
+    "D1": "-1",
+    "D2": "-1",
+    "D3": "-1",
+    "Enc": "111",
+    "VLimit": "2.50",
+    "SLimit": "15.00",
+    "EncType": "0",
+    "C1": "16384",
+    "C2": "16384",
+    "C3": "16384",
+    "Map1": "3",
+    "Map2": "1",
+    "Map3": "2",
+    "PP1": "7",
+    "PP2": "7",
+    "PP3": "7",
+    "Dir1": "1",
+    "Dir2": "1",
+    "Dir3": "1",
+    "Ref": "1",
+    "Axis1": "2",
+    "Axis2": "3",
+    "Axis3": "1",
+    "AxesOK": "1",
+    "DirOK": "1",
+    "AxisMask": "7",
+    "DirMask": "7",
+    "CountMs": "0",
+    "CornerStart": "1"
+  },
+  "ranges": {
+    "Pit": {
+      "median": -42.12,
+      "min": -89.19,
+      "max": 3.42
+    },
+    "Rol": {
+      "median": -94.52,
+      "min": -179.95,
+      "max": 179.9
+    },
+    "Ax": {
+      "median": 0.57,
+      "min": -0.5,
+      "max": 1.04
+    },
+    "Ay": {
+      "median": -0.69,
+      "min": -1.23,
+      "max": 0.3
+    },
+    "Az": {
+      "median": -0.27,
+      "min": -0.79,
+      "max": 0.18
+    },
+    "Gx": {
+      "median": -15.0,
+      "min": -138.5,
+      "max": 47.0
+    },
+    "Gy": {
+      "median": 8.9,
+      "min": -36.0,
+      "max": 141.3
+    },
+    "Gz": {
+      "median": 10.2,
+      "min": -130.6,
+      "max": 153.5
+    }
+  },
+  "captured_candidate": null
+}

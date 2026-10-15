@@ -1,0 +1,67 @@
+{
+  "kind": "synthetic_math_checks_only",
+  "real_com_measured": false,
+  "checks": [
+    "known COM recovered from three suspension gravity lines",
+    "orthogonal coordinate-change invariance, including motor-face projection parity",
+    "incorrect accelerometer up/down convention rejected",
+    "parallel-line non-identifiability rejected",
+    "closed-form ideal firmware-angle conversion",
+    "incomplete real input does not generate a COM target",
+    "full synthetic input gives correct COM and target"
+  ],
+  "synthetic_result": {
+    "support_corner_motor_face_mm": [
+      35.0,
+      35.0,
+      -35.0
+    ],
+    "geometric_center_reference_motor_face": [
+      -0.5773502691896258,
+      -0.5773502691896258,
+      0.5773502691896258
+    ],
+    "geometric_case_only": true,
+    "board_normal_to_vertical_deg_if_com_at_center": 54.735610317245346,
+    "actual_com_reference_available": true,
+    "physical_balance_verified": false,
+    "geometric_case_imu_angles": {
+      "pitch_deg": 35.264389682754654,
+      "roll_deg": 45.0
+    },
+    "suspension_fit": {
+      "center_mm": [
+        7.999999999999985,
+        -3.9999999999999902,
+        4.999999999999982
+      ],
+      "condition_number": 3.1758064939636097,
+      "line_residuals_mm": [
+        1.742767266337458e-14,
+        6.922980927079198e-15,
+        1.6482310036066487e-14
+      ],
+      "rms_residual_mm": 1.4414321391165733e-14,
+      "com_below_suspension_mm": [
+        56.12486080160913,
+        70.49822692805826,
+        50.89204259999792
+      ],
+      "geometry_quality_ok": true
+    },
+    "center_motor_face_mm": [
+      7.999999999999985,
+      -3.9999999999999902,
+      4.999999999999982
+    ],
+    "reference_gravity_imu": [
+      -0.6446583712203041,
+      0.4351444005737056,
+      0.6285419119397966
+    ],
+    "reference_angles": {
+      "pitch_deg": 25.794482665698823,
+      "roll_deg": 45.72522429905925
+    }
+  }
+}

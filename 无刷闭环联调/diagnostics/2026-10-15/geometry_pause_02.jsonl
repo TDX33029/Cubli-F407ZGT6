@@ -1,0 +1,11 @@
+{"t": 0.0, "kind": "tx", "data": "PING"}
+{"t": 0.0, "kind": "tx", "data": "STOP"}
+{"t": 0.0, "kind": "tx", "data": "FAST 0"}
+{"t": 0.0, "kind": "tx", "data": "STATE?"}
+{"t": 0.25, "kind": "tx", "data": "PING"}
+{"t": 0.5, "kind": "tx", "data": "PING"}
+{"t": 0.75, "kind": "tx", "data": "PING"}
+{"t": 1.0, "kind": "tx", "data": "PING"}
+{"t": 1.25, "kind": "tx", "data": "PING"}
+{"t": 1.5, "kind": "tx", "data": "PING"}
+{"t": 1.75, "kind": "tx", "data": "PING"}

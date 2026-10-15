@@ -1,0 +1,20 @@
+{
+  "support_corner_motor_face_mm": [
+    35.0,
+    35.0,
+    -35.0
+  ],
+  "geometric_center_reference_motor_face": [
+    -0.5773502691896258,
+    -0.5773502691896258,
+    0.5773502691896258
+  ],
+  "geometric_case_only": true,
+  "board_normal_to_vertical_deg_if_com_at_center": 54.735610317245346,
+  "actual_com_reference_available": false,
+  "physical_balance_verified": false,
+  "missing": [
+    "signed motor-face normals in the IMU frame",
+    "two or more static free-suspension observations"
+  ]
+}
