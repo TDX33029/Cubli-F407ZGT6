@@ -141,6 +141,18 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertIn('BCAP 2', device.commands)
         self.assertGreaterEqual(result['run_duration_s'], 3)
 
+    def test_finite_trial_clears_previous_experimental_trim(self):
+        device, _, code = self.run_trial()
+        self.assertEqual(code, 0)
+        self.assertIn('BTRIM 0', device.commands)
+        self.assertLess(device.commands.index('BTRIM 0'), device.commands.index('BSTART 8'))
+
+    def test_finite_trial_refuses_trim_not_disabled(self):
+        device, result, code = self.run_trial(fault='trim_not_applied')
+        self.assertEqual(code, 2)
+        self.assertIn('Tilt trim disabled', result['error'])
+        self.assertNotIn('BSTART 8', device.commands)
+
     def test_m2_speed_trips_and_stops_every_axis(self):
         _, result, code = self.run_trial(fault='M2_speed')
         self.assertEqual(code, 2)

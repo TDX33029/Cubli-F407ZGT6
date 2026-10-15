@@ -219,6 +219,11 @@ try:
             raise RuntimeError('Independent yaw tuning requires updated firmware')
         command(f'BYAW {args.yaw_damping}')
         confirm(lambda d: abs(float(d.get('YawD', -1)) - args.yaw_damping) < .011, 'Yaw damping')
+    # A finite baseline trial must also clear an integral left by a previous
+    # experimental session. Legacy firmware predates this feature entirely.
+    if state.get('TrimTune') == '1':
+        command('BTRIM 0')
+        confirm(lambda d: abs(float(d.get('BTrim', -1))) < .011, 'Tilt trim disabled')
     confirm(lambda d: d.get('BMode') == '4' and d.get('AxisMask') == '7' and d.get('DirMask') == '7'
             and all(d.get(f'Axis{i}') == str(args.body_axes[i-1])
                     and d.get(f'D{i}') == str(args.directions[i-1]) for i in (1, 2, 3))
