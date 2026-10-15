@@ -1,0 +1,45 @@
+{
+  "name": "Experimental wheel feedback -0.040 with original Roll50 reference",
+  "reference": {
+    "gravity": [
+      -0.7028287890572913,
+      0.3977869310324257,
+      0.5897433770480731
+    ],
+    "pitch_deg": 23.439901557157267,
+    "roll_deg": 50.00000003017075,
+    "neutral_verified": false
+  },
+  "runtime": {
+    "LQR_each": [
+      80,
+      5,
+      -0.04,
+      0
+    ],
+    "BYAW": 3,
+    "BTRIM": 0,
+    "BCAP": 0.5,
+    "BSTART": 2,
+    "U": 6,
+    "BU": 6,
+    "L": 240,
+    "host_wheel_bound": 220,
+    "host_tilt_bound_deg": 10,
+    "host_gyro_norm_bound_rad_s": 1.5,
+    "run_seconds": 8
+  },
+  "body_axes": [
+    2,
+    3,
+    1
+  ],
+  "body_directions": [
+    -1,
+    -1,
+    -1
+  ],
+  "balance_verified": false,
+  "comparison_baseline": "review_entry2s_halfdeg_trial8s_01 (Roll50, Kw=-0.030, Ki=0)",
+  "hypothesis": "Change only the common wheel-speed gain relative to the Roll50 baseline and observe momentum buildup. This is an empirical trial, not a model stability guarantee. Earlier -0.05 records also changed Ki and do not isolate Kw."
+}
