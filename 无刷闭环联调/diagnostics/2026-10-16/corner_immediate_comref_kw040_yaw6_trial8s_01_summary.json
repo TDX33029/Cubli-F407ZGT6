@@ -1,0 +1,192 @@
+{
+  "utc_started": "2026-10-15T18:42:31.862740+00:00",
+  "settings": {
+    "port": "COM7",
+    "tag": "corner_immediate_comref_kw040_yaw6_trial8s_01",
+    "seconds": 8.0,
+    "wait_seconds": 180.0,
+    "countdown": 2,
+    "capture_angle": 1.0,
+    "voltage": 6.0,
+    "wheel_bound": 220.0,
+    "kp": 80.0,
+    "kd": 5.0,
+    "kw": [
+      -0.04,
+      -0.04,
+      -0.04
+    ],
+    "yaw_damping": 6.0,
+    "body_axes": [
+      2,
+      3,
+      1
+    ],
+    "directions": [
+      -1,
+      -1,
+      -1
+    ],
+    "expected_pose": "无刷闭环联调\\diagnostics\\2026-10-14\\repaired_corner_hand_pose_still_summary.json",
+    "reference_gravity": [
+      -0.6930374040189499,
+      0.417914490743475,
+      0.587406703279165
+    ],
+    "prepare_only": false,
+    "output_dir": "无刷闭环联调\\diagnostics\\2026-10-16",
+    "live_state": ".codex-debug\\20261016-com-validation\\live.json",
+    "probe_motor": null,
+    "probe_voltage": 3,
+    "probe_ms": 80
+  },
+  "result": "stopped",
+  "reference": {
+    "gravity": [
+      -0.6930374040189499,
+      0.417914490743475,
+      0.587406703279165
+    ],
+    "pitch_deg": 24.702990422491794,
+    "roll_deg": 49.71595731897284,
+    "neutral_verified": false
+  },
+  "hands_off_verified": false,
+  "cable_free_verified": false,
+  "active_samples": 307,
+  "guard_frame": {
+    "T": "1817690828",
+    "R1": "0.00",
+    "V1": "-118.45",
+    "U1": "-0.14",
+    "R2": "0.00",
+    "V2": "-195.75",
+    "U2": "-6.00",
+    "R3": "0.00",
+    "V3": "221.31",
+    "U3": "6.00",
+    "Tilt": "4.67",
+    "Angle": "4.67",
+    "Rate": "1.261",
+    "Bal": "3",
+    "Wx": "-1.201",
+    "Wy": "-0.055",
+    "Wz": "0.380",
+    "Pit": "21.84",
+    "Rol": "45.70",
+    "T1": "0.000",
+    "T2": "0.000",
+    "T3": "0.000",
+    "S1": "-118.45",
+    "Gx": "-68.81223119521188",
+    "S2": "-195.75",
+    "Gy": "-3.151267873219528",
+    "S3": "221.31",
+    "Gz": "21.772396214971284"
+  },
+  "error": "RuntimeError('Corner wheel speed bound')",
+  "run_duration_s": 6.140999999974156,
+  "last_state": {
+    "App": "1",
+    "Dbg": "3",
+    "Mode": "1",
+    "BMode": "4",
+    "Bal": "0",
+    "Cal": "1",
+    "IMU": "1",
+    "Aligned": "111",
+    "EN": "000",
+    "Fault": "0",
+    "Trip": "1",
+    "Tilt": "45.12",
+    "PoseTilt": "45.12",
+    "Angle": "45.12",
+    "TripDeg": "20.0",
+    "CapDeg": "1.00",
+    "Auto": "0",
+    "BReason": "0",
+    "FullSpeed": "250.0",
+    "FullMs": "0",
+    "RetryMs": "0",
+    "EdgeReady": "0",
+    "Wheel": "203.83",
+    "Rate": "0.121",
+    "YawD": "6.00",
+    "YawTune": "1",
+    "Trim1": "0.000",
+    "Trim2": "0.000",
+    "Trim3": "0.000",
+    "BTrim": "0.0",
+    "TrimTune": "1",
+    "U1": "0.00",
+    "U2": "0.00",
+    "U3": "0.00",
+    "D1": "-1",
+    "D2": "-1",
+    "D3": "-1",
+    "Enc": "111",
+    "VLimit": "2.50",
+    "SLimit": "15.00",
+    "EncType": "0",
+    "C1": "16384",
+    "C2": "16384",
+    "C3": "16384",
+    "Map1": "3",
+    "Map2": "1",
+    "Map3": "2",
+    "PP1": "7",
+    "PP2": "7",
+    "PP3": "7",
+    "Dir1": "1",
+    "Dir2": "1",
+    "Dir3": "1",
+    "Ref": "1",
+    "Axis1": "2",
+    "Axis2": "3",
+    "Axis3": "1",
+    "AxesOK": "1",
+    "DirOK": "1",
+    "AxisMask": "7",
+    "DirMask": "7",
+    "CountMs": "0",
+    "CornerStart": "1"
+  },
+  "tilt_deg_max": 3.418868656702388,
+  "wheel_ranges": {
+    "M1": [
+      -171.69,
+      18.41
+    ],
+    "M2": [
+      -198.1,
+      0.1
+    ],
+    "M3": [
+      -99.09,
+      219.36
+    ]
+  },
+  "frequency": [
+    "$FREQ,M:1,Map:3,PP:7,Hz:2295,GapUs:3167,ReadUs:125,Errors:0#",
+    "$FREQ,M:2,Map:1,PP:7,Hz:2295,GapUs:3107,ReadUs:125,Errors:0#",
+    "$FREQ,M:3,Map:2,PP:7,Hz:2295,GapUs:3107,ReadUs:125,Errors:0#"
+  ],
+  "review": {
+    "requested_duration_s": 8,
+    "actual_duration_s": 6.140999999974156,
+    "stop": "Wheel-speed guard M3+221.31rad/s, M2-195.75, U2-6/U3+6; body rate1.261 below host1.5 bound",
+    "interpretation": "Measured reference reduces neither all momentum nor oscillation enough for8s. Peak ranges include M3-99 to+219 before guard. No long-run COM/controller validation.",
+    "next_candidate": {
+      "kp": 80,
+      "kd": 8,
+      "kw": [
+        -0.04,
+        -0.04,
+        -0.04
+      ],
+      "yaw_damping": 6,
+      "seconds": 5,
+      "changed_parameter": "Tilt-rate damping5->8 with full wheel feedback enabled; earlier damping8 isolation used Kw0 and is not this controller."
+    }
+  }
+}
