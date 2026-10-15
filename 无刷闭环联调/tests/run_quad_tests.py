@@ -25,9 +25,9 @@ with contextlib.nullcontext(Path(tempfile.mkdtemp(prefix='cubli-quad-'))) as tmp
     def compile_case(defines,expect_success=True):
         cmd=['cl','/nologo','/std:c11','/utf-8','/W3','/D_CRT_SECURE_NO_WARNINGS']+['/D'+d for d in defines]+['/I'+str(tmp),'/I'+str(ST/'Hardware'),'/I'+str(ST/'SimpleFOC'),'quad_harness.c','/Fe:quad.exe']
         batch=tmp/'build.cmd'
-        # cmd.exe parses batch files with the ANSI codepage; UTF-8 would garble the Chinese workspace path.
-        batch.write_text('@echo off\ncall "'+vs+'\\VC\\Auxiliary\\Build\\vcvars64.bat" >nul\n'+subprocess.list2cmdline(cmd)+'\n',encoding='mbcs')
-        result=subprocess.run(['cmd.exe','/c',str(batch)],cwd=tmp,capture_output=True,text=True,encoding="gbk",errors='replace')
+        # Pin the batch codepage before reading the UTF-8 command; vcvars may change it.
+        batch.write_text('@echo off\nchcp 65001 >nul\ncall "'+vs+'\\VC\\Auxiliary\\Build\\vcvars64.bat" >nul\nchcp 65001 >nul\n'+subprocess.list2cmdline(cmd)+'\n',encoding='utf-8')
+        result=subprocess.run(['cmd.exe','/c',str(batch)],cwd=tmp,capture_output=True,text=True,encoding="utf-8",errors='replace')
         if expect_success:
             if result.returncode: print(result.stdout,result.stderr)
             result.check_returncode()

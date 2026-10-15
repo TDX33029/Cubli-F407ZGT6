@@ -17,7 +17,7 @@ AUTO_STATE = STATE.replace('App:0','App:1').replace('EN:010','EN:000').replace('
     ',Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:1,Wheel:0.0,Rate:0.0,Angle:0.1,PoseTilt:0.1,TripDeg:20.0,VLimit:6.0,SLimit:330.0,Ref:1,AxesOK:1,DirOK:1,Axis1:2,D1:-1#')
 CORNER_AUTO_STATE = AUTO_STATE.replace('BMode:1','BMode:4').replace('Aligned:100','Aligned:111').replace(
     'Axis1:2,D1:-1#','Axis1:2,Axis2:3,Axis3:1,D1:-1,D2:-1,D3:-1,AxisMask:7,DirMask:7,CornerStart:1,'
-    'BTrim:2.0,TrimTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000#')
+    'BTrim:0.0,TrimTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000#')
 class UpperTests(unittest.TestCase):
     def setUp(self):
         self.win = ui.MainWindow()
@@ -158,7 +158,7 @@ class UpperTests(unittest.TestCase):
         self.win.btn_corner_profile.click()
         self.assertTrue(self.win.edge_profile_pending)
         queued=self.queued()
-        for command in ('BMODE 4','BAXIS 2 3 1','BDIR -1 -1 -1','U 6','L 330','BYAW 3','BTRIM 2','BTRIP 20','BFULL 250','BCAP 2',
+        for command in ('BMODE 4','BAXIS 2 3 1','BDIR -1 -1 -1','U 6','L 330','BYAW 3','BTRIM 0','BTRIP 20','BFULL 250','BCAP 2',
                         'LQR1 80 5 -0.030 0','LQR2 80 5 -0.030 0','LQR3 80 5 -0.030 0',
                         'BREF -0.7028287890572913 0.3977869310324257 0.5897433770480731'):
             self.assertIn(command,queued)
@@ -167,6 +167,9 @@ class UpperTests(unittest.TestCase):
         self.assertTrue(self.win.edge_profile_pending)
         self.assertFalse(self.win.btn_auto_edge.isEnabled())
         self.win.worker._process_received_line('OK BREF')
+        self.win.worker._process_received_line(CORNER_AUTO_STATE.replace('BTrim:0.0','BTrim:2.0'))
+        self.assertTrue(self.win.edge_profile_pending)
+        self.assertFalse(self.win.btn_auto_edge.isEnabled())
         self.win.worker._process_received_line(CORNER_AUTO_STATE)
         self.assertFalse(self.win.edge_profile_pending)
         self.assertTrue(self.win.btn_auto_edge.isEnabled())

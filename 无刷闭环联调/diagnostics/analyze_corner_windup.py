@@ -12,13 +12,12 @@ Two candidate mechanisms:
   * speed self-feedback from a wrong-signed wheel gain -> a > 0, |a| growing
     with |K_w| (each wheel feeds its own speed back into its own voltage).
 
-With --settle it additionally reconstructs the gravity direction from the
-logged Pit/Rol of the stable stretch of each attempt. While the loop holds the
-cube, the body settles a fraction of the way from the saved reference towards
-the true neutral pose (where gravity torque is zero), so the mean settled
-gravity direction is a better reference than the one the run used -- feeding
-it back as BREF converges the reference onto the true neutral in a couple of
-runs, after which the wheels no longer need to ramp.
+With --settle it reconstructs the observed gravity-direction mean. This is
+an experimental candidate, not an identified neutral COM pose: accelerating
+wheels apply reaction torque even while the body attitude appears steady.
+Closed-loop derivative regressions are descriptive correlations, not a
+causal identification of gravity offset versus wheel feedback. Human/cable
+intervention must also be excluded using the accompanying field record.
 
 Usage: python diagnostics/analyze_corner_windup.py [glob] [--settle]
 """
@@ -229,17 +228,17 @@ def main():
                 if quiet:
                     clean.append((r["file"], s["gravity"], ang))
     if settle and best:
+        print('\nEXPERIMENTAL: attitude means do not identify the zero-torque COM pose; no convergence guarantee.')
         fname, dur, g, ang = best
         print(f"\nlongest-run settle candidate from {fname} ({dur:.1f}s):")
         print("--reference-gravity " + " ".join(f"{v:.9f}" for v in g))
         if ang is not None:
             print(f"(mean settled pose sits {ang:.3f} deg from the reference that run used)")
     if settle and clean:
-        # The loop settles a fraction of the way from the saved reference towards
-        # the true neutral pose, so the mean settled direction of several clean
-        # (Kw=-0.03, Ki=0) runs is a better reference than the original one.
+        # A repeatable observed attitude is only a candidate for controlled tests.
+        # Telemetry cannot certify that the run was hands-off or free of contact.
         mean = normalized(tuple(sum(g[i] for _, g, _ in clean) / len(clean) for i in range(3)))
-        print(f"\ncandidate reference = mean settle of {len(clean)} clean run(s):")
+        print(f"\nexperimental candidate = attitude mean of {len(clean)} filtered run(s), contact status unverified:")
         for fname, g, ang in clean:
             print(f"  {fname}: angle to this candidate = {angle_between(g, mean):.3f}deg" +
                   (f" (was {ang:.3f}deg from old ref)" if ang is not None else ""))

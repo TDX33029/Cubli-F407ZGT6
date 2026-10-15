@@ -186,14 +186,15 @@ static void setup_corner_auto(void) {
 static void test_corner_trim(void) {
  int i;
  float err[3];
- /* BTRIM is disarm-only and range-checked; default 2.0 V/(rad*s). */
+ /* BTRIM is disarm-only and range-checked; off by default. */
  setup();
- assert(cubli_bal.K_tilt_trim==2.0f);
+ assert(cubli_bal.K_tilt_trim==0.0f);
  command("BTRIM 3");assert(cubli_bal.K_tilt_trim==3.0f);
  command("BTRIM 11");command("BTRIM -1");command("BTRIM");assert(cubli_bal.K_tilt_trim==3.0f);
  command("BTRIM 2");assert(cubli_bal.K_tilt_trim==2.0f);
  /* Corner: a held 2deg tilt accumulates the integral and the trim term appears in u. */
  setup_corner_auto();
+ cubli_bal.K_tilt_trim=2.0f; /* explicitly opt into the experimental controller */
  for(i=0;i<3;i++) {cubli_bal.corner_gains[i].K_theta=0;cubli_bal.corner_gains[i].K_dtheta=0;
                    cubli_bal.corner_gains[i].K_w=0;cubli_bal.corner_gains[i].K_i=0;}
  corner_auto_ticks(210,0,0,0,0);assert(cubli_bal.state==BAL_STATE_COUNTDOWN);
@@ -213,6 +214,10 @@ static void test_corner_trim(void) {
  corner_auto_ticks(400,6*DEG_TO_RAD,0,0,0);
  for(i=0;i<3;i++) assert(fabsf(cubli_bal.tilt_int[i])<=2.0001f);
  assert(fabsf(cubli_bal.tilt_int[2])==2.0f); /* M3 axis carries the positive error at +6deg */
+ /* Integral polarity follows the confirmed body direction, including +1 installations. */
+ cubli_bal.body_direction[0]=1;
+ corner_auto_ticks(1,2*DEG_TO_RAD,0,0,0);
+ assert(fabsf(cubli_bal.control_u[0]-2*cubli_bal.tilt_int[0])<.002f);
  /* Disarm clears the trim. */
  command("STOP");
  assert(cubli_bal.tilt_int[0]==0&&cubli_bal.tilt_int[1]==0&&cubli_bal.tilt_int[2]==0);
@@ -223,6 +228,24 @@ static void test_corner_trim(void) {
  assert(cubli_bal.state==BAL_STATE_BALANCING);
  auto_ticks(600,2*DEG_TO_RAD,0);
  assert(cubli_bal.tilt_int[0]==0&&cubli_bal.tilt_int[1]==0&&cubli_bal.tilt_int[2]==0);
+}
+static void test_corner_verified_control_law(void) {
+ int i;float err[3],s,angle,yaw;
+ setup_corner_auto();
+ for(i=0;i<3;i++) LQR_SetGains(i,80,5,-.030f,0);
+ corner_auto_ticks(1150,0,0,0,0);
+ corner_auto_ticks(400,0,0,0,0); /* full wheel feedback weight */
+ cubli_bal.attitude.gyro_rad[0]=.01f;cubli_bal.attitude.gyro_rad[1]=-.02f;cubli_bal.attitude.gyro_rad[2]=.03f;
+ corner_auto_ticks(100,2*DEG_TO_RAD,5,-8,11);
+ cross3(cubli_bal.attitude.gravity,cubli_bal.reference[3],err);
+ s=norm3(err);angle=atan2f(s,dot3(cubli_bal.attitude.gravity,cubli_bal.reference[3]));
+ yaw=dot3(cubli_bal.attitude.gyro_rad,cubli_bal.reference[3]);
+ for(i=0;i<3;i++) {
+  int axis=cubli_bal.body_axis[i];float r=cubli_bal.reference[3][axis];
+  float expected=-(80*err[axis]*angle/s+5*(cubli_bal.attitude.gyro_rad[axis]-yaw*r)+3*yaw*r)+.030f*shaft_velocity[i];
+  assert(fabsf(cubli_bal.control_u[i]-expected)<.0001f);
+  assert(cubli_bal.tilt_int[i]==0); /* no hidden integral with BTRIM off */
+ }
 }
 static void test_corner_auto(void) {
  /* Arming needs all three axes, sensors, directions and a reference. */
@@ -277,6 +300,7 @@ int main(void) {
  test_corner_countdown();
  test_corner_auto();
  test_corner_trim();
+ test_corner_verified_control_law();
  setup();command("DBG 2");command("EN1 1");command("EN2 1");command("EN3 1");assert(m1_enabled&&m2_enabled&&m3_enabled);
  command("M1 20");command("M2 -30");command("M3 40");assert(target_m1==20&&target_m2==-30&&target_m3==40);
  command("M 180 -180 0");assert(target_m1==180&&target_m2==-180&&target_m3==0);

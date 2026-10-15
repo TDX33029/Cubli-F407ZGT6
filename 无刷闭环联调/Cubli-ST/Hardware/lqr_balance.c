@@ -84,7 +84,8 @@ void LQR_Balance_Init(void) {
     cubli_bal.capture_angle=10*DEG_TO_RAD;
     cubli_bal.full_speed_limit=250;
     cubli_bal.K_yaw_damping=3.0f;
-    cubli_bal.K_tilt_trim=2.0f;
+    /* Experimental integral is opt-in; zero preserves the verified PD/wheel loop. */
+    cubli_bal.K_tilt_trim=0.0f;
     for(i=0;i<3;i++) {
         LQR_Gains_t g={32.0f,2.4f,0.08f,0.008f,0,5};
         cubli_bal.gains[i]=cubli_bal.corner_gains[i]=g;
@@ -369,13 +370,12 @@ void LQR_Balance_Loop(void) {
         body=p->K_theta*err[axis]+p->K_dtheta*rate;
         if(m==3) body+=cubli_bal.K_yaw_damping*rate_yaw*ref[axis];
         u=cubli_bal.body_direction[i]*body-wheel_weight*(p->K_w*shaft_velocity[i]+p->K_i*cubli_bal.wheel_int[i]);
-        /* Corner trim: slowly shift the held pose towards the true COM-neutral
-           angle so the wheels stop accumulating speed. Clamped and frozen while
-           the output saturates, like the wheel integral. */
-        if(m==3) u-=wheel_weight*cubli_bal.K_tilt_trim*cubli_bal.tilt_int[i];
+        /* Experimental attitude integral, in the same body-axis convention as PD.
+           It integrates reference error; it does not identify the neutral COM pose. */
+        if(m==3) u+=cubli_bal.body_direction[i]*wheel_weight*cubli_bal.K_tilt_trim*cubli_bal.tilt_int[i];
         if(wheel_weight>=1 && fabsf(u)<limit) {
             cubli_bal.wheel_int[i]=_constrain(cubli_bal.wheel_int[i]+shaft_velocity[i]*dt,-50,50);
-            if(m==3) cubli_bal.tilt_int[i]=_constrain(cubli_bal.tilt_int[i]+err[axis]*dt,-2,2);
+            if(m==3 && cubli_bal.K_tilt_trim>0) cubli_bal.tilt_int[i]=_constrain(cubli_bal.tilt_int[i]+err[axis]*dt,-2,2);
         }
         if(!isfinite(u)) {LQR_Trip();return;}
         cubli_bal.control_u[i]=_constrain(u,-limit,limit);

@@ -19,7 +19,7 @@ args = parser.parse_args()
 
 folder = args.output_dir
 folder.mkdir(parents=True, exist_ok=True)
-log = (folder / (args.tag + '.jsonl')).open('w', encoding='utf-8')
+log = (folder / (args.tag + '.jsonl')).open('x', encoding='utf-8')
 link = serial.Serial(port=None, baudrate=115200, timeout=.05, write_timeout=.3)
 link.dtr = False
 link.rts = False

@@ -1,0 +1,23 @@
+[
+  {
+    "file": "Cubli-ST/Hardware/lqr_balance.c",
+    "backup_sha256": "5e837f41b010355d147b906b00ee5a8f4123aea8a988bf3c62ddeb74b020ef6a",
+    "baseline_sha256": "b1beff7535fa59d2874cf0d46803ebb7b7cec4648ebe9ad04cedb36753814e42",
+    "current_sha256": "88382a2b2bb2edc85ff0ecba7b8ee569345d1346b1d23bce5c432c6950e04a09",
+    "backup_matches_baseline": true
+  },
+  {
+    "file": "Cubli-ST/Core/Src/main.c",
+    "backup_sha256": "e73cd792709d7123f948a54243d57b749efc4b286f6eb5415ec36fa840000348",
+    "baseline_sha256": "59ff37f1946f41a9ac4c6ec429d8068acfa37a2d698bae577d4673b78a5ea017",
+    "current_sha256": "6f0d9f945ae35314ca8bec6ed2a0c81519c6432b73c5d7900ae2913515025715",
+    "backup_matches_baseline": true
+  },
+  {
+    "file": "Software/main.py",
+    "backup_sha256": "2a8a5883de409f2cd55676e3ac9bd8441d2028041d9ba89f101cddd609bb7f43",
+    "baseline_sha256": "832397fc1057c1760ff29b5b249a2e3e5969c4bba6033eba7fae327adc5c30da",
+    "current_sha256": "95d12af03db3148fd4db8cae797b25c873c59e2c4ac42a76a927cb5b2630d1d1",
+    "backup_matches_baseline": true
+  }
+]

@@ -65,7 +65,8 @@ class Device:
         elif name == 'BYAW':
             self.state['YawD'] = parts[1]
         elif name == 'BTRIM':
-            self.state['BTrim'] = parts[1]
+            if self.fault != 'trim_not_applied':
+                self.state['BTrim'] = parts[1]
         elif name == 'FAST':
             self.fast = parts[1] == '7'
         elif name == 'BSTART':
@@ -276,6 +277,13 @@ class CornerAutoTests(unittest.TestCase):
         device, result, code = self.run_auto(prepare=True)
         self.assertEqual(code, 0)
         self.assertEqual(result['result'], 'prepared_disabled')
+        self.assertFalse(any(c.startswith('BAUTO 1') for c in device.commands))
+
+    def test_disabling_trim_must_be_confirmed_before_arming(self):
+        device, result, code = self.run_auto(fault='trim_not_applied', prepare=True)
+        self.assertEqual(code, 2)
+        self.assertIn('BTRIM 0.0', device.commands)
+        self.assertIn('configuration', result['error'])
         self.assertFalse(any(c.startswith('BAUTO 1') for c in device.commands))
 
     def test_auto_arm_config_then_balancing_attempts(self):

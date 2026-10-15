@@ -45,21 +45,16 @@ parser.add_argument('--rate-guard', type=float, default=4.0, help='Host backstop
 parser.add_argument('--kp', type=float, default=80)
 parser.add_argument('--kd', type=float, default=5)
 parser.add_argument('--kw', type=float, nargs=3, default=[-.030, -.030, -.030],
-                    help='Wheel-speed feedback per axis, -0.5..0.5. Hardware evidence keeps -0.03 as the verified '
-                         'default (long runs 8-13s); -0.05 degrades to 3s and +0.03 loses body authority (1.4s, never '
-                         'use positive). The closed-loop model prefers 0, but two hardware runs at 0 fell in '
-                         '1.6-2.4s (one with a clean entry on a fresh battery), so the model gap (unmodeled '
-                         'friction/delay) stays an open problem and the default is -0.03.')
+                    help='Wheel-speed feedback per axis, -0.5..0.5. Default -0.03 retains the confirmed '
+                         'five-second corner configuration. Later Kw=0/+0.03 trials failed; the withdrawn '
+                         'offline model is not a tuning authority.')
 parser.add_argument('--ki', type=float, default=0.0,
-                    help='Wheel-speed integral for all three axes, -0.5..0.5. Closed-loop analysis and the recorded '
-                         'runs show that any nonzero value (either sign) destabilizes the slow momentum mode of this '
-                         'firmware structure; keep 0 unless a new trim structure is flashed.')
+                    help='Wheel-speed integral for all axes, -0.5..0.5. Default 0 preserves the confirmed '
+                         'configuration; other values remain experimental.')
 parser.add_argument('--yaw-damping', type=float, default=3)
 parser.add_argument('--tilt-trim', type=float, default=0.0,
-                    help='Corner tilt-error integral gain BTRIM, 0..10 V/(rad*s). Kept at 0: the integral can only '
-                         'move the rest pose onto the reference, it cannot stop the wheel ramp that a reference '
-                         'offset in pose space produces -- correct the reference with the settle-mean iteration '
-                         'instead. Requires firmware with TrimTune:1 when nonzero.')
+                    help='Experimental corner attitude integral BTRIM, 0..10 V/(rad*s). Default 0 matches '
+                         'the confirmed controller. Does not identify the neutral COM pose. Requires TrimTune:1.')
 parser.add_argument('--body-axes', type=int, nargs=3, choices=(1, 2, 3), default=[2, 3, 1])
 parser.add_argument('--directions', type=int, nargs=3, choices=(-1, 1), default=[-1, -1, -1])
 parser.add_argument('--reference-gravity', type=float, nargs=3, default=list(VERIFIED_REFERENCE),
@@ -312,8 +307,8 @@ try:
             'Three alignments/static IMU calibration')
     if state.get('CornerStart') != '1' or state.get('YawTune') != '1':
         raise RuntimeError('Corner automatic firmware (CornerStart/YawTune) required')
-    if args.tilt_trim > 0 and state.get('TrimTune') != '1':
-        raise RuntimeError('Tilt trim requires updated firmware (TrimTune)')
+    if state.get('TrimTune') != '1':
+        raise RuntimeError('Explicit tilt trim configuration requires updated firmware (TrimTune)')
     for text in ('APP 1', 'BMODE 4', 'BAXIS ' + ' '.join(map(str, args.body_axes)),
                  'BDIR ' + ' '.join(map(str, args.directions)), f'U {args.voltage}',
                  f'L {args.wheel_limit}', f'BU {args.voltage}', 'BTRIP 20', 'BCAP 2'):
@@ -321,8 +316,6 @@ try:
     for i, kw in enumerate(args.kw, 1):
         command(f'LQR{i} {args.kp} {args.kd} {kw} {args.ki}')
     command(f'BYAW {args.yaw_damping}')
-    if args.tilt_trim > 0 and state.get('TrimTune') != '1':
-        raise RuntimeError('Tilt trim requires updated firmware (TrimTune)')
     command(f'BTRIM {args.tilt_trim}')
     command(f'BFULL {args.full_speed}')
     confirm(lambda d: d.get('BMode') == '4' and d.get('AxisMask') == '7' and d.get('DirMask') == '7'
@@ -332,7 +325,8 @@ try:
             and abs(float(d.get('SLimit', 0)) - args.wheel_limit) < .11
             and abs(float(d.get('FullSpeed', 0)) - args.full_speed) < .11
             and abs(float(d.get('YawD', 0)) - args.yaw_damping) < .011
-            and (args.tilt_trim <= 0 or abs(float(d.get('BTrim', -1)) - args.tilt_trim) < .11)
+            and d.get('TrimTune') == '1'
+            and abs(float(d.get('BTrim', -1)) - args.tilt_trim) < .011
             and d.get('TripDeg') == '20.0' and d.get('EN') == '000', 'Corner automatic configuration')
     phase = 'capture_reference'
     if args.reference_gravity is not None:

@@ -34,15 +34,15 @@ with contextlib.nullcontext(tempfile.mkdtemp(prefix='cubli-control-')) as tmp:
         (tmp / f).write_bytes((TESTS / f).read_bytes())
     compile_line = ['cl', '/nologo', '/std:c11', '/utf-8', '/W3', '/D_CRT_SECURE_NO_WARNINGS', '/I'+str(tmp), '/I'+str(ST/'Hardware'), '/I'+str(ST/'SimpleFOC'), 'firmware_harness.c', '/Fe:harness.exe']
     batch = tmp / 'build.cmd'
-    # cmd.exe parses batch files with the ANSI codepage; UTF-8 would garble the Chinese workspace path.
-    batch.write_text('@echo off\ncall "' + vs + '\\VC\\Auxiliary\\Build\\vcvars64.bat" >nul\n' + subprocess.list2cmdline(compile_line) + '\n', encoding='mbcs')
+    # Pin the batch codepage before reading the UTF-8 command; vcvars may change it.
+    batch.write_text('@echo off\nchcp 65001 >nul\ncall "' + vs + '\\VC\\Auxiliary\\Build\\vcvars64.bat" >nul\nchcp 65001 >nul\n' + subprocess.list2cmdline(compile_line) + '\n', encoding='utf-8')
     subprocess.run(['cmd.exe', '/c', str(batch)], cwd=tmp, check=True)
     result = subprocess.run([str(tmp/'harness.exe')], cwd=tmp, capture_output=True, text=True)
     if result.returncode: print(result.stdout[-8000:], result.stderr)
     result.check_returncode()
     print(result.stdout.strip().splitlines()[-1], flush=True)
     compile_line[compile_line.index('firmware_harness.c')] = 'uart_harness.c'
-    batch.write_text('@echo off\ncall "' + vs + '\\VC\\Auxiliary\\Build\\vcvars64.bat" >nul\n' + subprocess.list2cmdline(compile_line) + '\n', encoding='mbcs')
+    batch.write_text('@echo off\nchcp 65001 >nul\ncall "' + vs + '\\VC\\Auxiliary\\Build\\vcvars64.bat" >nul\nchcp 65001 >nul\n' + subprocess.list2cmdline(compile_line) + '\n', encoding='utf-8')
     subprocess.run(['cmd.exe', '/c', str(batch)], cwd=tmp, check=True)
     subprocess.run([str(tmp/'harness.exe')], cwd=tmp, check=True)
 
