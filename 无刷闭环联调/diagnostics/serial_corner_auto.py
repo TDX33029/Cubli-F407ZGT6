@@ -44,11 +44,12 @@ parser.add_argument('--tilt-guard', type=float, default=28, help='Host backstop 
 parser.add_argument('--rate-guard', type=float, default=4.0, help='Host backstop during balancing, above the 3.0 rad/s trip')
 parser.add_argument('--kp', type=float, default=80)
 parser.add_argument('--kd', type=float, default=5)
-parser.add_argument('--kw', type=float, nargs=3, default=[0.0, 0.0, 0.0],
-                    help='Wheel-speed feedback per axis, -0.5..0.5. Closed-loop model (corner_loop_model.py) and the '
-                         'recorded runs agree the slow mode is best damped at 0: -0.03 leaves only -0.25/s margin '
-                         '(8-13s hardware runs), <=-0.05 flips it into a growing oscillation (3s), and +0.03 destroyed '
-                         'body authority on hardware (1.4s fall, never use positive Kw).')
+parser.add_argument('--kw', type=float, nargs=3, default=[-.030, -.030, -.030],
+                    help='Wheel-speed feedback per axis, -0.5..0.5. Hardware evidence keeps -0.03 as the verified '
+                         'default (long runs 8-13s); -0.05 degrades to 3s and +0.03 loses body authority (1.4s, never '
+                         'use positive). The closed-loop model prefers 0, but two hardware runs at 0 fell in '
+                         '1.6-2.4s (one with a clean entry on a fresh battery), so the model gap (unmodeled '
+                         'friction/delay) stays an open problem and the default is -0.03.')
 parser.add_argument('--ki', type=float, default=0.0,
                     help='Wheel-speed integral for all three axes, -0.5..0.5. Closed-loop analysis and the recorded '
                          'runs show that any nonzero value (either sign) destabilizes the slow momentum mode of this '

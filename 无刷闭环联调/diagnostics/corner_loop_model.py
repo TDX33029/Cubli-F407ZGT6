@@ -117,7 +117,7 @@ S_SIGN = resolve_sign()
 print()
 
 if __name__ == "__main__":
-    print("== baseline: old committed config (80/5/-0.03/0) vs recommended (80/5/0/0) ==")
+    print("== baseline: hardware default (80/5/-0.03/0) vs model-optimal (80/5/0/0) ==")
     summary("Kw=-0.03 Ki=0 Kti=0 Kyaw=3", build())
     summary("Kw= 0.00 Ki=0 Kti=0 Kyaw=3", build(kw=0.0))
     print()
@@ -141,5 +141,7 @@ if __name__ == "__main__":
     for kyaw in (0.0, 1.0, 3.0, 10.0):
         summary(f"Kyaw={kyaw:.1f}", build(kyaw=kyaw, kw=0.0))
     print()
-    print("Recommendation: corner gains 80/5/0.0/0 with BYAW=3; keep Ki=0.  The exact-zero")
+    print("Recommendation (model): 80/5/0.0/0 with BYAW=3; keep Ki=0.  The exact-zero")
     print("eigenvalues are the dormant Kti/Ki integrators when both are 0, not dynamics.")
+    print("Hardware caveat: two runs at Kw=0 fell in 1.6-2.4s while -0.03 ran 8-12.5s, so the")
+    print("operational default stays -0.03 until the model gap (unmodeled friction/delay) closes.")

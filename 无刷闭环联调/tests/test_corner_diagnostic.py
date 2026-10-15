@@ -287,7 +287,7 @@ class CornerAutoTests(unittest.TestCase):
         self.assertIn('BFULL 250', device.commands)
         for command in ('BREF ' + ' '.join(f'{v:.9f}' for v in
                         [-0.7028287890572913, 0.3977869310324257, 0.5897433770480731]),
-                        'LQR1 80 5 0.0 0.0', 'LQR2 80 5 0.0 0.0', 'LQR3 80 5 0.0 0.0'):
+                        'LQR1 80 5 -0.03 0.0', 'LQR2 80 5 -0.03 0.0', 'LQR3 80 5 -0.03 0.0'):
             self.assertIn(command, device.commands)
         self.assertGreaterEqual(result['auto_attempts'], 1)
         self.assertGreaterEqual(result['balance_seconds_total'], 0.9)
