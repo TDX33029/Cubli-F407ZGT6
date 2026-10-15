@@ -34,6 +34,7 @@ typedef struct {
     /* Optional slow corner reference search. Original reference remains the
        safety anchor; STOP retains the bounded offset, configuration resets it. */
     bool neutral_enabled;
+    float neutral_gain, neutral_rate_deg_s;
     float neutral_rotation[3], neutral_spin_filt[3], neutral_reference[3];
     /* M1/M2/M3 axes must be IMU body X/Y/Z; signs describe mechanical installation,
        independently of encoder sensor_direction. */

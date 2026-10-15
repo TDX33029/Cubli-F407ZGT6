@@ -349,7 +349,7 @@ static void setup_neutral(void) {
  int i;
  setup_corner_auto();command("BAUTO 0");command("U 6");command("BU 6");
  for(i=0;i<3;i++) LQR_SetGains(i,0,0,0,0);
- command("BNEUTRAL 1");assert(cubli_bal.neutral_enabled);
+ command("BNEUTRAL 1 .00025 .5");assert(cubli_bal.neutral_enabled);
  command("BSTART 2");corner_auto_ticks(500,0,0,0,0);
  assert(cubli_bal.state==BAL_STATE_BALANCING);
 }
@@ -362,6 +362,7 @@ static void neutral_tick(float w0,float w1,float w2) {
 static void test_neutral_search(void) {
  int i;float saved[3],previous[3],positive[3],*base,n;
  setup();assert(!cubli_bal.neutral_enabled);
+ assert(cubli_bal.neutral_gain==.000025f && cubli_bal.neutral_rate_deg_s==.1f);
  command("BNEUTRAL 1");assert(!cubli_bal.neutral_enabled);
  setup_corner_auto();command("BAUTO 0");
  command("BNEUTRAL 1");assert(!cubli_bal.neutral_enabled); /* default Ki conflicts */
@@ -369,6 +370,9 @@ static void test_neutral_search(void) {
  cubli_bal.attitude.is_calibrated=false;command("BNEUTRAL 1");assert(!cubli_bal.neutral_enabled);
  cubli_bal.attitude.is_calibrated=true;command("BTRIM 1");command("BNEUTRAL 1");assert(!cubli_bal.neutral_enabled);
  command("BTRIM 0");command("BNEUTRAL 1");assert(cubli_bal.neutral_enabled);
+ command("BNEUTRAL 1 .000251 .1");command("BNEUTRAL 1 .000004 .1");command("BNEUTRAL 1 .000025 .51");
+ assert(cubli_bal.neutral_gain==.000025f && cubli_bal.neutral_rate_deg_s==.1f);
+ command("BNEUTRAL 1 .00001 .05");assert(cubli_bal.neutral_gain==.00001f && cubli_bal.neutral_rate_deg_s==.05f);
  command("LQR1 80 8 -.04 .01");assert(cubli_bal.corner_gains[0].K_i==0);
  command("BTRIM 1");assert(cubli_bal.K_tilt_trim==0);
  setup_neutral();command("BNEUTRAL 0");assert(cubli_bal.neutral_enabled); /* disarm-only */

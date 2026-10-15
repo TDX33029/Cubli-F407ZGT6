@@ -34,7 +34,7 @@ class Device:
             self.state['CornerStart'] = '1'
             self.state.update(YawTune='1', YawD='3.00', TrimTune='1', BTrim='2.0', CapDeg='2.0')
             if fault != 'no_neutral':
-                self.state.update(NTune='1', NOn='1', NLimit='2.0', NRate='0.5')
+                self.state.update(NTune='2', NOn='1', NLimit='2.0', NRate='0.1', NGain='0.000025')
 
     def open(self):
         self.is_open = True
@@ -78,6 +78,8 @@ class Device:
         elif name == 'BNEUTRAL':
             if self.fault != 'neutral_not_applied':
                 self.state['NOn'] = parts[1]
+                if len(parts) == 4:
+                    self.state.update(NGain=parts[2],NRate=parts[3])
         elif name == 'BCAP':
             if self.fault != 'capture_not_applied':
                 self.state['CapDeg'] = parts[1]
@@ -180,14 +182,14 @@ class CornerDiagnosticTests(unittest.TestCase):
         device, result, code = self.run_trial()
         self.assertEqual(code, 0)
         self.assertIn('BNEUTRAL 0', device.commands)
-        self.assertNotIn('BNEUTRAL 1', device.commands)
+        self.assertFalse(any(c.startswith('BNEUTRAL 1') for c in device.commands))
 
     def test_neutral_enabled_after_reference_and_published(self):
         device, result, code = self.run_trial(saved=True, neutral=True, live=True)
         self.assertEqual(code, 0)
         self.assertLess(next(i for i,c in enumerate(device.commands) if c.startswith('BREF ')),
-                        device.commands.index('BNEUTRAL 1'))
-        self.assertLess(device.commands.index('BNEUTRAL 1'), device.commands.index('BSTART 2'))
+                        device.commands.index('BNEUTRAL 1 2.5e-05 0.1'))
+        self.assertLess(device.commands.index('BNEUTRAL 1 2.5e-05 0.1'), device.commands.index('BSTART 2'))
         self.assertEqual(result['learned_reference']['pitch_deg'], 23.8)
         self.assertEqual(result['_published_live_state']['target'], [23.8, 46.5])
         self.assertIn('effective_tilt_deg_max', result)

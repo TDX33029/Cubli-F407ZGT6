@@ -110,7 +110,7 @@ static void neutral_update(float dt) {
     }
     n=norm3(cubli_bal.neutral_spin_filt);
     if(n<=3.0f) return;
-    s=fminf(0.00025f*(n-3.0f),0.5f*DEG_TO_RAD)*dt/n;
+    s=fminf(cubli_bal.neutral_gain*(n-3.0f),cubli_bal.neutral_rate_deg_s*DEG_TO_RAD)*dt/n;
     for(i=0;i<3;i++) step[i]=cubli_bal.neutral_rotation[i]+s*cubli_bal.neutral_spin_filt[i];
     n=norm3(step);
     if(n>2*DEG_TO_RAD) for(i=0;i<3;i++) step[i]*=(2*DEG_TO_RAD)/n;
@@ -166,6 +166,8 @@ void LQR_Balance_Init(void) {
     cubli_bal.K_yaw_damping=3.0f;
     /* Experimental integral is opt-in; zero preserves the verified PD/wheel loop. */
     cubli_bal.K_tilt_trim=0.0f;
+    cubli_bal.neutral_gain=0.000025f;
+    cubli_bal.neutral_rate_deg_s=0.1f;
     for(i=0;i<3;i++) {
         LQR_Gains_t g={32.0f,2.4f,0.08f,0.008f,0,5};
         cubli_bal.gains[i]=cubli_bal.corner_gains[i]=g;

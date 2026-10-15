@@ -45,6 +45,8 @@ parser.add_argument('--expected-pose', type=Path, required=True, help='Disabled 
 parser.add_argument('--reference-gravity', type=float, nargs=3, help='Saved normalized corner target; requires CornerStart firmware')
 parser.add_argument('--prepare-only', action='store_true', help='Capture/configure, then STOP without arming')
 parser.add_argument('--neutral-learning', action='store_true', help='Bounded slow corner reference search, updated firmware required')
+parser.add_argument('--neutral-gain', type=float, default=.000025, help='Slow search gain, .000005.. .00025')
+parser.add_argument('--neutral-rate', type=float, default=.1, help='Maximum search speed, .01.. .5 degrees/s')
 parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent / '2026-10-14')
 parser.add_argument('--live-state',type=Path)
 parser.add_argument('--probe-motor', type=int, choices=(1, 2, 3), help='Zero-output release then one MCU-timed motor pulse')
@@ -66,6 +68,8 @@ if args.probe_motor and not (args.reference_gravity is not None and args.kp == 0
 expected = json.loads(args.expected_pose.read_text(encoding='utf-8'))
 if args.neutral_learning and (args.reference_gravity is None or args.probe_motor):
     parser.error('Neutral search requires a saved base reference and cannot be combined with a probe')
+if not (.000005 <= args.neutral_gain <= .00025 and .01 <= args.neutral_rate <= .5):
+    parser.error('Neutral tuning bounds exceeded')
 expected_g = gravity({key: expected['ranges'][key]['median'] for key in ('Pit', 'Rol')})
 publisher=PosePublisher(args.live_state, capture_angle=args.capture_angle)
 if min(abs(v) for v in expected_g) < .25:
@@ -253,9 +257,9 @@ try:
     confirm(lambda d: d.get('Aligned') == '111' and d.get('Cal') == '1'
             and d.get('IMU') == '1' and d.get('EN') == '000' and d.get('Fault') == '0',
             'Three alignments/static IMU calibration')
-    if args.neutral_learning and state.get('NTune') != '1':
-        raise RuntimeError('Neutral search requires updated firmware (NTune)')
-    if state.get('NTune') == '1':
+    if args.neutral_learning and state.get('NTune') != '2':
+        raise RuntimeError('Tunable neutral search requires updated firmware (NTune:2)')
+    if state.get('NTune') in ('1','2'):
         command('BNEUTRAL 0')
         confirm(lambda d: d.get('NOn') == '0', 'Neutral search disabled before configuration')
     for text in ('APP 1', 'BMODE 4', 'BAXIS ' + ' '.join(map(str, args.body_axes)),
@@ -306,10 +310,11 @@ try:
                             'roll_deg': math.degrees(math.atan2(-reference[0],reference[2])),
                             'neutral_verified': False}
     if args.neutral_learning:
-        command('BNEUTRAL 1')
-        confirm(lambda d: d.get('NTune') == '1' and d.get('NOn') == '1'
+        command(f'BNEUTRAL 1 {args.neutral_gain:g} {args.neutral_rate:g}')
+        confirm(lambda d: d.get('NTune') == '2' and d.get('NOn') == '1'
                 and abs(float(d.get('NLimit', -1))-2) < .011
-                and abs(float(d.get('NRate', -1))-.5) < .011, 'Bounded neutral search enabled')
+                and abs(float(d.get('NRate', -1))-args.neutral_rate) < .001
+                and abs(float(d.get('NGain', -1))-args.neutral_gain) < .0000006, 'Bounded neutral search enabled')
     if args.prepare_only:
         summary['result'] = 'prepared_disabled'
     else:

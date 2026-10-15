@@ -1,0 +1,17 @@
+{
+  "date_local": "2026-10-16",
+  "encoder": "I2C absolute",
+  "change": "Disarmed bounded neutral tuning; conservative default gain0.000025 and rate0.1deg/s, hard maxima0.00025/0.5; original2deg offset and all protections retained. NTune2.",
+  "hex_sha256": "4a362f02eac4488ea9c4dff172bec96177d5b6e7fef981e58dfc3a8ab47d7bc0",
+  "hex_data_bytes": 52228,
+  "build_inputs": 38,
+  "armcc_errors": 0,
+  "armcc_warnings": 0,
+  "tests": [
+    "Production C control/UART harness including tuning range and packet budgets",
+    "35 corner diagnostic tests"
+  ],
+  "flashed": false,
+  "balance_validation": "Not yet tested",
+  "source_file_sha256": "cccd8368ff9d5fd939803a2e16d20c3653a544961d41260c99b86b4675fa2334"
+}

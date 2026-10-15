@@ -619,13 +619,14 @@ void Control_Status(void) {
     report_float("YawD",cubli_bal.K_yaw_damping,2);report_int("YawTune",1);
     report_float("Trim1",cubli_bal.tilt_int[0],3);report_float("Trim2",cubli_bal.tilt_int[1],3);
     report_float("Trim3",cubli_bal.tilt_int[2],3);report_float("BTrim",cubli_bal.K_tilt_trim,1);report_int("TrimTune",1);
-    report_int("NTune",1);report_int("NOn",cubli_bal.neutral_enabled);
+    report_int("NTune",2);report_int("NOn",cubli_bal.neutral_enabled);
     if(cubli_bal.mode==BAL_MODE_CORNER && cubli_bal.reference_valid[3]) {
         const float *ref=LQR_GetControlReference(),*r=cubli_bal.neutral_rotation;
         report_float("NPit",atan2f(ref[1],sqrtf(ref[0]*ref[0]+ref[2]*ref[2]))*RAD_TO_DEG,2);
         report_float("NRol",atan2f(-ref[0],ref[2])*RAD_TO_DEG,2);
         report_float("NOff",sqrtf(r[0]*r[0]+r[1]*r[1]+r[2]*r[2])*RAD_TO_DEG,3);
-        report_float("NLimit",2,1);report_float("NRate",0.5f,1);
+        report_float("NLimit",2,1);report_float("NRate",cubli_bal.neutral_rate_deg_s,2);
+        report_float("NGain",cubli_bal.neutral_gain,6);
     }
     report_float("U1",voltage[0].q,2);
     report_float("U2",voltage[1].q,2);
@@ -673,7 +674,7 @@ void commander_run(void) {
                "M1/M2/M3 speed independently; EN1/EN2/EN3 0/1; ACC rad/s^2; STOP; PING (every 250ms)\r\n"
                "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BREF gx gy gz; BAXIS1/2/3 1..3; BDIR1/2/3 +/-1; BAL 0/1; BSTART 2..15 seconds; BAUTO 0/1 [2..15 seconds]; BFULL speed; BCAP 0.5..10 deg; BTRIP 10..60 deg; BYAW 0..10; BTRIM 0..10; BPROBE volts ms\r\n"
                "LQR1/2/3 [Kp Kd Kw Ki]; ZERO1/2/3 deg (edge); BU volts; U volts; L rad/s; PID1/2/3 [P I D]; TF seconds\r\n"
-               "BNEUTRAL 0/1: disarmed corner reference search, 2deg total / 0.5deg/s, Ki/BTRIM=0\r\n"
+               "BNEUTRAL 0/1 [gain rate_deg_s]: disarmed corner, 2deg total, gain0.000005..0.00025/rate0.01..0.5, Ki/BTRIM=0\r\n"
                "FF[1/2/3] [coulomb_V bemf_V_per_rad_s]; STATE?\r\n"); Control_Status();
     } else if(!strcmp(name,"APP") && n==1 && (v[0]==0 || v[0]==1)) {
         Control_Stop(); app_mode=(uint8_t)v[0]; if(!control_reset_latch()) return; printf("OK APP:%d\r\n",app_mode);
@@ -719,10 +720,12 @@ void commander_run(void) {
     } else if(!strcmp(name,"BYAW") && n==1 && v[0]>=0 && v[0]<=10) {
         if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
         cubli_bal.K_yaw_damping=v[0];printf("OK BYAW\r\n");
-    } else if(!strcmp(name,"BNEUTRAL") && n==1 && (v[0]==0 || v[0]==1)) {
+    } else if(!strcmp(name,"BNEUTRAL") && ((n==1 && (v[0]==0 || v[0]==1)) || (n==3 && v[0]==1))) {
+        if(n==3 && (v[1]<0.000005f || v[1]>0.00025f || v[2]<0.01f || v[2]>0.5f)) {printf("ERR NEUTRAL_RANGE\r\n");return;}
         if(m1_enabled || m2_enabled || m3_enabled || !LQR_SetNeutralLearning(v[0]!=0)) {
             printf("ERR BNEUTRAL (disarm, corner reference/calibration and Ki/BTRIM=0 required)\r\n");return;
         }
+        if(n==3) {cubli_bal.neutral_gain=v[1];cubli_bal.neutral_rate_deg_s=v[2];}
         printf("OK BNEUTRAL\r\n");
     } else if(!strcmp(name,"BTRIM") && n==1 && v[0]>=0 && v[0]<=10) {
         if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
