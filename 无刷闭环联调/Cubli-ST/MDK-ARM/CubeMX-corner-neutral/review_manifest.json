@@ -16,5 +16,5 @@
   "balance_validation": "Not tested on hardware yet",
   "source_file_sha256": "058c269bbf7fdf520228b4e19a0d68a777e9eec91bb9e2b374be3ca4434333a6",
   "flash_verification": "Download verified successfully; software reset performed",
-  "postflash_alignment_and_calibration": "Pending; reset clears calibration"
+  "postflash_alignment_and_calibration": "Aligned111 Cal1 IMU1 EN000 Fault0 Enc111; M1/2/3 map3/1/2 and7 pole pairs; all encoder signs+1"
 }
