@@ -1,0 +1,102 @@
+{
+  "name": "Reviewed firmware: independently confirmed repeat of five-second free corner balance",
+  "date": "2026-10-15",
+  "firmware": "Cubli-ST/MDK-ARM/CubeMX-corner-reviewed/CubeMX.hex",
+  "firmware_sha256": "f9d2aa9054d108078434529e59e12456b3312bfc4d9e988470438126f6451a97",
+  "hardware": {
+    "supply": "Identical 3S batteries throughout session, rigidly mounted in same position",
+    "body_axes": [
+      2,
+      3,
+      1
+    ],
+    "body_directions": [
+      -1,
+      -1,
+      -1
+    ],
+    "encoder_maps": [
+      3,
+      1,
+      2
+    ],
+    "encoder_directions": [
+      1,
+      1,
+      1
+    ],
+    "pole_pairs": [
+      7,
+      7,
+      7
+    ],
+    "encoder_type": "I2C"
+  },
+  "reference": {
+    "gravity": [
+      -0.7028287890572913,
+      0.3977869310324257,
+      0.5897433770480731
+    ],
+    "pitch_deg": 23.439901557157267,
+    "roll_deg": 50.00000003017075,
+    "neutral_verified": false
+  },
+  "runtime": {
+    "LQR_each": [
+      80,
+      5,
+      -0.03,
+      0
+    ],
+    "BYAW": 3,
+    "U": 6,
+    "BU": 6,
+    "L": 240,
+    "host_wheel_bound": 220,
+    "host_tilt_bound_deg": 10,
+    "host_gyro_norm_bound_rad_s": 1.5,
+    "BTRIP": 20,
+    "BSTART": 8,
+    "run_seconds": 5,
+    "BCAP": 2,
+    "BTRIM": 0
+  },
+  "verified": {
+    "hands_off": true,
+    "external_support": false,
+    "duration_s": 5.0,
+    "user_report": "全程无干预，停机后才接住"
+  },
+  "metrics": {
+    "watched_samples": 250,
+    "tilt_deg_max": 2.0246014215258854,
+    "wheel_ranges": {
+      "M1": [
+        -157.11,
+        30.21
+      ],
+      "M2": [
+        -35.51,
+        43.21
+      ],
+      "M3": [
+        -33.58,
+        20.56
+      ]
+    },
+    "gyro_norm_max": 0.279,
+    "voltage_abs_max": {
+      "M1": 4.29,
+      "M2": 1.91,
+      "M3": 1.54
+    },
+    "encoder_frequency": [
+      "$FREQ,M:1,Map:3,PP:7,Hz:2220,GapUs:3107,ReadUs:125,Errors:0#",
+      "$FREQ,M:2,Map:1,PP:7,Hz:2220,GapUs:3107,ReadUs:124,Errors:0#",
+      "$FREQ,M:3,Map:2,PP:7,Hz:2220,GapUs:3106,ReadUs:125,Errors:0#"
+    ]
+  },
+  "scope": "Confirmed finite five-second free run after battery reset and fresh alignment; longer-duration stability remains unverified.",
+  "trial_log": "review_baseline_battery02_trial5s_01.jsonl"
+}
