@@ -1,0 +1,29 @@
+{
+  "status": "user_confirmed_autonomous5s",
+  "source": "corner_immediate_kw040_yaw6_trial5s_01",
+  "firmware_hex_sha256": "a0f7e60a18407babbfa501e97dcffb76aa9c967ab37d4bb0ed8e86021c7d4ada",
+  "reference_gravity": [
+    -0.7028287890572913,
+    0.397786931032426,
+    0.589743377048073
+  ],
+  "LQR_each": [
+    80,
+    5,
+    -0.04,
+    0
+  ],
+  "BYAW": 6,
+  "BTRIM": 0,
+  "U": 6,
+  "L": 240,
+  "BCAP": 1,
+  "BSTART": 2,
+  "host_wheel_guard": 220,
+  "host_body_rate_guard": 1.5,
+  "host_tilt_guard_deg": 10,
+  "firmware_fall_deg": 20,
+  "next_step": "8s repeat",
+  "long_term_verified": false,
+  "production_defaults_updated": false
+}
