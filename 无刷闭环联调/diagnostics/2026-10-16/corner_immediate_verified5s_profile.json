@@ -1,5 +1,5 @@
 {
-  "status": "user_confirmed_autonomous5s",
+  "status": "user_confirmed5s_but8s_repeat_protected",
   "source": "corner_immediate_kw040_yaw6_trial5s_01",
   "firmware_hex_sha256": "a0f7e60a18407babbfa501e97dcffb76aa9c967ab37d4bb0ed8e86021c7d4ada",
   "reference_gravity": [
@@ -25,5 +25,10 @@
   "firmware_fall_deg": 20,
   "next_step": "8s repeat",
   "long_term_verified": false,
-  "production_defaults_updated": false
+  "production_defaults_updated": false,
+  "subsequent_validation": {
+    "source": "corner_immediate_kw040_yaw6_trial8s_01",
+    "actual_seconds": 5.11,
+    "outcome": "body-rate protection with momentum/voltage accumulation"
+  }
 }
