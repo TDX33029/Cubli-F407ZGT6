@@ -1,0 +1,456 @@
+{
+  "comparisons": [
+    {
+      "case": "new_reference",
+      "source": "无刷闭环联调\\diagnostics\\2026-10-16\\com_candidate_trial5s_cap1_01",
+      "result": "stopped",
+      "run_duration_s": 1.110000000015134,
+      "first_frame": {
+        "T": 571274701.0,
+        "R1": 0.0,
+        "V1": 0.5,
+        "U1": 1.01,
+        "R2": 0.0,
+        "V2": -0.12,
+        "U2": -0.48,
+        "R3": 0.0,
+        "V3": 0.0,
+        "U3": 0.16,
+        "Tilt": 0.9,
+        "Angle": 0.9,
+        "Rate": 0.074,
+        "Bal": 3.0,
+        "Wx": -0.04,
+        "Wy": -0.006,
+        "Wz": -0.062,
+        "Pit": 25.15,
+        "Rol": 48.85,
+        "T1": 0.0,
+        "T2": 0.0,
+        "T3": 0.0
+      },
+      "gyro_replay_sample_count": 58,
+      "gyro_replay_samples": [
+        {
+          "time_s": 0.0,
+          "fused_tilt_deg": 0.9036011149235251,
+          "gyro_only_tilt_deg": 0.9036011149235251,
+          "fused_vs_gyro_only_deg": 0.0,
+          "pitch_deg": 25.15,
+          "roll_deg": 48.85,
+          "gyro_norm_rad_s": 0.07402702209328699
+        },
+        {
+          "time_s": 0.260019,
+          "fused_tilt_deg": 0.6272483799689236,
+          "gyro_only_tilt_deg": 0.7462559706772446,
+          "fused_vs_gyro_only_deg": 0.2814148067062652,
+          "pitch_deg": 24.87,
+          "roll_deg": 49.05,
+          "gyro_norm_rad_s": 0.04535416188179427
+        },
+        {
+          "time_s": 0.499918,
+          "fused_tilt_deg": 2.194077657297,
+          "gyro_only_tilt_deg": 2.0308654741940915,
+          "fused_vs_gyro_only_deg": 0.24564290433028957,
+          "pitch_deg": 26.63,
+          "roll_deg": 50.88,
+          "gyro_norm_rad_s": 0.1091031621906533
+        },
+        {
+          "time_s": 0.740126,
+          "fused_tilt_deg": 3.4774423185693943,
+          "gyro_only_tilt_deg": 3.339170891297458,
+          "fused_vs_gyro_only_deg": 0.21260888775896697,
+          "pitch_deg": 27.25,
+          "roll_deg": 52.35,
+          "gyro_norm_rad_s": 0.11509344029961047
+        },
+        {
+          "time_s": 0.999872,
+          "fused_tilt_deg": 5.029674725633738,
+          "gyro_only_tilt_deg": 5.907784212743517,
+          "fused_vs_gyro_only_deg": 0.9374395565084332,
+          "pitch_deg": 28.34,
+          "roll_deg": 53.6,
+          "gyro_norm_rad_s": 0.48045603336829895
+        }
+      ],
+      "max_fused_vs_gyro_only_deg": 2.057083398495159
+    },
+    {
+      "case": "old_reference",
+      "source": "无刷闭环联调\\diagnostics\\2026-10-16\\com_oldref_comparison_trial5s_01",
+      "result": "stopped",
+      "run_duration_s": 1.4839999999967404,
+      "first_frame": {
+        "T": 874530874.0,
+        "R1": 0.0,
+        "V1": 0.11,
+        "U1": 0.33,
+        "R2": 0.0,
+        "V2": -0.21,
+        "U2": -0.73,
+        "R3": 0.0,
+        "V3": -0.31,
+        "U3": -0.68,
+        "Tilt": 0.73,
+        "Angle": 0.73,
+        "Rate": 0.067,
+        "Bal": 3.0,
+        "Wx": 0.06,
+        "Wy": 0.003,
+        "Wz": -0.03,
+        "Pit": 24.1,
+        "Rol": 49.66,
+        "T1": 0.0,
+        "T2": 0.0,
+        "T3": 0.0
+      },
+      "gyro_replay_sample_count": 76,
+      "gyro_replay_samples": [
+        {
+          "time_s": 0.0,
+          "fused_tilt_deg": 0.7297586301534312,
+          "gyro_only_tilt_deg": 0.7297586301534312,
+          "fused_vs_gyro_only_deg": 0.0,
+          "pitch_deg": 24.1,
+          "roll_deg": 49.66,
+          "gyro_norm_rad_s": 0.06714908785679817
+        },
+        {
+          "time_s": 0.259776,
+          "fused_tilt_deg": 0.5311662456692591,
+          "gyro_only_tilt_deg": 0.6062569763308815,
+          "fused_vs_gyro_only_deg": 0.09910289858037792,
+          "pitch_deg": 23.91,
+          "roll_deg": 49.73,
+          "gyro_norm_rad_s": 0.020303940504246953
+        },
+        {
+          "time_s": 0.499901,
+          "fused_tilt_deg": 0.6659696682875668,
+          "gyro_only_tilt_deg": 0.72999051376624,
+          "fused_vs_gyro_only_deg": 0.07660343979998885,
+          "pitch_deg": 23.99,
+          "roll_deg": 50.41,
+          "gyro_norm_rad_s": 0.13889654423346898
+        },
+        {
+          "time_s": 0.7400359999999999,
+          "fused_tilt_deg": 1.9410488811865656,
+          "gyro_only_tilt_deg": 1.6995548759188694,
+          "fused_vs_gyro_only_deg": 0.2828252939724147,
+          "pitch_deg": 24.0,
+          "roll_deg": 52.03,
+          "gyro_norm_rad_s": 0.03547534355013352
+        },
+        {
+          "time_s": 0.999756,
+          "fused_tilt_deg": 2.2346758667872333,
+          "gyro_only_tilt_deg": 1.9352830381087294,
+          "fused_vs_gyro_only_deg": 0.3072764382504446,
+          "pitch_deg": 23.84,
+          "roll_deg": 52.4,
+          "gyro_norm_rad_s": 0.0642144843473807
+        },
+        {
+          "time_s": 1.400002,
+          "fused_tilt_deg": 3.6630005197324533,
+          "gyro_only_tilt_deg": 4.093851766999137,
+          "fused_vs_gyro_only_deg": 0.4715820475547776,
+          "pitch_deg": 23.96,
+          "roll_deg": 53.96,
+          "gyro_norm_rad_s": 0.7926193916376257
+        }
+      ],
+      "max_fused_vs_gyro_only_deg": 1.0458876832809991
+    },
+    {
+      "case": "historical_success",
+      "source": "无刷闭环联调\\diagnostics\\2026-10-15\\review_baseline_battery02_trial5s_01",
+      "result": "bounded_run_completed",
+      "run_duration_s": 5.0,
+      "first_frame": {
+        "T": 338605908.0,
+        "R1": 0.0,
+        "V1": 4.21,
+        "U1": 2.46,
+        "R2": 0.0,
+        "V2": -0.19,
+        "U2": -0.38,
+        "R3": 0.0,
+        "V3": 1.72,
+        "U3": 1.05,
+        "Tilt": 2.03,
+        "Angle": 2.03,
+        "Rate": 0.039,
+        "Bal": 3.0,
+        "Wx": 0.032,
+        "Wy": 0.017,
+        "Wz": 0.015,
+        "Pit": 23.04,
+        "Rol": 47.84,
+        "T1": 0.0,
+        "T2": 0.0,
+        "T3": 0.0
+      },
+      "gyro_replay_sample_count": 251,
+      "gyro_replay_samples": [
+        {
+          "time_s": 0.0,
+          "fused_tilt_deg": 2.0246014215258854,
+          "gyro_only_tilt_deg": 2.0246014215258854,
+          "fused_vs_gyro_only_deg": 0.0,
+          "pitch_deg": 23.04,
+          "roll_deg": 47.84,
+          "gyro_norm_rad_s": 0.03921734310225515
+        },
+        {
+          "time_s": 0.259866,
+          "fused_tilt_deg": 1.054557598915196,
+          "gyro_only_tilt_deg": 1.3336610485823557,
+          "fused_vs_gyro_only_deg": 0.2806585245435459,
+          "pitch_deg": 23.17,
+          "roll_deg": 48.89,
+          "gyro_norm_rad_s": 0.043534469102080475
+        },
+        {
+          "time_s": 0.499953,
+          "fused_tilt_deg": 0.4392602476411748,
+          "gyro_only_tilt_deg": 0.7412653537780621,
+          "fused_vs_gyro_only_deg": 0.37046138191264255,
+          "pitch_deg": 23.06,
+          "roll_deg": 49.76,
+          "gyro_norm_rad_s": 0.03512121865767189
+        },
+        {
+          "time_s": 0.759733,
+          "fused_tilt_deg": 0.604734318871074,
+          "gyro_only_tilt_deg": 0.6896920920168915,
+          "fused_vs_gyro_only_deg": 0.21968713159462736,
+          "pitch_deg": 22.87,
+          "roll_deg": 49.78,
+          "gyro_norm_rad_s": 0.045535700280109885
+        },
+        {
+          "time_s": 0.9999129999999999,
+          "fused_tilt_deg": 0.4135438649162514,
+          "gyro_only_tilt_deg": 0.4958250638672199,
+          "fused_vs_gyro_only_deg": 0.3083544520156916,
+          "pitch_deg": 23.05,
+          "roll_deg": 50.15,
+          "gyro_norm_rad_s": 0.02716615541441225
+        },
+        {
+          "time_s": 1.399635,
+          "fused_tilt_deg": 0.615376032276849,
+          "gyro_only_tilt_deg": 0.29378929317534286,
+          "fused_vs_gyro_only_deg": 0.46615718264540784,
+          "pitch_deg": 23.47,
+          "roll_deg": 50.67,
+          "gyro_norm_rad_s": 0.015124483462254172
+        }
+      ],
+      "max_fused_vs_gyro_only_deg": 1.4790891515663038
+    }
+  ],
+  "interpretation": "Gyro-only replay is a short-term consistency check, not ground truth. FAST samples are sparse relative to MCU fusion. A discrepancy can reflect accelerometer correction, sampling/aliasing or sensor calibration; it does not prove an estimator bug. Current old reference also fails, so new reference offset alone cannot explain failure.",
+  "next_action": "Bounded 3-second old-reference trial with K_w=0 on all motors, keeping 80/5 PD, BYAW3, BTRIM0, U6, 1-degree entry, 2-second countdown and all protections. Isolates wheel-speed feedback; no production defaults changed. Requires fresh operator corner readiness.",
+  "old_reference_operator_feedback": {
+    "source_reply": "完全一样 不必重复",
+    "same_release_and_interference_conditions_as_previous": true,
+    "same_side_fall_as_previous": true,
+    "mechanical_configuration_unchanged_reported": true
+  },
+  "approximate_output_components": [
+    {
+      "source": "com_candidate_trial5s_cap1_01",
+      "sampled_components": [
+        {
+          "time_since_first_active_fast_s": 0.260019,
+          "estimated_wheel_weight": 0.0,
+          "body_PD_and_yaw_V": [
+            0.763332629800329,
+            -0.5198583207190312,
+            -0.09987147827803824
+          ],
+          "wheel_feedback_V": [
+            0.0,
+            -0.0,
+            -0.0
+          ],
+          "reported_U_V": [
+            0.76,
+            -0.52,
+            -0.1
+          ]
+        },
+        {
+          "time_since_first_active_fast_s": 0.499918,
+          "estimated_wheel_weight": 0.0,
+          "body_PD_and_yaw_V": [
+            -1.5785988661489896,
+            -1.7066770018076656,
+            -2.571610178276327
+          ],
+          "wheel_feedback_V": [
+            -0.0,
+            -0.0,
+            -0.0
+          ],
+          "reported_U_V": [
+            -1.58,
+            -1.71,
+            -2.58
+          ]
+        },
+        {
+          "time_since_first_active_fast_s": 0.740126,
+          "estimated_wheel_weight": 0.24012599999999995,
+          "body_PD_and_yaw_V": [
+            -3.2171319201662802,
+            -1.833479300111403,
+            -3.7318809260982673
+          ],
+          "wheel_feedback_V": [
+            -0.4714153631999999,
+            -0.3799273571999999,
+            -0.6497809559999999
+          ],
+          "reported_U_V": [
+            -3.69,
+            -2.22,
+            -4.39
+          ]
+        },
+        {
+          "time_since_first_active_fast_s": 0.999872,
+          "estimated_wheel_weight": 0.499872,
+          "body_PD_and_yaw_V": [
+            -6.21966955347661,
+            -2.7666943300998508,
+            -6.774380480650807
+          ],
+          "wheel_feedback_V": [
+            -2.136202992,
+            -1.3150132704,
+            -2.4038844480000003
+          ],
+          "reported_U_V": [
+            -6.0,
+            -4.09,
+            -6.0
+          ]
+        }
+      ]
+    },
+    {
+      "source": "com_oldref_comparison_trial5s_01",
+      "sampled_components": [
+        {
+          "time_since_first_active_fast_s": 0.259776,
+          "estimated_wheel_weight": 0.0,
+          "body_PD_and_yaw_V": [
+            0.30059157240379786,
+            -0.6596809518402983,
+            -0.3598580288689619
+          ],
+          "wheel_feedback_V": [
+            0.0,
+            -0.0,
+            -0.0
+          ],
+          "reported_U_V": [
+            0.3,
+            -0.66,
+            -0.36
+          ]
+        },
+        {
+          "time_since_first_active_fast_s": 0.499901,
+          "estimated_wheel_weight": 0.0,
+          "body_PD_and_yaw_V": [
+            -1.111487813675237,
+            -0.292287449690731,
+            -0.9903640270050202
+          ],
+          "wheel_feedback_V": [
+            -0.0,
+            -0.0,
+            -0.0
+          ],
+          "reported_U_V": [
+            -1.11,
+            -0.3,
+            -0.99
+          ]
+        },
+        {
+          "time_since_first_active_fast_s": 0.7400359999999999,
+          "estimated_wheel_weight": 0.24003599999999992,
+          "body_PD_and_yaw_V": [
+            -2.435359021469599,
+            0.06450111368055127,
+            -1.3763656654840384
+          ],
+          "wheel_feedback_V": [
+            -0.36675100439999986,
+            -0.07006650839999998,
+            -0.2661519167999999
+          ],
+          "reported_U_V": [
+            -2.8,
+            -0.02,
+            -1.65
+          ]
+        },
+        {
+          "time_since_first_active_fast_s": 0.999756,
+          "estimated_wheel_weight": 0.499756,
+          "body_PD_and_yaw_V": [
+            -3.240581815102578,
+            0.17482200957361535,
+            -1.3843631374200802
+          ],
+          "wheel_feedback_V": [
+            -1.6473956784,
+            0.008245974,
+            -0.9184515767999999
+          ],
+          "reported_U_V": [
+            -4.85,
+            0.18,
+            -2.31
+          ]
+        },
+        {
+          "time_since_first_active_fast_s": 1.400002,
+          "estimated_wheel_weight": 0.900002,
+          "body_PD_and_yaw_V": [
+            -7.6165635651343315,
+            -0.3544542488803909,
+            -1.7180457848318555
+          ],
+          "wheel_feedback_V": [
+            -5.0938313196,
+            0.5985913302,
+            -2.8439163198
+          ],
+          "reported_U_V": [
+            -6.0,
+            0.24,
+            -4.53
+          ]
+        }
+      ]
+    }
+  ],
+  "component_reconstruction_limit": "Wheel ramp clock starts at MCU enable, while reconstruction starts at first active FAST frame; quantization, control/FAST timing and clamping create differences. This decomposition is not a causal plant identification.",
+  "evidence_limits": [
+    "Gyro-only reconstruction also trends away; no proof of a pure accelerometer-estimator artifact.",
+    "Historical successful first frame was near23.04/47.84, unlike current23.44/50 entry; initial conditions differ, so comparison does not isolate reference alone against historical success.",
+    "Negative wheel gain gives u an additive +0.03*wheel_speed term as it ramps from0.5s to1.5s; this can reinforce wheel voltage, but coupled balance-loop stability cannot be decided from this algebra alone."
+  ]
+}
