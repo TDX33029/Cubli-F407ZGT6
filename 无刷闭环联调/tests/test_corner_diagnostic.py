@@ -92,6 +92,9 @@ class Device:
                     Gx='100' if active and self.fault == 'gyro' else '.5', Gy='-.4', Gz='.2',
                     S1='0', S2='101' if active and self.fault == 'M2_speed' else
                     ('400' if active and self.fault == 'wheel_guard' else '0'), S3='0')
+        if self.fault == 'off_target_before_arm' and not active and (
+                self.arm_at is None or self.now < self.arm_at - 1):
+            data.update(Pit='0', Rol='90', Gx='120')
         if active and self.fault == 'nan':
             data['S3']='nan'
         if self.fast:
@@ -188,6 +191,12 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertNotIn('BZERO', device.commands)
         self.assertIn('FAST 7', device.commands)
         self.assertIn('BSTART 2', device.commands)
+    def test_saved_reference_waits_for_entry_without_hand_capture_gate(self):
+        device, result, code = self.run_trial(fault='off_target_before_arm', saved=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(result['result'], 'bounded_run_completed')
+        self.assertIn('BSTART 2', device.commands)
+        self.assertNotIn('BZERO', device.commands)
     def test_legacy_uses_host_wait_without_fast(self):
         device, result, code = self.run_trial(fault='legacy')
         self.assertEqual(code, 0)

@@ -30,6 +30,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--port', default='COM7')
 parser.add_argument('--tag', required=True)
 parser.add_argument('--seconds', type=float, default=3)
+parser.add_argument('--wait-seconds', type=float, default=180, help='Disabled entry wait, 10..600 seconds')
 parser.add_argument('--countdown', type=int, default=2)
 parser.add_argument('--capture-angle', type=float, default=.5, help='Total entry tilt in degrees, 0.5..3')
 parser.add_argument('--voltage', type=float, default=3.5)
@@ -46,7 +47,7 @@ parser.add_argument('--prepare-only', action='store_true', help='Capture/configu
 parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent / '2026-10-14')
 parser.add_argument('--live-state',type=Path)
 args = parser.parse_args()
-if not (0 < args.seconds <= 15 and 2 <= args.countdown <= 15 and .5 <= args.capture_angle <= 3
+if not (0 < args.seconds <= 15 and 10 <= args.wait_seconds <= 600 and 2 <= args.countdown <= 15 and .5 <= args.capture_angle <= 3
         and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 250
         and 0 <= args.kp <= 120 and 0 <= args.kd <= 10 and all(abs(v) <= .1 for v in args.kw)
         and sorted(args.body_axes) == [1, 2, 3]):
@@ -157,7 +158,9 @@ def pump(duration):
                         summary['guard_frame'] = data
                         raise RuntimeError('Corner wheel speed bound')
                     rate = math.sqrt(sum(float(data[k]) ** 2 for k in ('Gx', 'Gy', 'Gz'))) * math.pi / 180
-                    if rate > 1.5 or tilt(gravity(data), reference) > 10:
+                    # Moving a disabled cube towards the target is expected.
+                    # The MCU owns pose/stillness checks during its countdown.
+                    if (data.get('Bal') == '3' or data.get('EN') == '111') and (rate > 1.5 or tilt(gravity(data), reference) > 10):
                         summary['guard_frame']=data
                         raise RuntimeError('Corner body rate/tilt bound')
                     if data.get('Bal') == '3':
@@ -189,15 +192,20 @@ def confirm(predicate, label, timeout=1):
     raise RuntimeError(label + ': fresh STATE confirmation failed')
 
 
-def still_corner():
+def ready_for_reference():
     samples = [d for t, d in recent if time.monotonic() - t <= .5]
     if len(samples) < 5 or time.monotonic() - last_tele > .15:
         return False
     for data in samples:
+        if data.get('EN') != '000' or max(abs(float(data[f'S{i}'])) for i in (1, 2, 3)) > 2:
+            return False
+        if args.reference_gravity is not None:
+            # A saved target does not need to be recaptured from a hand-held
+            # pose. Keep idle-wheel/fresh-data checks, then let BSTART gate entry.
+            continue
         g = gravity(data)
         rate = math.sqrt(sum(float(data[k]) ** 2 for k in ('Gx', 'Gy', 'Gz'))) * math.pi / 180
-        if (data.get('EN') != '000' or tilt(g, expected_g) > 6 or min(abs(v) for v in g) < .25
-                or rate > .1 or max(abs(float(data[f'S{i}'])) for i in (1, 2, 3)) > 2):
+        if tilt(g, expected_g) > 6 or min(abs(v) for v in g) < .25 or rate > .1:
             return False
     return True
 
@@ -236,12 +244,13 @@ try:
             and abs(float(d.get('SLimit', 0)) - args.wheel_bound - 20) < .11
             and (d.get('CornerStart') != '1' or abs(float(d.get('CapDeg', -1))-args.capture_angle) < .011)
             and d.get('TripDeg') == '20.0' and d.get('EN') == '000', 'Corner configuration')
-    phase = 'wait_still_corner'
-    print('Waiting for stationary supported corner; motors disabled', flush=True)
-    deadline = time.monotonic() + 60
-    while not still_corner():
+    phase = 'wait_idle_wheels' if args.reference_gravity is not None else 'wait_still_corner'
+    print('Waiting for idle flywheels; motors disabled' if args.reference_gravity is not None
+          else 'Waiting for stationary supported corner; motors disabled', flush=True)
+    deadline = time.monotonic() + args.wait_seconds
+    while not ready_for_reference():
         if time.monotonic() >= deadline:
-            raise RuntimeError('Corner pose not stationary within 60s')
+            raise RuntimeError('Reference preparation not ready within entry wait')
         pump(.05)
     phase = 'capture_reference'
     firmware_countdown = state.get('CornerStart') == '1'
@@ -268,7 +277,7 @@ try:
             watch = True
             command(f'BSTART {args.countdown}')
             print('MCU wait pose/countdown; PG5 flashes, hold until PG6', flush=True)
-            deadline = time.monotonic() + 60
+            deadline = time.monotonic() + args.wait_seconds
         else:
             phase = 'host_countdown'
             print(f'Host wait {args.countdown}s; PG5 does not blink in legacy corner firmware; hold until PG6', flush=True)
