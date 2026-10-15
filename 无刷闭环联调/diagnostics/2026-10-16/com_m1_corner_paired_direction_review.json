@@ -1,0 +1,82 @@
+{
+  "motor": 1,
+  "body_axis": "Y",
+  "positive_voltage_body_response": "positiveY",
+  "negative_voltage_body_response": "negativeY",
+  "body_direction_to_keep": -1,
+  "paired_response_matches_existing_direction": true,
+  "measurements": [
+    {
+      "source": "com_m1_corner_probe_pos3_01",
+      "voltage": 3.0,
+      "baseline_gyro_rad_s": [
+        -0.026166666666666668,
+        -0.05433333333333334,
+        -0.04866666666666667
+      ],
+      "end_gyro_rad_s": [
+        -0.47050000000000003,
+        0.5665,
+        0.5415
+      ],
+      "gyro_delta_rad_s": [
+        -0.44433333333333336,
+        0.6208333333333333,
+        0.5901666666666666
+      ],
+      "wheel_end_rad_s": 24.34,
+      "gyro_delta_per_wheel_speed": [
+        -0.0182552725280745,
+        0.025506710490276637,
+        0.024246781703642837
+      ],
+      "samples": 8,
+      "final_disabled": true
+    },
+    {
+      "source": "com_m1_corner_probe_neg3_01",
+      "voltage": -3.0,
+      "baseline_gyro_rad_s": [
+        0.018,
+        0.012500000000000002,
+        0.028833333333333336
+      ],
+      "end_gyro_rad_s": [
+        0.5135000000000001,
+        -0.5814999999999999,
+        -0.5985
+      ],
+      "gyro_delta_rad_s": [
+        0.49550000000000005,
+        -0.5939999999999999,
+        -0.6273333333333334
+      ],
+      "wheel_end_rad_s": -26.43,
+      "gyro_delta_per_wheel_speed": [
+        -0.01874763526295876,
+        0.022474460839954594,
+        0.023735653928616474
+      ],
+      "samples": 9,
+      "final_disabled": true
+    }
+  ],
+  "limits": [
+    "Baseline gravity drift, hand release latency and sparse samples prevent treating the response ratio as an exact inertia.",
+    "M1 produces substantial X/Z coupling at the corner; a single motor pulse does not identify the complete3-axis plant.",
+    "Standing release/no-interference protocol used; no new repeated physical confirmation requested."
+  ],
+  "next_trial": {
+    "kp": 80,
+    "kd": 5,
+    "kw": [
+      -0.04,
+      -0.04,
+      -0.04
+    ],
+    "reference_pitch": 23.4399,
+    "reference_roll": 50,
+    "seconds": 3,
+    "reason": "Restore full closed loop; compare stronger stabilizing wheel term to historical-.03. Not a validated production parameter."
+  }
+}
