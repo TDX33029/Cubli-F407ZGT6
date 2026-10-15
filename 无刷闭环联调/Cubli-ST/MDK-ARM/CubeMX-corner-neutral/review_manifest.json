@@ -12,7 +12,9 @@
     "35 corner diagnostic tests",
     "10 persistent pose monitor tests"
   ],
-  "flashed": false,
+  "flashed": true,
   "balance_validation": "Not tested on hardware yet",
-  "source_file_sha256": "058c269bbf7fdf520228b4e19a0d68a777e9eec91bb9e2b374be3ca4434333a6"
+  "source_file_sha256": "058c269bbf7fdf520228b4e19a0d68a777e9eec91bb9e2b374be3ca4434333a6",
+  "flash_verification": "Download verified successfully; software reset performed",
+  "postflash_alignment_and_calibration": "Pending; reset clears calibration"
 }
