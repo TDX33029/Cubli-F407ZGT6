@@ -1,0 +1,5 @@
+{
+  "result": "logging_failed_before_self_test",
+  "motor_motion_commanded": false,
+  "error": "GBK console could not print U+FFFD from a partial startup frame; STOP cleanup executed. Fixed UTF-8/backslashreplace logging; successful retry is prep_02."
+}

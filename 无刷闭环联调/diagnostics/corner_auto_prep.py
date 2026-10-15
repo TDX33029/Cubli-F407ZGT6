@@ -7,9 +7,16 @@ Never enables balancing; STOP on every exit.
 import argparse
 import json
 import time
+import sys
 from pathlib import Path
 
 import serial
+
+# A partial boot/UART frame may contain replacement characters. Logging it
+# must not abort preparation (or its STOP cleanup) on a Windows GBK console.
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, 'reconfigure'):
+        stream.reconfigure(encoding='utf-8', errors='backslashreplace')
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--port', default='COM7')
