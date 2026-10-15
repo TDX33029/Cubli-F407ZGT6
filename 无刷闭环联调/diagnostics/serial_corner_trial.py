@@ -29,6 +29,8 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--port', default='COM7')
 parser.add_argument('--tag', required=True)
 parser.add_argument('--seconds', type=float, default=3)
+parser.add_argument('--countdown', type=int, default=2)
+parser.add_argument('--capture-angle', type=float, default=.5, help='Total entry tilt in degrees, 0.5..3')
 parser.add_argument('--voltage', type=float, default=3.5)
 parser.add_argument('--wheel-bound', type=float, default=100)
 parser.add_argument('--kp', type=float, default=80)
@@ -43,7 +45,8 @@ parser.add_argument('--prepare-only', action='store_true', help='Capture/configu
 parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent / '2026-10-14')
 parser.add_argument('--live-state',type=Path)
 args = parser.parse_args()
-if not (0 < args.seconds <= 15 and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 250
+if not (0 < args.seconds <= 15 and 2 <= args.countdown <= 15 and .5 <= args.capture_angle <= 3
+        and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 250
         and 0 <= args.kp <= 120 and 0 <= args.kd <= 10 and all(abs(v) <= .1 for v in args.kw)
         and sorted(args.body_axes) == [1, 2, 3]):
     parser.error('Corner diagnostic bounds exceeded')
@@ -51,7 +54,7 @@ if args.yaw_damping is not None and not 0 <= args.yaw_damping <= 10:
     parser.error('Yaw damping must be 0..10')
 expected = json.loads(args.expected_pose.read_text(encoding='utf-8'))
 expected_g = gravity({key: expected['ranges'][key]['median'] for key in ('Pit', 'Rol')})
-publisher=PosePublisher(args.live_state)
+publisher=PosePublisher(args.live_state, capture_angle=args.capture_angle)
 if min(abs(v) for v in expected_g) < .25:
     parser.error('Expected pose is too close to a face/edge; capture a corner pose first')
 if args.reference_gravity is not None:
@@ -210,7 +213,7 @@ try:
             'Three alignments/static IMU calibration')
     for text in ('APP 1', 'BMODE 4', 'BAXIS ' + ' '.join(map(str, args.body_axes)),
                  'BDIR ' + ' '.join(map(str, args.directions)), f'U {args.voltage}',
-                 f'L {args.wheel_bound + 20}', f'BU {args.voltage}', 'BTRIP 20', 'BCAP 2', 'FREQ 7'):
+                 f'L {args.wheel_bound + 20}', f'BU {args.voltage}', 'BTRIP 20', f'BCAP {args.capture_angle:g}', 'FREQ 7'):
         command(text)
     for i, kw in enumerate(args.kw, 1):
         command(f'LQR{i} {args.kp} {args.kd} {kw} 0')
@@ -229,6 +232,7 @@ try:
                     and d.get(f'D{i}') == str(args.directions[i-1]) for i in (1, 2, 3))
             and abs(float(d.get('VLimit', 0)) - args.voltage) < .11
             and abs(float(d.get('SLimit', 0)) - args.wheel_bound - 20) < .11
+            and (d.get('CornerStart') != '1' or abs(float(d.get('CapDeg', -1))-args.capture_angle) < .011)
             and d.get('TripDeg') == '20.0' and d.get('EN') == '000', 'Corner configuration')
     phase = 'wait_still_corner'
     print('Waiting for stationary supported corner; motors disabled', flush=True)
@@ -260,16 +264,16 @@ try:
             phase = 'mcu_countdown'
             command('FAST 7')
             watch = True
-            command('BSTART 8')
+            command(f'BSTART {args.countdown}')
             print('MCU wait pose/countdown; PG5 flashes, hold until PG6', flush=True)
             deadline = time.monotonic() + 60
         else:
             phase = 'host_countdown'
-            print('Host wait 8s; PG5 does not blink in legacy corner firmware; hold until PG6', flush=True)
-            deadline = time.monotonic() + 8
+            print(f'Host wait {args.countdown}s; PG5 does not blink in legacy corner firmware; hold until PG6', flush=True)
+            deadline = time.monotonic() + args.countdown
             while time.monotonic() < deadline:
                 pump(.05)
-                if (time.monotonic() - last_tele > .2 or tilt(gravity(tele), reference) > 3
+                if (time.monotonic() - last_tele > .2 or tilt(gravity(tele), reference) >= args.capture_angle
                         or tele.get('EN') != '000'):
                     raise RuntimeError('Corner moved during host countdown; not armed')
             phase = 'corner_run'

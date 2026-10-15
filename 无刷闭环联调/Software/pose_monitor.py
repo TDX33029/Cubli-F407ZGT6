@@ -36,7 +36,7 @@ class PoseMonitor(QWidget):
         self.angles.setAlignment(Qt.AlignCenter)
         self.target = QLabel('目标尚未设置')
         self.target.setAlignment(Qt.AlignCenter)
-        self.error = QLabel('圆心为当前候选目标，圆圈为2°范围')
+        self.error = QLabel('圆心为当前候选目标，圆圈为配置入位范围')
         self.error.setAlignment(Qt.AlignCenter)
         self.plot = QWidget()
         self.plot.setStyleSheet('background:transparent;')
@@ -76,7 +76,7 @@ class PoseMonitor(QWidget):
             self.target.setText(f"候选目标 Pitch {target[0]:+.2f}°    Roll {target[1]:+.2f}°")
             g, ref = gravity(data['pitch'], data['roll']), gravity(*target)
             angle = math.degrees(math.acos(max(-1,min(1,sum(a*b for a,b in zip(g,ref))))))
-            self.error.setText(f'距候选目标 {angle:.2f}° · 圆圈为2°范围')
+            self.error.setText(f"距候选目标 {angle:.2f}° · 圆圈为{data.get('capture_angle',2):g}°范围")
         self.speeds.setText('    '.join(f'M{i} {v:+.1f} rad/s' for i,v in enumerate(data['speeds'],1)))
         self.update()
 
@@ -86,7 +86,8 @@ class PoseMonitor(QWidget):
         center = QPointF(rectangle.center())
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        scale = min(rectangle.width()/10, rectangle.height()/6)
+        radius = max(.5, min(10, float(self.data.get('capture_angle',2))))
+        scale = min(rectangle.width()/(5*radius), rectangle.height()/(3*radius))
         painter.setPen(QPen(QColor('#475569'), 1))
         painter.drawLine(QPointF(rectangle.left()+20,center.y()), QPointF(rectangle.right()-20,center.y()))
         painter.drawLine(QPointF(center.x(),rectangle.top()+10), QPointF(center.x(),rectangle.bottom()-10))
@@ -94,7 +95,7 @@ class PoseMonitor(QWidget):
         painter.drawText(QPointF(center.x()+10,rectangle.top()+25),'Pitch ↑')
         painter.drawText(QPointF(rectangle.right()-90,center.y()-10),'Roll →')
         painter.setPen(QPen(QColor('#22c55e'), 2))
-        painter.drawEllipse(center,2*scale,2*scale)
+        painter.drawEllipse(center,radius*scale,radius*scale)
         data = self.data
         if data.get('target'):
             pitch, roll = data['target']

@@ -33,7 +33,8 @@ def tilt(left, right):
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--port', default='COM7')
 parser.add_argument('--tag', required=True)
-parser.add_argument('--countdown', type=int, default=8, help='BAUTO countdown seconds, 3..15')
+parser.add_argument('--countdown', type=int, default=2, help='BAUTO countdown seconds, 2..15')
+parser.add_argument('--capture-angle', type=float, default=.5, help='Total entry tilt in degrees, 0.5..3')
 parser.add_argument('--duration-minutes', type=float, default=0, help='0 keeps running until interrupted')
 parser.add_argument('--wait-seconds', type=float, default=180, help='Deadline for the first auto entry')
 parser.add_argument('--voltage', type=float, default=6)
@@ -64,7 +65,8 @@ parser.add_argument('--prepare-only', action='store_true', help='Configure and v
 parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent / '2026-10-15')
 parser.add_argument('--live-state', type=Path)
 args = parser.parse_args()
-if not (3 <= args.countdown <= 15 and args.duration_minutes >= 0 and 30 <= args.wait_seconds <= 1800
+if not (2 <= args.countdown <= 15 and .5 <= args.capture_angle <= 3
+        and args.duration_minutes >= 0 and 30 <= args.wait_seconds <= 1800
         and 0 < args.voltage <= 6 and 30 <= args.full_speed < args.wheel_limit <= 360
         and args.wheel_limit < args.wheel_guard <= 500
         and 20 < args.tilt_guard <= 40 and 3 <= args.rate_guard <= 6
@@ -112,7 +114,7 @@ first_entry_deadline = None
 run_deadline = None
 last_tele = 0
 last_report = 0
-publisher = PosePublisher(args.live_state)
+publisher = PosePublisher(args.live_state, capture_angle=args.capture_angle)
 
 
 def record(kind, data):
@@ -311,7 +313,7 @@ try:
         raise RuntimeError('Explicit tilt trim configuration requires updated firmware (TrimTune)')
     for text in ('APP 1', 'BMODE 4', 'BAXIS ' + ' '.join(map(str, args.body_axes)),
                  'BDIR ' + ' '.join(map(str, args.directions)), f'U {args.voltage}',
-                 f'L {args.wheel_limit}', f'BU {args.voltage}', 'BTRIP 20', 'BCAP 2'):
+                 f'L {args.wheel_limit}', f'BU {args.voltage}', 'BTRIP 20', f'BCAP {args.capture_angle:g}'):
         command(text)
     for i, kw in enumerate(args.kw, 1):
         command(f'LQR{i} {args.kp} {args.kd} {kw} {args.ki}')
@@ -327,6 +329,7 @@ try:
             and abs(float(d.get('YawD', 0)) - args.yaw_damping) < .011
             and d.get('TrimTune') == '1'
             and abs(float(d.get('BTrim', -1)) - args.tilt_trim) < .011
+            and abs(float(d.get('CapDeg', -1)) - args.capture_angle) < .011
             and d.get('TripDeg') == '20.0' and d.get('EN') == '000', 'Corner automatic configuration')
     phase = 'capture_reference'
     if args.reference_gravity is not None:

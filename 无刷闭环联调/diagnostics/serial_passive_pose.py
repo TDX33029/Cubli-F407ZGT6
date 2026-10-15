@@ -15,9 +15,10 @@ p.add_argument('--port', default='COM9')
 p.add_argument('--live-state',type=Path)
 p.add_argument('--target-pitch',type=float,default=23.4399)
 p.add_argument('--target-roll',type=float,default=50)
+p.add_argument('--capture-angle',type=float,default=.5)
 p.add_argument('--stop-on-capture',type=Path,help='End disabled recording when the pose guide saves a new candidate')
 a = p.parse_args()
-if not 1 <= a.seconds <= 600:
+if not 1 <= a.seconds <= 600 or not .5 <= a.capture_angle <= 10:
     raise SystemExit('Passive recording duration must be 1..600 seconds')
 folder = Path(__file__).resolve().parent / '2026-10-14'
 log = (folder / (a.tag + '.jsonl')).open('x', encoding='utf-8')
@@ -32,7 +33,7 @@ captured_candidate=None
 buf = b''
 frames = []
 state = {}
-publisher=PosePublisher(a.live_state,[a.target_pitch,a.target_roll])
+publisher=PosePublisher(a.live_state,[a.target_pitch,a.target_roll],capture_angle=a.capture_angle)
 
 def record(kind, data):
     log.write(json.dumps({'t': time.monotonic() - start, 'kind': kind, 'data': data}) + '\n')

@@ -330,11 +330,13 @@ class SerialWorker(QThread):
                 if 'Enc' in fields and not re.fullmatch('[01]{3}', fields['Enc']):
                     raise ValueError('invalid encoder mask')
                 for key in ('VLimit', 'SLimit', 'TripDeg', 'PoseTilt', 'Angle', 'FullSpeed', 'Wheel', 'Rate', 'YawD',
-                            'Trim1', 'Trim2', 'Trim3', 'BTrim'):
+                            'Trim1', 'Trim2', 'Trim3', 'BTrim', 'CapDeg'):
                     if key in fields:
                         fields[key] = float(fields[key])
                         if not math.isfinite(fields[key]):
                             raise ValueError('invalid limits')
+                if 'CapDeg' in fields and not .5 <= fields['CapDeg'] <= 10:
+                    raise ValueError('invalid capture angle')
                 if 'EncType' in fields:
                     fields['EncType'] = int(fields['EncType'])
                     if fields['EncType'] not in (0, 1):
@@ -2728,7 +2730,7 @@ class MainWindow(QMainWindow):
         self.btn_balance_countdown.setEnabled(connected and not self.self_test_running and not self.expected_state and not self.edge_profile_pending and
             state.get('App') == 1 and (state.get('BMode', 1) != 4 or state.get('CornerStart') == 1) and state.get('Bal', 0) in (0, 4) and
             bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 0)) and bool(state.get('AxesOK', 0)) and bool(state.get('DirOK', 0)) and all(needed))
-        self.btn_balance_countdown.setText('等待入位，8秒倒计时后启动（单点）' if state.get('BMode') == 4 else '等待入位，8秒倒计时后启动（边沿）')
+        self.btn_balance_countdown.setText('等待0.5°内入位，2秒倒计时后启动（单点）' if state.get('BMode') == 4 else '等待入位，8秒倒计时后启动（边沿）')
         self.btn_balance_countdown.setToolTip('单点需三轴对齐、映射与方向确认，并采集参考；PG5倒计时，PG6亮即松手。离位取消倒计时。'
             if state.get('BMode') == 4 and state.get('CornerStart') == 1 else
             ('当前固件不支持单点灯光倒计时，请更新固件' if state.get('BMode') == 4 else
@@ -2863,7 +2865,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(btn_dir, 19, 0, 1, 2)
         self.btn_balance_countdown = QPushButton("等待入位，8秒倒计时后启动（边沿）")
         self.btn_balance_countdown.setToolTip("先采集目标姿态；±10°内PG5倒计时，离位取消。PG8闪烁表示需靠近并稳住，常亮表示约±3°且低角速度。PG6运行，PG7跌倒停机。")
-        self.btn_balance_countdown.clicked.connect(lambda: self._request_state_change("BSTART 8"))
+        self.btn_balance_countdown.clicked.connect(lambda: self._request_state_change("BSTART 2" if (self.device_state or {}).get('BMode') == 4 else "BSTART 8"))
         layout.addWidget(self.btn_balance_countdown, 20, 0, 1, 2)
         btn_axis_one = QPushButton("只确认当前边沿轮轴")
         btn_axis_one.clicked.connect(self.action_send_edge_axis)
@@ -2926,7 +2928,7 @@ class MainWindow(QMainWindow):
         if state.get('Auto'):
             self._request_state_change('BAUTO 0', {'Auto': 0})
         elif self.btn_auto_edge.isEnabled():
-            self._request_state_change('BAUTO 1', {'Auto': 1})
+            self._request_state_change('BAUTO 1 2' if state.get('BMode') == 4 else 'BAUTO 1', {'Auto': 1})
 
     def action_prepare_edge_m1_test(self):
         if not self.btn_edge_m1_test.isEnabled():return
@@ -2971,7 +2973,7 @@ class MainWindow(QMainWindow):
         self.edge_profile_generation += 1;generation = self.edge_profile_generation
         for command in ('APP 1','BMODE 4','BAXIS 2 3 1','BDIR -1 -1 -1','U 6','L 330','BU 6',
                         'LQR1 80 5 -0.030 0','LQR2 80 5 -0.030 0','LQR3 80 5 -0.030 0','BYAW 3','BTRIM 0',
-                        'BTRIP 20','BFULL 250','BCAP 2',
+                        'BTRIP 20','BFULL 250','BCAP 0.5',
                         'BREF -0.7028287890572913 0.3977869310324257 0.5897433770480731','STATE?'):
             self.worker.send_cmd(command)
         self.set_motor_controls_locked(True)
@@ -3028,7 +3030,7 @@ class MainWindow(QMainWindow):
                         if self.profile_kind == 'edge' else
                         {'App':1,'BMode':4,'Axis1':2,'Axis2':3,'Axis3':1,'D1':-1,'D2':-1,'D3':-1,
                          'AxisMask':7,'DirMask':7,'Ref':1,'EN':'000','TripDeg':20.0,'FullSpeed':250.0,'VLimit':6.0,'SLimit':330.0,
-                         'BTrim':0.0,'TrimTune':1})
+                         'BTrim':0.0,'TrimTune':1,'CapDeg':0.5})
             if all(state.get(k) == v for k,v in expected.items()):
                 self.edge_profile_pending = False
                 self.spin_vq.setValue(6);self.spin_vlim.setValue(330)
@@ -3072,8 +3074,10 @@ class MainWindow(QMainWindow):
         self.on_mode_changed(state['Mode'])
         for card, en in zip((self.card_m1, self.card_m2, self.card_m3), state['EN']):
             card.set_enable_state(en == '1')
-        names = {0: '已失能', 1: 'IMU静止校准中', 2: '等待3°接管窗口', 3: '平衡运行', 4: '跌倒/传感器保护，需手动重启', 5: '倒计时：靠近目标并扶稳，PG8常亮才可接管', 6: '等待扶到目标±10°内，电机失能', 7: '定时短力矩探测，结束自动失能'}
-        if state.get('Auto') and state['Bal'] == 6:names[6] = '自动等待入位：±3°稳定1秒，飞轮需低于5rad/s'
+        capture_angle = float(state.get('CapDeg', .5 if state.get('BMode') == 4 else 10))
+        entry_angle = min(capture_angle, 3)
+        names = {0: '已失能', 1: 'IMU静止校准中', 2: f'等待{entry_angle:g}°接管窗口', 3: '平衡运行', 4: '跌倒/传感器保护，需手动重启', 5: '倒计时：靠近目标并扶稳，PG8常亮才可接管', 6: f'等待扶到目标{capture_angle:g}°内，电机失能', 7: '定时短力矩探测，结束自动失能'}
+        if state.get('Auto') and state['Bal'] == 6:names[6] = f'自动等待入位：{entry_angle:g}°内稳定1秒，飞轮需低于5rad/s'
         self.lbl_balance.setText(f"{names.get(state['Bal'], '未知状态')} | 倾斜 {state['Tilt']:.2f}°\n"
             f"Uq {state['U1']:+.2f} / {state['U2']:+.2f} / {state['U3']:+.2f} V | 故障 {state['Fault']} | 停机码 {state['Trip']}")
         if state['Bal'] == 5:

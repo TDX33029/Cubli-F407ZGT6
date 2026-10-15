@@ -293,6 +293,36 @@ static void test_corner_auto(void) {
  setup_corner_auto();command("BAUTO 0");corner_auto_ticks(1000,0,0,0,0);
  assert(!cubli_bal.auto_enabled&&!m1_enabled&&!m2_enabled&&!m3_enabled&&cubli_bal.state==BAL_STATE_DISABLED);
 }
+static void test_corner_tight_entry(void) {
+ int i;uint32_t begin;
+ setup_corner_auto();command("BAUTO 0");
+ assert(fabsf(cubli_bal.capture_angle-0.5f*DEG_TO_RAD)<.00001f);
+ command("BCAP 0.49");assert(fabsf(cubli_bal.capture_angle-0.5f*DEG_TO_RAD)<.00001f);
+ command("BCAP 0.5");
+ command("BSTART 1");assert(cubli_bal.state==BAL_STATE_DISABLED);
+ command("BSTART 2.5");assert(cubli_bal.state==BAL_STATE_DISABLED);
+ command("BSTART 2");assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ corner_auto_ticks(250,.6f*DEG_TO_RAD,0,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
+ for(i=0;i<30 && cubli_bal.state==BAL_STATE_WAIT_POSE;i++) corner_auto_ticks(1,.1f*DEG_TO_RAD,0,0,0);
+ assert(cubli_bal.state==BAL_STATE_COUNTDOWN&&LQR_CountdownRemainingMs()==2000);
+ corner_auto_ticks(100,.1f*DEG_TO_RAD,0,0,0);
+ corner_auto_ticks(1,.6f*DEG_TO_RAD,0,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
+ for(i=0;i<30 && cubli_bal.state==BAL_STATE_WAIT_POSE;i++) corner_auto_ticks(1,.1f*DEG_TO_RAD,0,0,0);
+ begin=fake_ms;assert(LQR_CountdownRemainingMs()==2000);
+ corner_auto_ticks(399,.1f*DEG_TO_RAD,0,0,0);assert(LQR_CountdownRemainingMs()==5&&!m1_enabled);
+ corner_auto_ticks(1,.1f*DEG_TO_RAD,0,0,0);
+ assert(fake_ms-begin==2000&&cubli_bal.state==BAL_STATE_STANDBY&&!m1_enabled);
+ /* A late exit must restart the countdown, not enable on the next return. */
+ corner_auto_ticks(1,.6f*DEG_TO_RAD,0,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
+ corner_auto_ticks(425,.1f*DEG_TO_RAD,0,0,0);assert(m1_enabled&&m2_enabled&&m3_enabled);
+ command("STOP");command("BAUTO 1"); /* Corner default countdown is2s. */
+ assert(cubli_bal.auto_enabled&&cubli_bal.countdown_seconds==2);
+ corner_auto_ticks(250,.6f*DEG_TO_RAD,0,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE);
+ for(i=0;i<250 && cubli_bal.state==BAL_STATE_WAIT_POSE;i++) corner_auto_ticks(1,.1f*DEG_TO_RAD,0,0,0);
+ assert(cubli_bal.state==BAL_STATE_COUNTDOWN&&LQR_CountdownRemainingMs()==2000);
+ corner_auto_ticks(1,.6f*DEG_TO_RAD,0,0,0);assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
+ command("STOP");
+}
 int main(void) {
  int i;float u;uint32_t saved;
  setvbuf(stdout,NULL,_IONBF,0);
@@ -301,6 +331,7 @@ int main(void) {
  test_corner_auto();
  test_corner_trim();
  test_corner_verified_control_law();
+ test_corner_tight_entry();
  setup();command("DBG 2");command("EN1 1");command("EN2 1");command("EN3 1");assert(m1_enabled&&m2_enabled&&m3_enabled);
  command("M1 20");command("M2 -30");command("M3 40");assert(target_m1==20&&target_m2==-30&&target_m3==40);
  command("M 180 -180 0");assert(target_m1==180&&target_m2==-180&&target_m3==0);

@@ -536,6 +536,7 @@ static void Control_FastTelemetry(void) {
         float *w=cubli_bal.attitude.gyro_rad;
         report_float("Rate",cubli_bal.mode<3?w[cubli_bal.body_axis[cubli_bal.mode]]:sqrtf(w[0]*w[0]+w[1]*w[1]+w[2]*w[2]),3);
         report_int("Bal",cubli_bal.state);
+        if(cubli_bal.state==BAL_STATE_COUNTDOWN) report_int("CountMs",LQR_CountdownRemainingMs());
         if(cubli_bal.state==BAL_STATE_PROBE || cubli_bal.mode==BAL_MODE_CORNER) {
             report_float("Wx",cubli_bal.attitude.gyro_rad[0],3);
             report_float("Wy",cubli_bal.attitude.gyro_rad[1],3);
@@ -596,6 +597,7 @@ void Control_Status(void) {
     report_float("PoseTilt",cubli_bal.pose_tilt_deg,2);
     report_float("Angle",cubli_bal.signed_tilt_deg,2);
     report_float("TripDeg",cubli_bal.max_angle_trip*RAD_TO_DEG,1);
+    report_float("CapDeg",cubli_bal.capture_angle*RAD_TO_DEG,2);
     report_int("Auto",cubli_bal.auto_enabled);
     report_int("BReason",cubli_bal.stop_reason);
     report_float("FullSpeed",cubli_bal.full_speed_limit,1);
@@ -655,7 +657,7 @@ void commander_run(void) {
         printf("APP 0=DEBUG/1=WORK; DBG 1..3; MODE 0=open/1=closed; TEST [axis]; ALIGN [axis]\r\n"
                "PP1/PP2/PP3 pairs; PP?; FREQ 1=reset, FREQ?=sample diagnostics\r\n"
                "M1/M2/M3 speed independently; EN1/EN2/EN3 0/1; ACC rad/s^2; STOP; PING (every 250ms)\r\n"
-               "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BREF gx gy gz; BAXIS1/2/3 1..3; BDIR1/2/3 +/-1; BAL 0/1; BSTART 3..15 seconds; BAUTO 0/1 [3..15 seconds]; BFULL speed; BCAP 2..10 deg; BTRIP 10..60 deg; BYAW 0..10; BTRIM 0..10; BPROBE volts ms\r\n"
+               "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BREF gx gy gz; BAXIS1/2/3 1..3; BDIR1/2/3 +/-1; BAL 0/1; BSTART 2..15 seconds; BAUTO 0/1 [2..15 seconds]; BFULL speed; BCAP 0.5..10 deg; BTRIP 10..60 deg; BYAW 0..10; BTRIM 0..10; BPROBE volts ms\r\n"
                "LQR1/2/3 [Kp Kd Kw Ki]; ZERO1/2/3 deg (edge); BU volts; U volts; L rad/s; PID1/2/3 [P I D]; TF seconds\r\n"
                "FF[1/2/3] [coulomb_V bemf_V_per_rad_s]; STATE?\r\n"); Control_Status();
     } else if(!strcmp(name,"APP") && n==1 && (v[0]==0 || v[0]==1)) {
@@ -672,10 +674,10 @@ void commander_run(void) {
         }
         printf("OK BAL:%d\r\n",(int)v[0]);
     } else if(!strcmp(name,"BAUTO") && ((n==1 && (v[0]==0 || v[0]==1)) ||
-              (n==2 && v[0]==1 && v[1]>=3 && v[1]<=15 && v[1]==(int)v[1]))) {
+              (n==2 && v[0]==1 && v[1]>=2 && v[1]<=15 && v[1]==(int)v[1]))) {
         Control_Stop();
         if(v[0]) {
-            if(!app_mode || !imu_online || !control_reset_latch() || !LQR_StartAuto(n==2?(uint8_t)v[1]:8)) {
+            if(!app_mode || !imu_online || !control_reset_latch() || !LQR_StartAuto(n==2?(uint8_t)v[1]:(cubli_bal.mode==BAL_MODE_CORNER?2:8))) {
                 printf("ERR BAUTO (ALIGN/CAL/AXIS/DIR/REF for the selected mode and L>BFULL required)\r\n");return;
             }
         }
@@ -683,7 +685,7 @@ void commander_run(void) {
     } else if(!strcmp(name,"BFULL") && n==1 && v[0]>=10 && v[0]<velocity_limit) {
         if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
         cubli_bal.full_speed_limit=v[0];printf("OK BFULL\r\n");
-    } else if(!strcmp(name,"BSTART") && n==1 && v[0]>=3 && v[0]<=15 && v[0]==(int)v[0]) {
+    } else if(!strcmp(name,"BSTART") && n==1 && v[0]>=2 && v[0]<=15 && v[0]==(int)v[0]) {
         Control_Stop();
         if(!app_mode || !imu_online || !control_reset_latch() || !LQR_StartCountdown((uint8_t)v[0])) {
             printf("ERR BSTART (ALIGN/CAL_IMU/BAXIS/BDIR/BZERO required)\r\n");return;
@@ -693,7 +695,7 @@ void commander_run(void) {
         if(!app_mode || cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST_WORK_ONLY\r\n");return;}
         if(!control_reset_latch() || !LQR_StartProbe(v[0],(uint16_t)v[1])) {printf("ERR BPROBE_PRECONDITION\r\n");return;}
         printf("OK BPROBE\r\n");return; /* Keep the short pulse trace free of a large STATE frame. */
-    } else if(!strcmp(name,"BCAP") && n==1 && v[0]>=2 && v[0]<=10) {
+    } else if(!strcmp(name,"BCAP") && n==1 && v[0]>=0.5f && v[0]<=10) {
         if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}
         cubli_bal.capture_angle=v[0]*DEG_TO_RAD;printf("OK BCAP\r\n");
     } else if(!strcmp(name,"BTRIP") && n==1 && v[0]>=10 && v[0]<=60) {

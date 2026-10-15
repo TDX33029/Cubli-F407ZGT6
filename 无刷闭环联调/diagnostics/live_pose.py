@@ -6,9 +6,10 @@ import time
 
 
 class PosePublisher:
-    def __init__(self, path, target=None):
+    def __init__(self, path, target=None, capture_angle=None):
         self.path = path
         self.target = target
+        self.capture_angle = capture_angle
         self.last_write = -1
         self.pose = {}
         self.pose_time = 0
@@ -27,7 +28,9 @@ class PosePublisher:
         self.last_write = time.monotonic()
         payload = {'timestamp': self.pose_time, 'pitch': float(self.pose['Pit']),
                    'roll': float(self.pose['Rol']), 'bal': int(data.get('Bal', self.state.get('Bal', 0))),
-                   'count_ms': int(self.state.get('CountMs', 0)), 'target': self.target,
+                   'count_ms': (int(data.get('CountMs', self.state.get('CountMs', 0)))
+                                if int(data.get('Bal', self.state.get('Bal', 0))) == 5 else 0), 'target': self.target,
+                   'capture_angle': float(self.capture_angle if self.capture_angle is not None else self.state.get('CapDeg', 2)),
                    'speeds': [float(self.pose.get(f'V{i}', self.pose.get(f'S{i}', 0))) for i in (1, 2, 3)]}
         temporary = self.path.with_suffix(self.path.suffix + '.tmp')
         try:

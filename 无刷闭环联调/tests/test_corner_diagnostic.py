@@ -29,7 +29,7 @@ class Device:
                           AxisMask='0', DirMask='0', Ref='0', VLimit='5', SLimit='180', TripDeg='20.0')
         if fault != 'legacy':
             self.state['CornerStart'] = '1'
-            self.state.update(YawTune='1', YawD='3.00', TrimTune='1', BTrim='2.0')
+            self.state.update(YawTune='1', YawD='3.00', TrimTune='1', BTrim='2.0', CapDeg='2.0')
 
     def open(self):
         self.is_open = True
@@ -67,6 +67,9 @@ class Device:
         elif name == 'BTRIM':
             if self.fault != 'trim_not_applied':
                 self.state['BTrim'] = parts[1]
+        elif name == 'BCAP':
+            if self.fault != 'capture_not_applied':
+                self.state['CapDeg'] = parts[1]
         elif name == 'FAST':
             self.fast = parts[1] == '7'
         elif name == 'BSTART':
@@ -137,21 +140,27 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(result['result'], 'bounded_run_completed')
         self.assertIn('BAXIS 2 3 1', device.commands)
-        self.assertIn('BSTART 8', device.commands)
-        self.assertIn('BCAP 2', device.commands)
+        self.assertIn('BSTART 2', device.commands)
+        self.assertIn('BCAP 0.5', device.commands)
         self.assertGreaterEqual(result['run_duration_s'], 3)
 
     def test_finite_trial_clears_previous_experimental_trim(self):
         device, _, code = self.run_trial()
         self.assertEqual(code, 0)
         self.assertIn('BTRIM 0', device.commands)
-        self.assertLess(device.commands.index('BTRIM 0'), device.commands.index('BSTART 8'))
+        self.assertLess(device.commands.index('BTRIM 0'), device.commands.index('BSTART 2'))
 
     def test_finite_trial_refuses_trim_not_disabled(self):
         device, result, code = self.run_trial(fault='trim_not_applied')
         self.assertEqual(code, 2)
         self.assertIn('Tilt trim disabled', result['error'])
-        self.assertNotIn('BSTART 8', device.commands)
+        self.assertNotIn('BSTART 2', device.commands)
+
+    def test_finite_trial_requires_half_degree_readback(self):
+        device, result, code = self.run_trial(fault='capture_not_applied')
+        self.assertEqual(code, 2)
+        self.assertIn('Corner configuration', result['error'])
+        self.assertNotIn('BSTART 2', device.commands)
 
     def test_m2_speed_trips_and_stops_every_axis(self):
         _, result, code = self.run_trial(fault='M2_speed')
@@ -178,7 +187,7 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertTrue(any(c.startswith('BREF ') for c in device.commands))
         self.assertNotIn('BZERO', device.commands)
         self.assertIn('FAST 7', device.commands)
-        self.assertIn('BSTART 8', device.commands)
+        self.assertIn('BSTART 2', device.commands)
     def test_legacy_uses_host_wait_without_fast(self):
         device, result, code = self.run_trial(fault='legacy')
         self.assertEqual(code, 0)
@@ -193,7 +202,7 @@ class CornerDiagnosticTests(unittest.TestCase):
         device, result, code = self.run_trial(yaw=2)
         self.assertEqual(code, 0)
         self.assertIn('BYAW 2.0', device.commands)
-        self.assertLess(device.commands.index('BYAW 2.0'), device.commands.index('BSTART 8'))
+        self.assertLess(device.commands.index('BYAW 2.0'), device.commands.index('BSTART 2'))
     def test_legacy_refuses_unavailable_yaw_setting(self):
         device, result, code = self.run_trial(fault='legacy', yaw=2)
         self.assertEqual(code, 2)
@@ -298,11 +307,17 @@ class CornerAutoTests(unittest.TestCase):
         self.assertIn('configuration', result['error'])
         self.assertFalse(any(c.startswith('BAUTO 1') for c in device.commands))
 
+    def test_auto_requires_half_degree_readback(self):
+        device, result, code = self.run_auto(fault='capture_not_applied', prepare=True)
+        self.assertEqual(code, 2)
+        self.assertIn('configuration', result['error'])
+        self.assertFalse(any(c.startswith('BAUTO 1') for c in device.commands))
+
     def test_auto_arm_config_then_balancing_attempts(self):
         device, result, code = self.run_auto(minutes=.2)
         self.assertEqual(code, 0)
         self.assertEqual(result['result'], 'timed_run_completed')
-        self.assertIn('BAUTO 1 8', device.commands)
+        self.assertIn('BAUTO 1 2', device.commands)
         self.assertIn('L 330', device.commands)
         self.assertIn('BFULL 250', device.commands)
         for command in ('BREF ' + ' '.join(f'{v:.9f}' for v in
@@ -318,7 +333,7 @@ class CornerAutoTests(unittest.TestCase):
         device, result, code = self.run_auto(minutes=.3)
         self.assertEqual(code, 0)
         self.assertGreaterEqual(result['auto_attempts'], 2)
-        self.assertEqual(device.commands.count('BAUTO 1 8'), 1)
+        self.assertEqual(device.commands.count('BAUTO 1 2'), 1)
 
     def test_hard_fault_exits_automatic_mode(self):
         _, result, code = self.run_auto(fault='fall_protect', minutes=.5)
