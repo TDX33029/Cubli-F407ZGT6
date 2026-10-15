@@ -13,7 +13,7 @@
   ],
   "flashed": true,
   "flash_verification": "Download verified successfully",
-  "balance_validation": "pending; old ramp firmware3s success did not reproduce in next5s trial",
+  "balance_validation": "Completed3s with user-reported restoring action/balance; max tilt3.221deg; longer validation pending",
   "source_file_sha256": "77900044f44cbfc3ba741bbd99f68d1fd81a6a78503d0c63b7ebe4bde3cd32a0",
   "postflash_alignment_and_calibration": "Aligned111 Cal1 EN000 Fault0"
 }

@@ -3666,7 +3666,7 @@ Image component sizes
 ==============================================================================
 
 
-      Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
+      Code (inc. data)   RO Data    RW Data    ZI Data      Debug
 
      47812       6818       2040        208      11032     905619   Grand Totals
      47812       6818       2040        208      11032     905619   ELF Image Totals
@@ -3679,4 +3679,3 @@ Image component sizes
     Total ROM Size (Code + RO Data + RW Data)      50060 (  48.89kB)
 
 ==============================================================================
-

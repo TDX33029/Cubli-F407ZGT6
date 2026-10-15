@@ -1,5 +1,5 @@
       -------------------------------------------------------------------
-                       STM32CubeProgrammer v2.21.0                  
+                       STM32CubeProgrammer v2.21.0
       -------------------------------------------------------------------
 
 ST-LINK SN  : 190A071F7116303030303032
@@ -24,7 +24,7 @@ Opening and parsing file: CubeMX.hex
 
 Memory Programming ...
   File          : CubeMX.hex
-  Size          : 48.89 KB 
+  Size          : 48.89 KB
   Address       : 0x08000000
 
 
