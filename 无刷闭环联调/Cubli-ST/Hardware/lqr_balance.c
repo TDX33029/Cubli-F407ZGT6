@@ -13,6 +13,13 @@ Cubli_Balance_t cubli_bal;
 static uint8_t required_mask(void) {
     return cubli_bal.mode==BAL_MODE_CORNER?7U:(uint8_t)(1U<<cubli_bal.mode);
 }
+static bool corner_wheels_idle(void) {
+    int i;
+    if(cubli_bal.mode!=BAL_MODE_CORNER) return true;
+    for(i=0;i<3;i++) if(!motor_aligned[i] || !sensor_valid[i] ||
+        !isfinite(shaft_velocity[i]) || fabsf(shaft_velocity[i])>=5.0f) return false;
+    return true;
+}
 bool LQR_AxesConfirmed(void) {return (cubli_bal.axes_confirmed_mask&required_mask())==required_mask();}
 bool LQR_DirectionsConfirmed(void) {return (cubli_bal.directions_confirmed_mask&required_mask())==required_mask();}
 void LQR_ConfirmAxis(uint8_t motor,uint8_t axis) {
@@ -276,6 +283,7 @@ void LQR_Balance_Loop(void) {
         cubli_bal.tilt_deg=full_tilt*RAD_TO_DEG;
         cubli_bal.signed_tilt_deg=m<3?(atan2f(err[axis],dot3(g,ref)-g[axis]*ref[axis])-cubli_bal.gains[m].theta_0)*RAD_TO_DEG:full_tilt*RAD_TO_DEG;
         if(cubli_bal.auto_enabled) within=LQR_AutoPoseReady();
+        within=within && corner_wheels_idle();
         if(cubli_bal.state==BAL_STATE_WAIT_POSE) {
             if(!within || norm3(cubli_bal.attitude.gyro_rad)>0.6f) {cubli_bal.capture_since_ms=0;return;}
             if(!cubli_bal.capture_since_ms) cubli_bal.capture_since_ms=ms;
@@ -337,7 +345,7 @@ void LQR_Balance_Loop(void) {
     }
     if(cubli_bal.state==BAL_STATE_STANDBY) {
         uint32_t now_ms=HAL_GetTick();
-        if(tilt>=fminf(cubli_bal.capture_angle,3*DEG_TO_RAD) || full_tilt>=fminf(cubli_bal.capture_angle,3*DEG_TO_RAD) || norm3(cubli_bal.attitude.gyro_rad)>0.35f) {
+        if(tilt>=fminf(cubli_bal.capture_angle,3*DEG_TO_RAD) || full_tilt>=fminf(cubli_bal.capture_angle,3*DEG_TO_RAD) || norm3(cubli_bal.attitude.gyro_rad)>0.35f || !corner_wheels_idle()) {
             cubli_bal.capture_since_ms=0;
             /* A pose lost between countdown expiry and enable needs a new countdown. */
             if(cubli_bal.countdown_seconds) {
@@ -363,10 +371,11 @@ void LQR_Balance_Loop(void) {
         int axis=cubli_bal.body_axis[i];
         float rate=cubli_bal.attitude.gyro_rad[axis];
         float limit=fminf(p->max_u,voltage_limit),u,body;
-        /* Body PD acts immediately. Hand support temporarily removes body
-           motion from the wheel feedback path; introduce that path gradually
-           after 500ms, reaching its configured gain at 1500ms. */
-        float wheel_weight=_constrain(((float)(HAL_GetTick()-cubli_bal.balance_since_ms)-500.0f)/1000.0f,0,1);
+        /* Corner handover starts with idle wheels and immediate release.
+           Its stabilizing wheel term must be present from the first loop,
+           rather than leaving a different controller active for500ms.
+           Keep the established edge-mode handover ramp. */
+        float wheel_weight=m==3?1.0f:_constrain(((float)(HAL_GetTick()-cubli_bal.balance_since_ms)-500.0f)/1000.0f,0,1);
         if(!sensor_valid[i] || !motor_aligned[i]) {LQR_Trip();return;}
         if(fabsf(shaft_velocity[i])>velocity_limit) {protect_balance(BAL_STOP_OVERSPEED);return;}
         if(fabsf(shaft_velocity[i])>=cubli_bal.full_speed_limit) {

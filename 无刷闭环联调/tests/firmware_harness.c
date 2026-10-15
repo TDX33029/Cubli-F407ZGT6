@@ -199,7 +199,7 @@ static void test_corner_trim(void) {
                    cubli_bal.corner_gains[i].K_w=0;cubli_bal.corner_gains[i].K_i=0;}
  corner_auto_ticks(210,0,0,0,0);assert(cubli_bal.state==BAL_STATE_COUNTDOWN);
  corner_auto_ticks(910,0,0,0,0);assert(cubli_bal.state==BAL_STATE_BALANCING);
- corner_auto_ticks(320,0,0,0,0); /* finish the wheel-weight ramp at zero tilt */
+ corner_auto_ticks(320,0,0,0,0); /* remain at zero tilt before checking the integral */
  assert(cubli_bal.tilt_int[0]==0&&cubli_bal.tilt_int[1]==0&&cubli_bal.tilt_int[2]==0);
  corner_auto_ticks(200,2*DEG_TO_RAD,0,0,0);
  advance();corner_gravity(2*DEG_TO_RAD);cross3(cubli_bal.attitude.gravity,cubli_bal.reference[3],err);
@@ -246,6 +246,28 @@ static void test_corner_verified_control_law(void) {
   assert(fabsf(cubli_bal.control_u[i]-expected)<.0001f);
   assert(cubli_bal.tilt_int[i]==0); /* no hidden integral with BTRIM off */
  }
+}
+static void test_corner_immediate_feedback(void) {
+ int i;
+ setup_corner_auto();command("BAUTO 0");
+ for(i=0;i<3;i++) LQR_SetGains(i,0,0,-.040f,0);
+ command("BSTART 2");
+ corner_auto_ticks(100,0,0,0,6);
+ assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled&&!m2_enabled&&!m3_enabled);
+ corner_auto_ticks(30,0,2,0,0);assert(cubli_bal.state==BAL_STATE_COUNTDOWN);
+ corner_auto_ticks(1,0,2,6,0);
+ assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
+ for(i=0;i<500&&cubli_bal.state!=BAL_STATE_STANDBY;i++) corner_auto_ticks(1,0,2,0,0);
+ assert(cubli_bal.state==BAL_STATE_STANDBY&&!m1_enabled);
+ /* A wheel starting to move in the handover gap must restart entry. */
+ corner_auto_ticks(1,0,6,0,0);
+ assert(cubli_bal.state==BAL_STATE_WAIT_POSE&&!m1_enabled);
+ for(i=0;i<500&&cubli_bal.state!=BAL_STATE_BALANCING;i++) corner_auto_ticks(1,0,2,0,0);
+ assert(cubli_bal.state==BAL_STATE_BALANCING&&m1_enabled&&m2_enabled&&m3_enabled);
+ corner_auto_ticks(1,0,2,0,0);
+ assert(HAL_GetTick()-cubli_bal.balance_since_ms<20U);
+ assert(fabsf(cubli_bal.control_u[0]-.080f)<.0001f);
+ command("STOP");
 }
 static void test_corner_auto(void) {
  /* Arming needs all three axes, sensors, directions and a reference. */
@@ -331,6 +353,7 @@ int main(void) {
  test_corner_auto();
  test_corner_trim();
  test_corner_verified_control_law();
+ test_corner_immediate_feedback();
  test_corner_tight_entry();
  setup();command("DBG 2");command("EN1 1");command("EN2 1");command("EN3 1");assert(m1_enabled&&m2_enabled&&m3_enabled);
  command("M1 20");command("M2 -30");command("M3 40");assert(target_m1==20&&target_m2==-30&&target_m3==40);

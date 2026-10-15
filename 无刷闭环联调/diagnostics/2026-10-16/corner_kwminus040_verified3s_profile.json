@@ -1,5 +1,5 @@
 {
-  "status": "user_confirmed_autonomous3s_only",
+  "status": "confirmed3s_but_failed_repeat_unstable",
   "source": "com_kwminus040_full_trial3s_01",
   "reference_gravity": [
     -0.7028287890572913,
@@ -23,5 +23,12 @@
   "host_tilt_guard_deg": 10,
   "firmware_fall_deg": 20,
   "next_step": "5s same-parameter validation",
-  "production_defaults_updated": false
+  "production_defaults_updated": false,
+  "subsequent_validation": {
+    "source": "com_kwminus040_full_trial5s_01",
+    "requested_seconds": 5,
+    "actual_seconds": 1.328,
+    "result": "body-rate guard, not robust",
+    "firmware": "old500ms-to1500ms wheel-feedback ramp"
+  }
 }
