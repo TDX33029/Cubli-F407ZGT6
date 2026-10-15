@@ -1,0 +1,12 @@
+{
+  "mode": "ST-LINK HOTPLUG, read only",
+  "flash_image_matches": "Cubli-ST/MDK-ARM/CubeMX-corner-entry2s/CubeMX.hex",
+  "verified_image_bytes": 49940,
+  "expected_hex_sha256": "8d3800e442928edd8708c7e19a85f0d57dcf4c282886c4364263161107270187",
+  "DHCSR_read": "0x01010000",
+  "core_halted_bit": false,
+  "MCU_reset_command_sent": false,
+  "flash_written": false,
+  "COM7_subsequently_reconnected": true,
+  "readout_64KiB_sha256": "a4ac876b7d7123c3acbd5530ce9948e3db75ea79d68b808a1c22d6aef1426016"
+}

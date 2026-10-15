@@ -1,0 +1,76 @@
+{
+  "method": "multiple_suspension_points_in_imu_frame",
+  "suspension_fit": {
+    "center_mm": [
+      -41.18603575720299,
+      24.835948333235105,
+      34.90858263202039
+    ],
+    "condition_number": 2.2925890207073603,
+    "line_residuals_mm": [
+      1.5229551256080396,
+      1.3549102778163018,
+      0.23661131646597486
+    ],
+    "rms_residual_mm": 1.184786772746867,
+    "com_below_suspension_mm": [
+      57.36974294454778,
+      51.61242316063035,
+      38.03973234943165
+    ],
+    "geometry_quality_ok": true
+  },
+  "reference_direction_available": true,
+  "physical_balance_verified": false,
+  "support_to_com_imu_mm": [
+    -41.18603575720299,
+    24.835948333235105,
+    34.90858263202039
+  ],
+  "reference_gravity_imu": [
+    -0.6930374040189499,
+    0.41791449074347464,
+    0.587406703279165
+  ],
+  "reference_angles": {
+    "pitch_deg": 24.702990422491773,
+    "roll_deg": 49.71595731897284
+  },
+  "sources": [
+    "无刷闭环联调\\diagnostics\\2026-10-16\\com_same_corner_hang_redo_02.jsonl",
+    "无刷闭环联调\\diagnostics\\2026-10-16\\com_edge_hang_point2_01.jsonl",
+    "无刷闭环联调\\diagnostics\\2026-10-16\\com_edge_hang_midpoint_01.jsonl"
+  ],
+  "attachment_coordinates_approximate": true,
+  "accelerometer_bias_corrected": false,
+  "neutral_verified": false,
+  "com_relative_to_geometric_center_imu_mm": [
+    -6.186035757202987,
+    -10.164051666764895,
+    -0.09141736797960931
+  ],
+  "reference_uncertainty_note": "Scatter and fitting residual do not include all attachment-position, line-load, IMU-axis and accelerometer-bias errors; this is a bounded-test candidate, not a precision calibration.",
+  "comparison_to_previous_reference_deg": 1.2894367773544773,
+  "proposed_trial": {
+    "LQR_each": [
+      80,
+      5,
+      -0.03,
+      0
+    ],
+    "BYAW": 3,
+    "BTRIM": 0,
+    "U": 6,
+    "BU": 6,
+    "L": 240,
+    "host_wheel_bound": 220,
+    "host_tilt_bound_deg": 10,
+    "host_rate_bound_rad_s": 1.5,
+    "BTRIP": 20,
+    "BCAP": 0.5,
+    "BSTART": 2,
+    "run_seconds": 5,
+    "hardware_preparation_required": true,
+    "started": false
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "method": "multiple_suspension_points_in_imu_frame",
+  "suspension_fit": {
+    "center_mm": [
+      -35.40711799048235,
+      12.743613768003826,
+      15.48461389833222
+    ],
+    "condition_number": 2.2925890207073603,
+    "line_residuals_mm": [
+      11.266133752994397,
+      17.656765368008497,
+      18.440453947355476
+    ],
+    "rms_residual_mm": 16.11146046334515,
+    "com_below_suspension_mm": [
+      36.4069840299518,
+      35.87588440599041,
+      7.892297683318609
+    ],
+    "geometry_quality_ok": false
+  },
+  "reference_direction_available": false,
+  "physical_balance_verified": false,
+  "rejection_cause": "Third point was initially described as on M1/M2 edge; operator corrected it to M1/M3 edge. Preserve initial-model rejection; do not silently change coordinates to force a fit."
+}

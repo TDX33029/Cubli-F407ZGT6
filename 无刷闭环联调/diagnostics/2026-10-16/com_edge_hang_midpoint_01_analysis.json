@@ -1,0 +1,134 @@
+{
+  "source_log": "无刷闭环联调\\diagnostics\\2026-10-16\\com_edge_hang_midpoint_01.jsonl",
+  "samples": 400,
+  "duration_s": 19.905999999988126,
+  "all_samples_disabled": true,
+  "last_state": {
+    "App": "0",
+    "Dbg": "1",
+    "Mode": "1",
+    "BMode": "1",
+    "Bal": "0",
+    "Cal": "0",
+    "IMU": "1",
+    "Aligned": "000",
+    "EN": "000",
+    "Fault": "0",
+    "Trip": "1",
+    "Tilt": "89.11",
+    "PoseTilt": "89.42",
+    "Angle": "-89.11",
+    "TripDeg": "20.0",
+    "CapDeg": "10.00",
+    "Auto": "0",
+    "BReason": "0",
+    "FullSpeed": "250.0",
+    "FullMs": "0",
+    "RetryMs": "0",
+    "EdgeReady": "0",
+    "Wheel": "0.12",
+    "Rate": "0.010",
+    "YawD": "3.00",
+    "YawTune": "1",
+    "Trim1": "0.000",
+    "Trim2": "0.000",
+    "Trim3": "0.000",
+    "BTrim": "0.0",
+    "TrimTune": "1",
+    "U1": "0.00",
+    "U2": "0.00",
+    "U3": "0.00",
+    "D1": "1",
+    "D2": "1",
+    "D3": "1",
+    "Enc": "111",
+    "VLimit": "5.00",
+    "SLimit": "180.00",
+    "EncType": "0",
+    "C1": "16384",
+    "C2": "16384",
+    "C3": "16384",
+    "Map1": "1",
+    "Map2": "2",
+    "Map3": "3",
+    "PP1": "7",
+    "PP2": "7",
+    "PP3": "7",
+    "Dir1": "1",
+    "Dir2": "1",
+    "Dir3": "1",
+    "Ref": "0",
+    "Axis1": "1",
+    "Axis2": "2",
+    "Axis3": "3",
+    "AxesOK": "0",
+    "DirOK": "0",
+    "AxisMask": "0",
+    "DirMask": "0",
+    "CountMs": "0",
+    "CornerStart": "1"
+  },
+  "gravity_up_raw_mean_imu": [
+    -0.7566124219549122,
+    -0.653808431134393,
+    0.008495782548154229
+  ],
+  "gravity_up_filtered_mean_imu": [
+    -0.7571788243613153,
+    -0.6531405421270408,
+    0.009362700935716872
+  ],
+  "raw_filtered_difference_deg": 0.07060260881456165,
+  "filtered_scatter_rms_deg": 0.14500850097582058,
+  "filtered_scatter_p95_deg": 0.24326742118600816,
+  "five_second_raw_mean_spread_deg": 0.17705985051370346,
+  "blocks": [
+    {
+      "start_s": 0.062000000005355105,
+      "samples": 100,
+      "gravity_up_imu": [
+        -0.7559606404362441,
+        -0.654573854772521,
+        0.007521885366468649
+      ]
+    },
+    {
+      "start_s": 5.062000000005355,
+      "samples": 100,
+      "gravity_up_imu": [
+        -0.756125913692929,
+        -0.6543828856417617,
+        0.007526062795012486
+      ]
+    },
+    {
+      "start_s": 10.062000000005355,
+      "samples": 100,
+      "gravity_up_imu": [
+        -0.7569886593569605,
+        -0.6533629163550468,
+        0.009223293174342876
+      ]
+    },
+    {
+      "start_s": 15.062000000005355,
+      "samples": 100,
+      "gravity_up_imu": [
+        -0.757371744023342,
+        -0.6529117256079657,
+        0.00971184424657949
+      ]
+    }
+  ],
+  "acceleration_norm_mean_g": 1.009215455477472,
+  "acceleration_norm_range_g": [
+    0.9860020283954795,
+    1.0282995672468214
+  ],
+  "raw_gyro_norm_max_dps": 8.954328562209453,
+  "wheel_abs_max_rad_s": 0.15,
+  "mean_repeatability_ok": true,
+  "physical_contact_status_requires_operator_confirmation": true,
+  "accelerometer_bias_corrected": false,
+  "physical_balance_verified": false
+}

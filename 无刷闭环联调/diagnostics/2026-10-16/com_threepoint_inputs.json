@@ -1,0 +1,68 @@
+{
+  "points_imu_mm": [
+    [
+      -3,
+      0,
+      0
+    ],
+    [
+      -70,
+      0,
+      0
+    ],
+    [
+      -70,
+      0,
+      35
+    ]
+  ],
+  "gravity_up_imu": [
+    [
+      0.6624069076793387,
+      -0.4126041772144272,
+      -0.6252798426336015
+    ],
+    [
+      -0.5553444494171921,
+      -0.5030988683887193,
+      -0.6621812977784148
+    ],
+    [
+      -0.7566124219549122,
+      -0.653808431134393,
+      0.008495782548154229
+    ]
+  ],
+  "support_imu_mm": [
+    0,
+    0,
+    0
+  ],
+  "coordinate_origin": "Original balance support corner; axes are the IMU axes",
+  "nominal_cube_side_mm": 70,
+  "sources": [
+    "无刷闭环联调\\diagnostics\\2026-10-16\\com_same_corner_hang_redo_02.jsonl",
+    "无刷闭环联调\\diagnostics\\2026-10-16\\com_edge_hang_point2_01.jsonl",
+    "无刷闭环联调\\diagnostics\\2026-10-16\\com_edge_hang_midpoint_01.jsonl"
+  ],
+  "attachment_geometry": [
+    {
+      "point": "Q1",
+      "description": "M1/M2 common edge, 3mm towards M3 from original support corner",
+      "operator_report": "实际受力点沿M1/M2共有棱朝M3方向约3mm"
+    },
+    {
+      "point": "Q2",
+      "description": "M1/M2 common edge, tip nearest M3, 70mm from original support corner",
+      "operator_report": "已就绪 无偏移"
+    },
+    {
+      "point": "Q3",
+      "description": "Midpoint of M1/M3 common edge; corrected after explicit operator confirmation",
+      "operator_report": "实际相邻是M1和M3"
+    }
+  ],
+  "geometry_axes_assumption": "M1 outward=-Y, M3 outward=-X confirmed by face-up readings; M2 outward=-Z follows opposite-mainboard placement and is consistent with these gravity lines. Axes approximated as cardinal/orthogonal.",
+  "accelerometer_bias_corrected": false,
+  "physical_balance_verified": false
+}
