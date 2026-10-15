@@ -14,6 +14,8 @@ class PosePublisher:
         self.pose = {}
         self.pose_time = 0
         self.state = {}
+        self.remaining_s = None
+        self.outcome_text = None
 
     def update(self, data):
         if not self.path:
@@ -31,6 +33,8 @@ class PosePublisher:
                    'count_ms': (int(data.get('CountMs', self.state.get('CountMs', 0)))
                                 if int(data.get('Bal', self.state.get('Bal', 0))) == 5 else 0), 'target': self.target,
                    'capture_angle': float(self.capture_angle if self.capture_angle is not None else self.state.get('CapDeg', 2)),
+                   'remaining_s': self.remaining_s,
+                   'outcome_text': self.outcome_text,
                    'speeds': [float(self.pose.get(f'V{i}', self.pose.get(f'S{i}', 0))) for i in (1, 2, 3)]}
         temporary = self.path.with_suffix(self.path.suffix + '.tmp')
         try:

@@ -184,6 +184,16 @@ class DisplayTests(unittest.TestCase):
                     window.refresh()
                 self.assertIn('+24.00', window.angles.text())
                 self.assertEqual(window.status.text(), '电机失能')
+                payload.update(bal=3, remaining_s=1.2)
+                path.write_text(json.dumps(payload))
+                with patch('time.time', return_value=102.1):
+                    window.refresh()
+                self.assertIn('剩余 1.2 秒', window.status.text())
+                payload.update(bal=0, remaining_s=None, outcome_text='轮速保护停机')
+                path.write_text(json.dumps(payload))
+                with patch('time.time', return_value=102.1):
+                    window.refresh()
+                self.assertIn('轮速保护停机', window.status.text())
             finally:
                 window.close()
 

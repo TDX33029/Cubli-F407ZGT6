@@ -137,6 +137,8 @@ def pump(duration):
             data = dict(item.split(':', 1) for item in line.split(',', 1)[1][:-1].split(','))
             target_vector = reference or args.reference_gravity or expected_g
             publisher.target=[math.degrees(math.asin(target_vector[1])),math.degrees(math.atan2(-target_vector[0],target_vector[2]))]
+            publisher.remaining_s = (max(0, args.seconds - (now-run_started)) if run_started is not None
+                                     else args.seconds) if data.get('Bal') == '3' else None
             publisher.update(data)
             if line.startswith('$STATE,'):
                 state = data
@@ -345,6 +347,27 @@ except BaseException as error:
     print(repr(error), flush=True)
 finally:
     watch = False
+    publisher.remaining_s = None
+    if summary['result'] == 'bounded_run_completed':
+        publisher.outcome_text = f'定时结束（{args.seconds:g}秒）'
+    elif summary['result'] == 'probe_completed':
+        publisher.outcome_text = '短脉冲结束'
+    elif summary['result'] == 'prepared_disabled':
+        publisher.outcome_text = '配置完成'
+    else:
+        error_text = summary.get('error', '')
+        if 'wheel speed bound' in error_text:
+            publisher.outcome_text = '轮速保护停机'
+        elif 'body rate/tilt bound' in error_text:
+            frame = summary.get('guard_frame', {})
+            rate = math.sqrt(sum(float(frame.get(k, 0))**2 for k in ('Gx','Gy','Gz')))*math.pi/180
+            publisher.outcome_text = '角速度保护停机' if rate > 1.5 else '倾角保护停机'
+        elif 'Firmware protection' in error_text or 'ERR' in error_text:
+            publisher.outcome_text = '固件保护停机'
+        elif 'not achieved' in error_text or 'not ready' in error_text:
+            publisher.outcome_text = '入位等待结束'
+        else:
+            publisher.outcome_text = '试验异常停机'
     phase = 'finish'
     if link.is_open:
         try:
@@ -357,6 +380,10 @@ finally:
         except BaseException as error:
             summary['result'] = 'stopped'
             summary['final_disarm_error'] = repr(error)
+            publisher.outcome_text = '停机未确认'
+            publisher.remaining_s = None
+            publisher.last_write = -1
+            publisher.update(state)
             record('error', repr(error))
         finally:
             link.close()

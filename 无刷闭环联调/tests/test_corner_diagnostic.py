@@ -26,6 +26,7 @@ class Device:
         self.arm_at = None
         self.probe_until = None
         self.probe_voltage = 0
+        self.had_active = False
         self.state = dict(App='0', BMode='1', Bal='0', EN='000', Fault='0', Trip='0',
                           Aligned='111', Cal='0' if fault == 'uncalibrated' else '1', IMU='1',
                           AxisMask='0', DirMask='0', Ref='0', VLimit='5', SLimit='180', TripDeg='20.0')
@@ -40,7 +41,10 @@ class Device:
         self.is_open = False
 
     def state_frame(self):
-        return '$STATE,' + ','.join(f'{k}:{v}' for k, v in self.state.items()) + '#\n'
+        state = dict(self.state)
+        if self.had_active and self.fault == 'disarm_state_stale' and state['Bal'] == '0':
+            state['EN'] = '111'
+        return '$STATE,' + ','.join(f'{k}:{v}' for k, v in state.items()) + '#\n'
 
     def write(self, raw):
         command = raw.decode().strip()
@@ -97,6 +101,7 @@ class Device:
         if self.pending:
             return self.pending.pop(0).encode()
         active = self.state['Bal'] == '3'
+        self.had_active |= active
         data = dict(Bal=self.state['Bal'], EN=self.state['EN'], Pit='23.56', Rol='46.79',
                     Gx='100' if active and self.fault == 'gyro' else '.5', Gy='-.4', Gz='.2',
                     S1='0', S2='101' if active and self.fault == 'M2_speed' else
@@ -122,7 +127,7 @@ class Device:
 
 
 class CornerDiagnosticTests(unittest.TestCase):
-    def run_trial(self, fault=None, prepare=False, saved=False, yaw=None, probe=None):
+    def run_trial(self, fault=None, prepare=False, saved=False, yaw=None, probe=None, live=False):
         if probe is not None:
             saved = True
             fault = fault or 'probe_edge'
@@ -142,6 +147,8 @@ class CornerDiagnosticTests(unittest.TestCase):
                 argv += ['--probe-motor','1','--probe-voltage',str(probe),'--probe-ms','80',
                          '--kp','0','--kd','0','--kw','0','0','0','--yaw-damping','0',
                          '--voltage','3','--wheel-bound','60','--seconds','1']
+            if live:
+                argv += ['--live-state', str(folder/'live.json')]
             code = 0
             with patch.object(sys, 'argv', argv), patch('serial.Serial', return_value=device), \
                     patch('time.monotonic', side_effect=lambda: device.now), \
@@ -151,6 +158,8 @@ class CornerDiagnosticTests(unittest.TestCase):
                 except SystemExit as error:
                     code = error.code
             result = json.loads((folder / 'sim_summary.json').read_text())
+            if live:
+                result['_published_live_state'] = json.loads((folder/'live.json').read_text())
         self.assertFalse(device.is_open)
         self.assertEqual(device.state['EN'], '000')
         self.assertGreaterEqual(device.commands.count('STOP'), 2)
@@ -161,6 +170,19 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(result['result'], 'prepared_disabled')
         self.assertNotIn('BAL 1', device.commands)
+    def test_live_display_distinguishes_timer_and_rate_protection(self):
+        _, timed, code = self.run_trial(live=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(timed['_published_live_state']['outcome_text'], '定时结束（3秒）')
+        self.assertIsNone(timed['_published_live_state']['remaining_s'])
+        _, protected, code = self.run_trial(fault='gyro', live=True)
+        self.assertEqual(code, 2)
+        self.assertEqual(protected['_published_live_state']['outcome_text'], '角速度保护停机')
+    def test_missing_disarm_confirmation_does_not_display_normal_timer_end(self):
+        _, result, code = self.run_trial(fault='disarm_state_stale', live=True)
+        self.assertEqual(code, 2)
+        self.assertIn('final_disarm_error', result)
+        self.assertEqual(result['_published_live_state']['outcome_text'], '停机未确认')
 
     def test_bounded_corner_arms_all_axes_and_stops(self):
         device, result, code = self.run_trial()

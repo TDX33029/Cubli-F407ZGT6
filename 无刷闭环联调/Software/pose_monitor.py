@@ -48,6 +48,7 @@ class PoseMonitor(QWidget):
             if data.get('target') and self.reader:
                 self.reader.publisher.target = data['target']
                 self.reader.publisher.capture_angle = data.get('capture_angle', 1)
+                self.reader.publisher.outcome_text = data.get('outcome_text')
             self.data = data
         except (OSError, ValueError, TypeError):
             pass
@@ -66,6 +67,12 @@ class PoseMonitor(QWidget):
         self.status.setText({0: '电机失能', 1: '静止校准中', 2: '等待接管',
                              3: '正在运行 · 松手', 4: '保护停机',
                              5: '倒计时 · 扶稳', 6: '等待入位 · 扶稳'}.get(data.get('bal'), '读取中'))
+        if data.get('outcome_text') == '停机未确认':
+            self.status.setText('停机未确认')
+        elif data.get('bal') == 3 and data.get('remaining_s') is not None:
+            self.status.setText(f"运行 · 松手 · 剩余 {max(0,data['remaining_s']):.1f} 秒")
+        elif data.get('bal') == 0 and data.get('outcome_text'):
+            self.status.setText(f"上次{data['outcome_text']} · 已失能")
         self.angles.setText(f"Pitch {data['pitch']:+.2f}°     Roll {data['roll']:+.2f}°")
         target = data.get('target')
         if target:

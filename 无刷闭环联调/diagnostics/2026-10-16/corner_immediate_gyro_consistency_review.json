@@ -1,0 +1,115 @@
+{
+  "method": "Rodrigues gravity propagation with trapezoidal FAST gyro, ignoring accelerometer corrections; compare with firmware fused angle.",
+  "results": [
+    {
+      "source": "corner_immediate_kw040_yaw6_trial5s_01",
+      "max_disagreement_deg": 0.7666642292810782,
+      "last": {
+        "t": 4.980061,
+        "fused_minus_gyro_only_deg": 0.15125242535756037
+      },
+      "samples": [
+        {
+          "t": 0.49997899999999995,
+          "fused_minus_gyro_only_deg": 0.4417022475682535
+        },
+        {
+          "t": 0.9998769999999999,
+          "fused_minus_gyro_only_deg": 0.34786461706522637
+        },
+        {
+          "t": 3.0000139999999997,
+          "fused_minus_gyro_only_deg": 0.19680033896981008
+        },
+        {
+          "t": 4.980061,
+          "fused_minus_gyro_only_deg": 0.15125242535756037
+        }
+      ]
+    },
+    {
+      "source": "corner_immediate_kw040_yaw6_trial8s_01",
+      "max_disagreement_deg": 1.5412968980742767,
+      "last": {
+        "t": 5.099984,
+        "fused_minus_gyro_only_deg": 1.5412968980742767
+      },
+      "samples": [
+        {
+          "t": 0.49999899999999997,
+          "fused_minus_gyro_only_deg": 0.644382958690956
+        },
+        {
+          "t": 1.000154,
+          "fused_minus_gyro_only_deg": 0.386802052971793
+        },
+        {
+          "t": 3.000121,
+          "fused_minus_gyro_only_deg": 0.4204026265096917
+        },
+        {
+          "t": 4.999928,
+          "fused_minus_gyro_only_deg": 1.1147368652546443
+        }
+      ]
+    },
+    {
+      "source": "corner_immediate_comref_kw040_yaw6_trial5s_01",
+      "max_disagreement_deg": 1.229912625658777,
+      "last": {
+        "t": 4.980021,
+        "fused_minus_gyro_only_deg": 0.3719865791980031
+      },
+      "samples": [
+        {
+          "t": 0.499889,
+          "fused_minus_gyro_only_deg": 0.30517322285221754
+        },
+        {
+          "t": 0.999975,
+          "fused_minus_gyro_only_deg": 0.24745684625876743
+        },
+        {
+          "t": 2.999905,
+          "fused_minus_gyro_only_deg": 0.6719836285101625
+        },
+        {
+          "t": 4.980021,
+          "fused_minus_gyro_only_deg": 0.3719865791980031
+        }
+      ]
+    },
+    {
+      "source": "corner_immediate_comref_kw040_yaw6_trial8s_01",
+      "max_disagreement_deg": 1.8929069294974044,
+      "last": {
+        "t": 6.140129,
+        "fused_minus_gyro_only_deg": 1.5746593346693532
+      },
+      "samples": [
+        {
+          "t": 0.5002,
+          "fused_minus_gyro_only_deg": 0.07362077600477232
+        },
+        {
+          "t": 1.000206,
+          "fused_minus_gyro_only_deg": 0.5225413860109658
+        },
+        {
+          "t": 2.9999919999999998,
+          "fused_minus_gyro_only_deg": 0.1272728609303612
+        },
+        {
+          "t": 5.00022,
+          "fused_minus_gyro_only_deg": 1.0701212075060125
+        },
+        {
+          "t": 6.000124,
+          "fused_minus_gyro_only_deg": 0.5708495163767904
+        }
+      ]
+    }
+  ],
+  "limits": "Sparse50Hz gyro, initial attitude error and gyro bias mean this is not ground truth. Disagreement does not prove an IMU-rate/estimator defect and cannot identify COM.",
+  "hardware_review": "LSM6DSR configured416Hz gyro/accel, firmware reads/updates fusion nominally200Hz; no evidence of low encoder rate (current runs~2.2kHz/errors0)."
+}
