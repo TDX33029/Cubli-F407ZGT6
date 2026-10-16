@@ -1,0 +1,50 @@
+{
+  "method": "Per-frame gravity Rodrigues propagation with midpoint FAST gyro vs next fused gravity; tangent correction rate correlated with body tilt angular acceleration.20ms data and angle quantization limit inference. Does not equate gyro-only integration with true attitude.",
+  "results": [
+    {
+      "source": "corner_immediate_comref_kd8_kw040_yaw6_trial8s_01",
+      "samples": 246,
+      "median_frame_disagreement_deg": 0.15970331960028777,
+      "p95_frame_disagreement_deg": 0.4500010275561236,
+      "median_correction_rate_deg_s": 7.9777796070478155,
+      "p95_correction_rate_deg_s": 22.586900450590722,
+      "correction_vs_tilt_accel_scalar_s": -0.026163901338046535,
+      "acceleration_fit_relative_error": 0.7585692354195792,
+      "accel_excited_samples": 208
+    },
+    {
+      "source": "corner_neutral_comref_kd8_kw040_yaw6_trial5s_01",
+      "samples": 218,
+      "median_frame_disagreement_deg": 0.20960871447196183,
+      "p95_frame_disagreement_deg": 0.5057609557941791,
+      "median_correction_rate_deg_s": 10.442838147773468,
+      "p95_correction_rate_deg_s": 25.303875214796168,
+      "correction_vs_tilt_accel_scalar_s": -0.023113716033233308,
+      "acceleration_fit_relative_error": 0.8063703117830888,
+      "accel_excited_samples": 199
+    },
+    {
+      "source": "corner_neutral_slow_comref_kd8_kw040_yaw6_trial8s_02",
+      "samples": 292,
+      "median_frame_disagreement_deg": 0.13664979308885714,
+      "p95_frame_disagreement_deg": 0.36857156983360145,
+      "median_correction_rate_deg_s": 6.802367626655429,
+      "p95_correction_rate_deg_s": 18.349269933670833,
+      "correction_vs_tilt_accel_scalar_s": -0.024812375566688673,
+      "acceleration_fit_relative_error": 0.8090953920799583,
+      "accel_excited_samples": 261
+    },
+    {
+      "source": "corner_neutral_slow_comref_kd8_kw035_yaw6_trial8s_01",
+      "samples": 301,
+      "median_frame_disagreement_deg": 0.143396035793774,
+      "p95_frame_disagreement_deg": 0.3913585326707613,
+      "median_correction_rate_deg_s": 7.216257098026429,
+      "p95_correction_rate_deg_s": 19.508274238418657,
+      "correction_vs_tilt_accel_scalar_s": -0.01743107180268052,
+      "acceleration_fit_relative_error": 0.880197123940265,
+      "accel_excited_samples": 268
+    }
+  ],
+  "conclusion": "Use as a diagnostic of observer/kinematic consistency only. Cross-correlation alone cannot separate translational acceleration, gyro interpolation and true sensor errors; no firmware filter change is justified from this report alone."
+}
