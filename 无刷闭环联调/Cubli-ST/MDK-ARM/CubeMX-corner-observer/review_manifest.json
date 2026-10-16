@@ -16,7 +16,7 @@
     "tau_1": 0.0372
   },
   "flashed": true,
-  "balance_validation": "Not tested on hardware yet",
+  "balance_validation": "Tau1 trial failed at3.875s on host body-rate1.614rad/s; M1/M3 at-6V. Final EN000. Not promoted. Same-calibration tau.25 comparison pending.",
   "source_hashes": {
     "Cubli-ST/Hardware/lqr_balance.c": "c21a261cc78c227650627bed004a6b33f36955da7d8ccc08490e5bfca0308739",
     "Cubli-ST/Hardware/lqr_balance.h": "77c4faeaf46df6aea5a87c74d27beaf38972bcbc4563be1473a726d90ea13adf",

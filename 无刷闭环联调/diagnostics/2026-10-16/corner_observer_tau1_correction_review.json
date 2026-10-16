@@ -1,0 +1,19 @@
+{
+  "results": [
+    {
+      "source": "corner_immediate_comref_kd8_kw040_yaw6_trial8s_01",
+      "tau": 0.25,
+      "samples": 246,
+      "median_correction_rate_deg_s": 7.977779607047815,
+      "p95_correction_rate_deg_s": 22.586900450590722
+    },
+    {
+      "source": "corner_observer_tau1_comref_kd8_kw040_yaw6_trial5s_01",
+      "tau": 1,
+      "samples": 197,
+      "median_correction_rate_deg_s": 4.559656891468369,
+      "p95_correction_rate_deg_s": 10.872723647136468
+    }
+  ],
+  "conclusion": "Compare observer correction magnitude only; initial release differs and real attitude is not independently measured. Tau1 trial still failed at3.875s and is not promoted."
+}
