@@ -27,6 +27,7 @@ class Device:
         self.probe_until = None
         self.probe_voltage = 0
         self.had_active = False
+        self.dropped_probe_state = False
         self.state = dict(App='0', BMode='1', Bal='0', EN='000', Fault='0', Trip='0',
                           Aligned='111', Cal='0' if fault == 'uncalibrated' else '1', IMU='1',
                           AxisMask='0', DirMask='0', Ref='0', VLimit='5', SLimit='180', TripDeg='20.0')
@@ -54,6 +55,8 @@ class Device:
         parts = command.split()
         name = parts[0]
         if name in ('STOP', 'APP', 'BMODE', 'BAL'):
+            if name == 'STOP' and self.fault == 'probe_partial_fast_on_stop' and self.had_active:
+                self.pending.append('$FAST,V1:0,V2:0,V3:0,Bal:4#\n')
             self.state.update(EN='000', Bal='0')
             self.arm_at = None
         if name == 'APP':
@@ -99,6 +102,9 @@ class Device:
             mask = ''.join('1' if i == motor else '0' for i in (1,2,3))
             self.state.update(Bal='7', EN=('010' if motor != 2 else '100') if self.fault == 'probe_wrong_enable' else mask)
         if name == 'STATE?':
+            if self.fault == 'probe_state_query_drop' and self.state['BMode'] == '2' and not self.dropped_probe_state:
+                self.dropped_probe_state = True
+                return len(raw)
             self.pending.append(self.state_frame())
         return len(raw)
 
@@ -131,7 +137,7 @@ class Device:
                 data.update(NPit='23.8', NRol='46.5')
                 if self.fault == 'neutral_out_of_bounds':
                     data['NPit'] = '30'
-            if self.state['BMode'] != '4' and self.fault in ('probe_edge', 'missing_probe', 'probe_wrong_enable','probe_stale_tele'):
+            if self.state['BMode'] != '4' and self.fault in ('probe_edge', 'missing_probe', 'probe_wrong_enable','probe_stale_tele','probe_partial_fast_on_stop','probe_state_query_drop'):
                 data.pop('Pit'); data.pop('Rol')
                 if self.state['Bal'] == '7':
                     motor = int(self.state['BMode'])
@@ -324,6 +330,21 @@ class CornerDiagnosticTests(unittest.TestCase):
         _, result, code = self.run_trial(fault='probe_stale_tele', probe=3, probe_delay=.15)
         self.assertEqual(code, 0)
         self.assertEqual(result['result'], 'probe_completed')
+
+    def test_partial_fault_packet_cannot_interrupt_probe_cleanup(self):
+        device, result, code = self.run_trial(fault='probe_partial_fast_on_stop',probe=3)
+        self.assertEqual(code, 0)
+        self.assertNotIn('final_disarm_error', result)
+        self.assertEqual(device.state['EN'], '000')
+        tail = device.commands[len(device.commands)-1-device.commands[::-1].index('STOP'):]
+        self.assertEqual([c for c in tail if c != 'PING'], ['STOP','FAST 0','U 2.5','L 15','STATE?','FREQ?'])
+
+    def test_probe_retries_dropped_state_without_skipping_disarm(self):
+        device, result, code = self.run_trial(fault='probe_state_query_drop',probe=3,probe_motor=2,probe_delay=.1)
+        self.assertEqual(code, 0)
+        self.assertTrue(device.dropped_probe_state)
+        queries = device.commands[device.commands.index('BMODE 2'):device.commands.index('BPROBE 3 80')]
+        self.assertGreaterEqual(queries.count('STATE?'), 2)
     def test_missing_probe_response_is_not_direction_evidence(self):
         _, result, code = self.run_trial(fault='missing_probe', probe=3)
         self.assertEqual(code, 2)

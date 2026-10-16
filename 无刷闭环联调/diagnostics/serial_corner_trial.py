@@ -145,6 +145,10 @@ def pump(duration):
                 raise RuntimeError(line)
             if not line.startswith(('$STATE,', '$TELE,', '$FAST,')) or not line.endswith('#'):
                 continue
+            if phase == 'finish' and line.startswith('$FAST,'):
+                # Faulted edge FAST intentionally omits gyro/pose. A queued
+                # packet must never interrupt STOP/FAST0/fresh STATE cleanup.
+                continue
             data = dict(item.split(':', 1) for item in line.split(',', 1)[1][:-1].split(','))
             if 'Pit' in data and 'Rol' in data:
                 last_pose = {key:data[key] for key in ('Pit','Rol')}
@@ -215,7 +219,8 @@ def pump(duration):
                         if run_started is None:
                             run_started = now
                             phase='corner_run'
-                            send('FREQ 7')
+                            if not args.probe_motor:
+                                send('FREQ 7')
                             print('BALANCING: PG6 on, release now', flush=True)
                         active.append(data)
         if len(buffer) > 65536:
@@ -231,9 +236,12 @@ def command(text, seconds=.12):
 
 def confirm(predicate, label, timeout=1):
     previous = revision
-    send('STATE?')
+    next_query = 0
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
+        if time.monotonic() >= next_query:
+            send('STATE?')
+            next_query = time.monotonic() + .1
         pump(.02)
         if revision > previous and predicate(state):
             return
@@ -357,12 +365,12 @@ try:
             if args.probe_motor and run_started is not None and time.monotonic() - run_started >= args.probe_delay:
                 summary['probe_baseline'] = [dict(d) for d in active[-6:]]
                 phase = 'probe_prepare'
-                command('FAST 0', .03)
-                command('BAL 0', .03)
-                command(f'BMODE {args.probe_motor}', .03)
+                send('FAST 0')
+                send('BAL 0')
+                send(f'BMODE {args.probe_motor}')
                 confirm(lambda d: d.get('EN') == '000' and d.get('Bal') == '0'
                         and d.get('BMode') == str(args.probe_motor), 'Disarm before timed probe')
-                command('FAST 7', .03)
+                send('FAST 7')
                 phase = 'probe_pulse'
                 command(f'BPROBE {args.probe_voltage:g} {args.probe_ms}', (args.probe_ms + 40)/1000)
                 pump(.1)
