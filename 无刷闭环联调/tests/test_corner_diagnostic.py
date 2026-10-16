@@ -34,6 +34,8 @@ class Device:
         if fault != 'legacy':
             self.state['CornerStart'] = '1'
             self.state.update(YawTune='1', YawD='3.00', TrimTune='1', BTrim='2.0', CapDeg='2.0')
+            if fault != 'no_attitude_tuning':
+                self.state.update(ATune='1',AttTau='1.25')
             if fault != 'no_neutral':
                 self.state.update(NTune='2', NOn='1', NLimit='2.0', NRate='0.1', NGain='0.000025')
 
@@ -78,6 +80,8 @@ class Device:
         elif name == 'BTRIM':
             if self.fault != 'trim_not_applied':
                 self.state['BTrim'] = parts[1]
+        elif name == 'BATTAU' and self.fault != 'attitude_not_applied':
+            self.state['AttTau'] = parts[1]
         elif name == 'BNEUTRAL':
             if self.fault != 'neutral_not_applied':
                 self.state['NOn'] = parts[1]
@@ -152,7 +156,7 @@ class Device:
 
 class CornerDiagnosticTests(unittest.TestCase):
     def run_trial(self, fault=None, prepare=False, saved=False, yaw=None, probe=None, live=False, neutral=False,
-                  probe_motor=1, probe_delay=.35):
+                  probe_motor=1, probe_delay=.35, tau=None):
         if probe is not None:
             saved = True
             fault = fault or 'probe_edge'
@@ -168,6 +172,8 @@ class CornerDiagnosticTests(unittest.TestCase):
                 argv += ['--reference-gravity', '-.668', '.4', '.627']
             if yaw is not None:
                 argv += ['--yaw-damping', str(yaw)]
+            if tau is not None:
+                argv += ['--attitude-tau',str(tau)]
             if probe is not None:
                 argv += ['--probe-motor',str(probe_motor),'--probe-voltage',str(probe),'--probe-ms','80',
                          '--probe-delay',str(probe_delay),
@@ -198,6 +204,24 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('BNEUTRAL 0', device.commands)
         self.assertFalse(any(c.startswith('BNEUTRAL 1') for c in device.commands))
+
+    def test_baseline_clears_previous_observer_experiment(self):
+        device,result,code = self.run_trial()
+        self.assertEqual(code,0)
+        self.assertIn('BATTAU 0.25',device.commands)
+        self.assertLess(device.commands.index('BATTAU 0.25'),device.commands.index('BSTART 2'))
+
+    def test_observer_tuning_is_explicit_and_read_back(self):
+        device,result,code = self.run_trial(tau=1)
+        self.assertEqual(code,0)
+        self.assertIn('BATTAU 1',device.commands)
+        self.assertEqual(float(result['last_state']['AttTau']),1)
+
+    def test_observer_tuning_requires_firmware_and_confirmation(self):
+        for fault in ('no_attitude_tuning','attitude_not_applied'):
+            device,result,code = self.run_trial(fault=fault,tau=1)
+            self.assertEqual(code,2)
+            self.assertNotIn('BSTART 2',device.commands)
 
     def test_neutral_enabled_after_reference_and_published(self):
         device, result, code = self.run_trial(saved=True, neutral=True, live=True)

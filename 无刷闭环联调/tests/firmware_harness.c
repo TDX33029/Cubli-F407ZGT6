@@ -445,6 +445,43 @@ static void test_neutral_search(void) {
  setup_neutral();command("BAL 0");command("BDIR 1 1 1");assert(!cubli_bal.neutral_enabled);
  setup_neutral();command("BAL 0");LQR_InvalidateMotorCalibration(0);assert(!cubli_bal.neutral_enabled);
 }
+static float observer_pivot_rms(float tau) {
+ int i,count=0;float error2=0;
+ const float initial[3]={-.693037404f,.417914491f,.587406703f};
+ const float sensor_y=.035f,sensor_z=.070f,frequency=3.0f,amplitude=.15f;
+ setup();assert(LQR_SetAttitudeTau(tau));
+ cubli_bal.attitude.is_calibrated=true;gravity(initial[0],initial[1],initial[2]);
+ /* Known fixed-pivot motion: IMU specific force includes alpha x r and
+    omega x (omega x r), even though its norm remains near1g. */
+ for(i=1;i<=1600;i++) {
+  float t=i*.005f,f=2*_PI*frequency,omega=amplitude*sinf(f*t),alpha=amplitude*f*cosf(f*t);
+  float angle=amplitude/f*(1-cosf(f*t)),c=cosf(angle),s=sinf(angle),truth[3],a[3],w[3]={0},e[3],error;
+  truth[0]=initial[0];truth[1]=initial[1]*c+initial[2]*s;truth[2]=initial[2]*c-initial[1]*s;
+  a[0]=truth[0];a[1]=truth[1]+(-alpha*sensor_z-omega*omega*sensor_y)/9.80665f;
+  a[2]=truth[2]+(alpha*sensor_y-omega*omega*sensor_z)/9.80665f;w[0]=omega*RAD_TO_DEG;
+  advance();LQR_Attitude_Update(a,w,.005f);assert(cubli_bal.attitude.valid);
+  if(i>400) {cross3(cubli_bal.attitude.gravity,truth,e);error=atan2f(norm3(e),dot3(cubli_bal.attitude.gravity,truth));error2+=error*error;count++;}
+ }
+ return sqrtf(error2/count)*RAD_TO_DEG;
+}
+static void test_observer_tuning(void) {
+ int i;float fast,slow,a[3]={0,sinf(3*DEG_TO_RAD),cosf(3*DEG_TO_RAD)},w[3]={0},e[3];
+ setup();assert(cubli_bal.attitude_tau_s==.25f);
+ command("BATTAU .1");command("BATTAU 3");assert(cubli_bal.attitude_tau_s==.25f);
+ assert(!LQR_SetAttitudeTau(NAN)&&!LQR_SetAttitudeTau(INFINITY));
+ command("BATTAU 1");assert(cubli_bal.attitude_tau_s==1);
+ command("EN1 1");assert(m1_enabled);command("BATTAU .5");assert(cubli_bal.attitude_tau_s==1);command("STOP");
+ cubli_bal.state=BAL_STATE_WAIT_POSE;assert(!LQR_SetAttitudeTau(.5f));
+ cubli_bal.state=BAL_STATE_DISABLED;command("BMODE 4");assert(cubli_bal.attitude_tau_s==.25f);
+ assert(LQR_SetAttitudeTau(1));command("CAL_IMU");assert(cubli_bal.attitude_tau_s==.25f);
+ fast=observer_pivot_rms(.25f);slow=observer_pivot_rms(1);
+ printf("Observer fixed-pivot simulation RMS: .25s=%.4fdeg 1s=%.4fdeg\n",fast,slow);
+ assert(slow<.5f*fast); /* Known truth, not a claim about the real cube. */
+ setup();assert(LQR_SetAttitudeTau(1));cubli_bal.attitude.is_calibrated=true;gravity(0,0,1);
+ for(i=0;i<2000;i++) {advance();LQR_Attitude_Update(a,w,.005f);}
+ cross3(cubli_bal.attitude.gravity,a,e);assert(atan2f(norm3(e),dot3(cubli_bal.attitude.gravity,a))*RAD_TO_DEG<.002f);
+ a[0]=NAN;LQR_Attitude_Update(a,w,.005f);assert(!cubli_bal.attitude.valid);
+}
 int main(void) {
  int i;float u;uint32_t saved;
  setvbuf(stdout,NULL,_IONBF,0);
@@ -456,6 +493,7 @@ int main(void) {
  test_corner_immediate_feedback();
  test_corner_tight_entry();
  test_neutral_search();
+ test_observer_tuning();
  setup();command("DBG 2");command("EN1 1");command("EN2 1");command("EN3 1");assert(m1_enabled&&m2_enabled&&m3_enabled);
  command("M1 20");command("M2 -30");command("M3 40");assert(target_m1==20&&target_m2==-30&&target_m3==40);
  command("M 180 -180 0");assert(target_m1==180&&target_m2==-180&&target_m3==0);

@@ -322,6 +322,9 @@ try:
         command(text)
     for i, kw in enumerate(args.kw, 1):
         command(f'LQR{i} {args.kp} {args.kd} {kw} {args.ki}')
+    if state.get('ATune') == '1':
+        command('BATTAU .25')
+        confirm(lambda d: abs(float(d.get('AttTau', -1))-.25) < .005, 'Baseline attitude correction')
     command(f'BYAW {args.yaw_damping}')
     command(f'BTRIM {args.tilt_trim}')
     command(f'BFULL {args.full_speed}')

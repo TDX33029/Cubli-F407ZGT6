@@ -27,6 +27,7 @@ typedef struct {
     BalanceMode_e mode;
     LQR_Gains_t gains[3], corner_gains[3];
     float K_yaw_damping;
+    float attitude_tau_s; /* Accelerometer correction time constant; default .25s. */
     Attitude_t attitude;
     float wheel_int[3], control_u[3];
     /* Experimental tilt-error integral, not a center-of-mass estimator. */
@@ -88,4 +89,5 @@ void LQR_SetTiltTrim(float k); /* corner tilt-error integral gain, 0..10 V/(rad*
 void LQR_ResetNeutralLearning(void);
 bool LQR_SetNeutralLearning(bool enabled);
 const float *LQR_GetControlReference(void);
+bool LQR_SetAttitudeTau(float seconds); /* disarm-only, .25..2s */
 #endif

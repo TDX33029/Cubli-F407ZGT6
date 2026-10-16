@@ -164,6 +164,7 @@ void LQR_Balance_Init(void) {
     cubli_bal.capture_angle=10*DEG_TO_RAD;
     cubli_bal.full_speed_limit=250;
     cubli_bal.K_yaw_damping=3.0f;
+    cubli_bal.attitude_tau_s=0.25f;
     /* Experimental integral is opt-in; zero preserves the verified PD/wheel loop. */
     cubli_bal.K_tilt_trim=0.0f;
     cubli_bal.neutral_gain=0.000025f;
@@ -271,6 +272,7 @@ bool LQR_StartProbe(float volts,uint16_t duration_ms) {
     cubli_bal.state=BAL_STATE_PROBE;return true;
 }
 void LQR_Balance_StartCalib(void) {
+    cubli_bal.attitude_tau_s=0.25f;
     LQR_ResetNeutralLearning();
     clear_output(); cubli_bal.state=BAL_STATE_CALIBRATING;
     cubli_bal.attitude.is_calibrated=false; cubli_bal.calib_samples=0;
@@ -299,7 +301,7 @@ void LQR_Attitude_Update(float a[3], float w[3], float dt) {
     for(i=0;i<3;i++) att->gyro_rad[i]=w[i]*DEG_TO_RAD-att->gyro_bias[i];
     /* Body gravity propagation: dg/dt = g cross omega. No Euler singularity. */
     cross3(att->gravity,att->gyro_rad,rot);
-    alpha=dt/(0.25f+dt);
+    alpha=dt/(cubli_bal.attitude_tau_s+dt);
     if(fabsf(n-1)>0.25f) alpha=0;
     for(i=0;i<3;i++) {
         pred[i]=att->gravity[i]+rot[i]*dt;
@@ -515,6 +517,7 @@ void LQR_Motor_Loop(void) {
 }
 void LQR_Balance_SetMode(BalanceMode_e mode) {
     LQR_Balance_Enable(false);
+    cubli_bal.attitude_tau_s=0.25f;
     LQR_ResetNeutralLearning();
     if(mode<=BAL_MODE_CORNER) {
         cubli_bal.mode=mode;
@@ -535,3 +538,7 @@ void LQR_SetMaxVoltage(float v) {
     int i; for(i=0;i<3;i++) cubli_bal.gains[i].max_u=cubli_bal.corner_gains[i].max_u=v;
 }
 void LQR_SetTiltTrim(float k) {if(!cubli_bal.neutral_enabled || k==0) cubli_bal.K_tilt_trim=k;}
+bool LQR_SetAttitudeTau(float seconds) {
+    if(cubli_bal.state!=BAL_STATE_DISABLED || !isfinite(seconds) || seconds<0.25f || seconds>2.0f) return false;
+    cubli_bal.attitude_tau_s=seconds;return true;
+}

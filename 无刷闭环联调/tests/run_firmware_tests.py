@@ -40,6 +40,9 @@ with contextlib.nullcontext(tempfile.mkdtemp(prefix='cubli-control-')) as tmp:
     result = subprocess.run([str(tmp/'harness.exe')], cwd=tmp, capture_output=True, text=True)
     if result.returncode: print(result.stdout[-8000:], result.stderr)
     result.check_returncode()
+    for line in result.stdout.splitlines():
+        if line.startswith('Observer fixed-pivot simulation RMS:'):
+            print(line, flush=True)
     print(result.stdout.strip().splitlines()[-1], flush=True)
     compile_line[compile_line.index('firmware_harness.c')] = 'uart_harness.c'
     batch.write_text('@echo off\nchcp 65001 >nul\ncall "' + vs + '\\VC\\Auxiliary\\Build\\vcvars64.bat" >nul\nchcp 65001 >nul\n' + subprocess.list2cmdline(compile_line) + '\n', encoding='utf-8')

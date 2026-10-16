@@ -39,6 +39,7 @@ parser.add_argument('--kp', type=float, default=80)
 parser.add_argument('--kd', type=float, default=5)
 parser.add_argument('--kw', type=float, nargs=3, default=[-.030, -.030, -.030])
 parser.add_argument('--yaw-damping', type=float, help='Independent corner yaw damping, 0..10; updated firmware required')
+parser.add_argument('--attitude-tau', type=float, help='Accelerometer correction time constant, .25..2s; optional observer experiment')
 parser.add_argument('--body-axes', type=int, nargs=3, choices=(1, 2, 3), required=True)
 parser.add_argument('--directions', type=int, nargs=3, choices=(-1, 1), required=True)
 parser.add_argument('--expected-pose', type=Path, required=True, help='Disabled passive pose summary JSON')
@@ -61,6 +62,8 @@ if not (0 < args.seconds <= 15 and 10 <= args.wait_seconds <= 600 and 2 <= args.
     parser.error('Corner diagnostic bounds exceeded')
 if args.yaw_damping is not None and not 0 <= args.yaw_damping <= 10:
     parser.error('Yaw damping must be 0..10')
+if args.attitude_tau is not None and not .25 <= args.attitude_tau <= 2:
+    parser.error('Attitude time constant must be .25..2s')
 if args.probe_motor and not (args.reference_gravity is not None and args.kp == 0 and args.kd == 0
         and all(v == 0 for v in args.kw) and args.yaw_damping == 0 and 0 < abs(args.probe_voltage) <= 3
         and abs(args.probe_voltage) <= args.voltage and 20 <= args.probe_ms <= 80
@@ -288,6 +291,12 @@ try:
         command(text)
     for i, kw in enumerate(args.kw, 1):
         command(f'LQR{i} {args.kp} {args.kd} {kw} 0')
+    if args.attitude_tau is not None and state.get('ATune') != '1':
+        raise RuntimeError('Attitude tuning requires updated firmware (ATune)')
+    if state.get('ATune') == '1':
+        expected_tau = args.attitude_tau if args.attitude_tau is not None else .25
+        command(f'BATTAU {expected_tau:g}')
+        confirm(lambda d: abs(float(d.get('AttTau', -1))-expected_tau) < .005, 'Attitude correction time constant')
     if args.yaw_damping is not None:
         if state.get('YawTune') != '1':
             raise RuntimeError('Independent yaw tuning requires updated firmware')
