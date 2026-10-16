@@ -1,0 +1,56 @@
+{
+  "utc_started": "2026-10-16T05:50:59.096788+00:00",
+  "settings": {
+    "port": "COM7",
+    "tag": "corner_observer_oldref_kp120_kd5_trial5s_01",
+    "seconds": 5.0,
+    "wait_seconds": 600.0,
+    "countdown": 2,
+    "capture_angle": 1.0,
+    "voltage": 6.0,
+    "wheel_bound": 220.0,
+    "kp": 120.0,
+    "kd": 5.0,
+    "kw": [
+      -0.04,
+      -0.04,
+      -0.04
+    ],
+    "yaw_damping": 6.0,
+    "attitude_tau": 0.25,
+    "body_axes": [
+      2,
+      3,
+      1
+    ],
+    "directions": [
+      -1,
+      -1,
+      -1
+    ],
+    "expected_pose": "diagnostics\\2026-10-14\\repaired_corner_hand_pose_still_summary.json",
+    "reference_gravity": [
+      -0.7028287890572913,
+      0.397786931032426,
+      0.589743377048073
+    ],
+    "prepare_only": false,
+    "neutral_learning": false,
+    "neutral_gain": 2.5e-05,
+    "neutral_rate": 0.1,
+    "output_dir": "diagnostics\\2026-10-16",
+    "live_state": "..\\.codex-debug\\20261016-com-validation\\live.json",
+    "probe_motor": null,
+    "probe_voltage": 3,
+    "probe_ms": 80,
+    "probe_delay": 0.35
+  },
+  "result": "stopped",
+  "reference": null,
+  "hands_off_verified": false,
+  "cable_free_verified": false,
+  "active_samples": 0,
+  "error": "SerialException(\"could not open port 'COM7': FileNotFoundError(2, '\u7cfb\u7edf\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6587\u4ef6\u3002', None, 2)\")",
+  "last_state": {},
+  "frequency": []
+}

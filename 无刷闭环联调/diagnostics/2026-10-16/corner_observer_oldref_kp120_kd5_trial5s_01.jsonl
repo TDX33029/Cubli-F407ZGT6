@@ -1,0 +1,1 @@
+{"t": 3.0780000000086147, "phase": "connect", "kind": "error", "data": "SerialException(\"could not open port 'COM7': FileNotFoundError(2, '系统找不到指定的文件。', None, 2)\")"}
