@@ -18,6 +18,8 @@ class PosePublisher:
         self.outcome_text = None
         self.neutral_enabled = False
         self.neutral_target = None
+        self.trial_id = None
+        self.trial_text = None
 
     def update(self, data):
         if not self.path:
@@ -52,6 +54,7 @@ class PosePublisher:
                    'capture_angle': float(self.capture_angle if self.capture_angle is not None else self.state.get('CapDeg', 2)),
                    'remaining_s': self.remaining_s,
                    'outcome_text': self.outcome_text,
+                   'trial_id': self.trial_id, 'trial_text': self.trial_text,
                    'speeds': [float(self.pose.get(f'V{i}', self.pose.get(f'S{i}', 0))) for i in (1, 2, 3)]}
         temporary = self.path.with_suffix(self.path.suffix + '.tmp')
         try:

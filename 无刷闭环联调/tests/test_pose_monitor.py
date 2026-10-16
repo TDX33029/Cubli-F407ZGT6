@@ -215,6 +215,52 @@ class DisplayTests(unittest.TestCase):
             finally:
                 window.close()
 
+    def test_nonmodal_reminder_once_per_trial_and_closes_on_takeover(self):
+        from PyQt5.QtWidgets import QPushButton
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder)/'live.json'
+            window = self.module.PoseMonitor(path)
+            window.timer.stop()
+            try:
+                payload = {'timestamp':100,'pitch':23.4,'roll':50,'bal':6,
+                           'target':[24.7,49.72],'trial_id':'first','trial_text':'5秒对照'}
+                def refresh():
+                    path.write_text(json.dumps(payload))
+                    with patch('time.time',return_value=100.1): window.refresh()
+                refresh()
+                self.assertTrue(window.reminder.isVisible())
+                self.assertFalse(window.reminder.isModal())
+                self.assertEqual(window.reminder.findChildren(QPushButton), [])
+                self.assertIn('+24.70',window.reminder_angles.text())
+                first = window.reminder
+                first.close()
+                refresh()
+                self.assertFalse(first.isVisible())  # no repeat popup for the same trial
+                payload.update(trial_id='second')
+                refresh()
+                self.assertTrue(window.reminder.isVisible())
+                payload.update(bal=3)
+                refresh()
+                self.assertIsNone(window.reminder)
+                self.assertIn('松手',window.status.text())
+            finally:
+                window.close()
+
+    def test_connected_reader_without_pose_is_not_reported_as_reconnecting(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as folder:
+            reader = SimpleNamespace(status='connected',step=lambda:None,close=lambda:None)
+            window = self.module.PoseMonitor(Path(folder)/'missing.json',reader=reader)
+            window.timer.stop()
+            try:
+                window.refresh()
+                self.assertIn('串口已连接',window.status.text())
+                reader.status='handoff'
+                window.refresh()
+                self.assertEqual(window.status.text(),'等待本轮实时数据')
+            finally:
+                window.close()
+
 
 if __name__ == '__main__':
     unittest.main()

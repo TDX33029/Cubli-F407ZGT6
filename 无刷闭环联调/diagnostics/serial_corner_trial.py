@@ -79,6 +79,14 @@ if not (.000005 <= args.neutral_gain <= .00025 and .01 <= args.neutral_rate <= .
     parser.error('Neutral tuning bounds exceeded')
 expected_g = gravity({key: expected['ranges'][key]['median'] for key in ('Pit', 'Rol')})
 publisher=PosePublisher(args.live_state, capture_angle=args.capture_angle)
+publisher.trial_id = args.tag
+if args.probe_motor:
+    publisher.trial_text = f'M{args.probe_motor} {args.probe_voltage:+g}V / {args.probe_ms}ms 短脉冲'
+elif args.neutral_learning:
+    publisher.trial_text = f'{args.seconds:g}秒单点自动寻点'
+else:
+    tau = args.attitude_tau if args.attitude_tau is not None else .25
+    publisher.trial_text = f'{args.seconds:g}秒单点对照 · 姿态校正{tau:g}秒'
 if min(abs(v) for v in expected_g) < .25:
     parser.error('Expected pose is too close to a face/edge; capture a corner pose first')
 if args.reference_gravity is not None:

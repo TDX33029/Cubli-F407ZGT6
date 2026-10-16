@@ -231,6 +231,8 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertLess(device.commands.index('BNEUTRAL 1 2.5e-05 0.1'), device.commands.index('BSTART 2'))
         self.assertEqual(result['learned_reference']['pitch_deg'], 23.8)
         self.assertEqual(result['_published_live_state']['target'], [23.8, 46.5])
+        self.assertEqual(result['_published_live_state']['trial_id'], 'sim')
+        self.assertIn('自动寻点',result['_published_live_state']['trial_text'])
         self.assertIn('effective_tilt_deg_max', result)
 
     def test_neutral_requires_firmware_and_readback(self):
