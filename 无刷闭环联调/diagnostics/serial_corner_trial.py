@@ -64,6 +64,8 @@ if args.yaw_damping is not None and not 0 <= args.yaw_damping <= 10:
     parser.error('Yaw damping must be 0..10')
 if args.attitude_tau is not None and not .25 <= args.attitude_tau <= 2:
     parser.error('Attitude time constant must be .25..2s')
+if args.probe_motor and args.attitude_tau not in (None, .25):
+    parser.error('Observer experiment cannot be combined with timed probe mode changes')
 if args.probe_motor and not (args.reference_gravity is not None and args.kp == 0 and args.kd == 0
         and all(v == 0 for v in args.kw) and args.yaw_damping == 0 and 0 < abs(args.probe_voltage) <= 3
         and abs(args.probe_voltage) <= args.voltage and 20 <= args.probe_ms <= 80
