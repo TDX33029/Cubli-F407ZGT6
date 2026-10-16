@@ -1,0 +1,141 @@
+{
+  "method": "Six existing startup forward/reverse sweeps. Match equal commanded electrical phase, average bidirectional reported mechanical angle, inspect7*angle-command_phase. Circular phase unwrapped about mean; harmonic fit and leave-one-startup-out error.",
+  "sources": [
+    "corner_neutral_postflash_prep01",
+    "corner_neutral_slow_postflash_prep01",
+    "corner_neutral_slow_uartfix_prep01",
+    "corner_ident_after_reset_prep01",
+    "corner_observer_postflash_prep01",
+    "corner_observer_popup_reset_prep01"
+  ],
+  "results": [
+    {
+      "motor": 1,
+      "samples": 30,
+      "phase_offset_span_electrical_deg": 34.33429690013544,
+      "median_forward_reverse_gap_electrical_deg": 3.770062291960847,
+      "fits": [
+        {
+          "harmonic_order": 0,
+          "condition": 1.0,
+          "coefficients_electrical_rad": [
+            1.463822002221792
+          ],
+          "fit_rms_electrical_deg": 8.723620183181371,
+          "leave_one_startup_out_rms_electrical_deg": 10.126791596083105
+        },
+        {
+          "harmonic_order": 1,
+          "condition": 2.4558970468946244,
+          "coefficients_electrical_rad": [
+            1.479970565686284,
+            -0.08040451690037054,
+            0.13686361655679316
+          ],
+          "fit_rms_electrical_deg": 5.194872573150156,
+          "leave_one_startup_out_rms_electrical_deg": 7.2458704057347765
+        },
+        {
+          "harmonic_order": 2,
+          "condition": 5.148436870086943,
+          "coefficients_electrical_rad": [
+            1.4913672206826907,
+            -0.06151271006482492,
+            0.1541099109583956,
+            0.03191804702943692,
+            0.007688904150610116
+          ],
+          "fit_rms_electrical_deg": 5.091017898165278,
+          "leave_one_startup_out_rms_electrical_deg": 12.03214463713882
+        }
+      ]
+    },
+    {
+      "motor": 2,
+      "samples": 30,
+      "phase_offset_span_electrical_deg": 43.99532449659834,
+      "median_forward_reverse_gap_electrical_deg": 3.9104369517678386,
+      "fits": [
+        {
+          "harmonic_order": 0,
+          "condition": 1.0,
+          "coefficients_electrical_rad": [
+            3.0809172070081816
+          ],
+          "fit_rms_electrical_deg": 12.944462337799157,
+          "leave_one_startup_out_rms_electrical_deg": 15.422529620713245
+        },
+        {
+          "harmonic_order": 1,
+          "condition": 7.80750846434672,
+          "coefficients_electrical_rad": [
+            3.013403031522683,
+            0.18640116458458927,
+            -0.2528831594065905
+          ],
+          "fit_rms_electrical_deg": 6.634138318237139,
+          "leave_one_startup_out_rms_electrical_deg": 10.676912501301134
+        },
+        {
+          "harmonic_order": 2,
+          "condition": 64.92542748247446,
+          "coefficients_electrical_rad": [
+            3.4755681652173784,
+            0.41671336295263806,
+            0.38945614396446143,
+            0.15779325206111475,
+            0.2018939468625796
+          ],
+          "fit_rms_electrical_deg": 6.514216202257965,
+          "leave_one_startup_out_rms_electrical_deg": 11.760526558465093
+        }
+      ]
+    },
+    {
+      "motor": 3,
+      "samples": 30,
+      "phase_offset_span_electrical_deg": 43.47168800543281,
+      "median_forward_reverse_gap_electrical_deg": 3.609634109324145,
+      "fits": [
+        {
+          "harmonic_order": 0,
+          "condition": 1.0,
+          "coefficients_electrical_rad": [
+            0.4097761176918608
+          ],
+          "fit_rms_electrical_deg": 15.00221535068826,
+          "leave_one_startup_out_rms_electrical_deg": 17.88778715718685
+        },
+        {
+          "harmonic_order": 1,
+          "condition": 1.7726105611150427,
+          "coefficients_electrical_rad": [
+            0.3694689189400305,
+            -0.008128320332503686,
+            -0.1810908347093127
+          ],
+          "fit_rms_electrical_deg": 13.579770727499335,
+          "leave_one_startup_out_rms_electrical_deg": 27.799135665013445
+        },
+        {
+          "harmonic_order": 2,
+          "condition": 3.188982166316975,
+          "coefficients_electrical_rad": [
+            0.36388164762984987,
+            -0.06252937843235912,
+            -0.1250805121266308,
+            -0.16830252982191363,
+            -0.09767725944303704
+          ],
+          "fit_rms_electrical_deg": 10.718538809137854,
+          "leave_one_startup_out_rms_electrical_deg": 20.670436400687034
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Sweeps are dynamic, not static metrology; cogging, load, phase lag and encoder nonlinearity can all contribute.",
+    "Mechanical angles do not cover all positions evenly; extrapolation is unsafe.",
+    "No encoder correction, commutation offset or gain is changed. Need controlled full-turn slow sweeps before creating any correction table."
+  ]
+}

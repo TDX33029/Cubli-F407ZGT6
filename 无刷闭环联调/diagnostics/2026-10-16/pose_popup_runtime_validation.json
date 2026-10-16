@@ -1,0 +1,26 @@
+{
+  "date_local": "2026-10-16",
+  "pid": 19356,
+  "trial": "corner_observer_tau025_comref_kd8_kw040_yaw6_trial5s_03",
+  "visible_windows": [
+    {
+      "title": "Cubli · 下一轮测试提醒",
+      "rect": [
+        1432,
+        20,
+        1908,
+        289
+      ]
+    },
+    {
+      "title": "Cubli 实时角度",
+      "rect": [
+        683,
+        395,
+        1239,
+        684
+      ]
+    }
+  ],
+  "verification": "Read-only native visible-window enumeration during Bal6; no confirmation button. Nonmodal/no-repeat/automatic-close behavior verified in12 pose tests."
+}
